@@ -353,28 +353,7 @@
 			interrupts = <0 13 4 0 14 4 0 15 4 0 16 4 0 17 4 0 40 4 0 41 4 0 42 4 0 43 4>;
 			reg = <0xf8003000 0x1000>;
 		};
-/*
-		axi_dma_0: axidma@40400000 {
-			#address-cells = <1>;
-			#size-cells = <1>;
-			#dma-cells = <1>;
-			compatible = "xlnx,axi-dma";
-			reg = < 0x40400000 0x1000 >;
-			xlnx,sg-include-stscntrl-strm = <0x0>;
-			dma-channel@40400000 {
-				compatible = "xlnx,axi-dma-mm2s-channel";
-				interrupts = < 0 58 0x4 >;
-				xlnx,datawidth = <0x20>;
-				xlnx,include-dre = <0x0>;
-			};
-		};
 
-		axi_spdif_tx_0: axi-spdif-tx@0x75c00000 {
-			compatible = "adi,axi-spdif-tx-1.00.a";
-			reg = < 0x75c00000 0x1000 >;
-			clock-frequency = <12288000>;
-		};
-*/
 		axi_vdma_0: axivdma@43000000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
@@ -412,18 +391,5 @@
 			dma-request = <&axi_vdma_0 0>;
 			clocks = <&hdmi_clock>;
 		};
-/*
-		xilinx_pcm_audio: xilinx_pcm_audio {
-			compatible = "xilinx-pcm-audio";
-			dma-request = <&axi_dma_0 0>;
-		};
-
-		adv7511_hdmi_snd: adv7511_hdmi_snd {
-			compatible = "adv7511-hdmi-snd";
-			audio-codec-adapter = <&i2c_adv7511>;
-			cpu-dai = <&axi_spdif_tx_0>;
-			pcm = <&xilinx_pcm_audio>;
-		};
-*/
 	};
 };
