@@ -391,5 +391,31 @@
 			dma-request = <&axi_vdma_0 0>;
 			clocks = <&hdmi_clock>;
 		};
+
+		tpg_0: v-tpg@40080000 {
+			compatible = "generic-uio";
+			reg = <0x40080000 0x10000>;
+		};
+
+		axi_vdma_1: axivdma@0x40090000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			compatible = "xlnx,axi-vdma";
+			ranges = <0x40090000 0x40090000 0x10000>;
+			reg = <0x40090000 0x10000>;
+			xlnx,flush-fsync = <0x1>;
+			xlnx,include-sg = <0x0>;
+			xlnx,num-fstores = <0x1>;
+			xlnx,family = "zynq-770";
+			dma-channel@0x40090000 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupt-parent = <&gic>;
+				interrupts = <0 58 4>;
+				xlnx,datawidth = <0x08>;
+				xlnx,genlock-mode = <0x0>;
+				xlnx,include-dre = <0x1>;
+				xlnx,device-id = <0x0>;
+			};
+		};
 	};
 };
