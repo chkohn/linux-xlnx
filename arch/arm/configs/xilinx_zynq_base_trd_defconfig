@@ -30,7 +30,7 @@ CONFIG_BUILDTIME_EXTABLE_SORT=y
 CONFIG_EXPERIMENTAL=y
 CONFIG_INIT_ENV_ARG_LIMIT=32
 CONFIG_CROSS_COMPILE=""
-CONFIG_LOCALVERSION="-xilinx"
+CONFIG_LOCALVERSION="-xilinx-trd"
 CONFIG_LOCALVERSION_AUTO=y
 CONFIG_HAVE_KERNEL_GZIP=y
 CONFIG_HAVE_KERNEL_LZMA=y
@@ -274,7 +274,7 @@ CONFIG_ARCH_MULTI_V6_V7=y
 # CONFIG_ARCH_MULTI_CPU_AUTO is not set
 # CONFIG_ARCH_MVEBU is not set
 # CONFIG_ARCH_BCM is not set
-# CONFIG_GPIO_PCA953X is not set
+CONFIG_GPIO_PCA953X=y
 # CONFIG_KEYBOARD_GPIO_POLLED is not set
 # CONFIG_ARCH_HIGHBANK is not set
 # CONFIG_ARCH_MXC is not set
@@ -1287,6 +1287,7 @@ CONFIG_I2C_MUX=y
 # CONFIG_I2C_MUX_PCA9541 is not set
 CONFIG_I2C_MUX_PCA954x=y
 CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_ALGOBIT=m
 
 #
 # I2C Hardware Bus support
@@ -1419,6 +1420,7 @@ CONFIG_GPIO_XILINX_PS=y
 #
 # CONFIG_GPIO_MAX7300 is not set
 # CONFIG_GPIO_MAX732X is not set
+# CONFIG_GPIO_PCA953X_IRQ is not set
 # CONFIG_GPIO_PCF857X is not set
 # CONFIG_GPIO_SX150X is not set
 # CONFIG_GPIO_ADP5588 is not set
@@ -1682,11 +1684,15 @@ CONFIG_MEDIA_SUPPORT=y
 #
 # Multimedia core support
 #
-# CONFIG_MEDIA_CAMERA_SUPPORT is not set
+CONFIG_MEDIA_CAMERA_SUPPORT=y
 # CONFIG_MEDIA_ANALOG_TV_SUPPORT is not set
 # CONFIG_MEDIA_DIGITAL_TV_SUPPORT is not set
 # CONFIG_MEDIA_RADIO_SUPPORT is not set
 # CONFIG_MEDIA_RC_SUPPORT is not set
+CONFIG_MEDIA_CONTROLLER=y
+CONFIG_VIDEO_DEV=y
+CONFIG_VIDEO_V4L2_SUBDEV_API=y
+CONFIG_VIDEO_V4L2=y
 # CONFIG_VIDEO_ADV_DEBUG is not set
 # CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
 
@@ -1695,18 +1701,133 @@ CONFIG_MEDIA_SUPPORT=y
 #
 # CONFIG_MEDIA_USB_SUPPORT is not set
 # CONFIG_MEDIA_PCI_SUPPORT is not set
+CONFIG_V4L_PLATFORM_DRIVERS=y
+# CONFIG_VIDEO_CAFE_CCIC is not set
+# CONFIG_VIDEO_TIMBERDALE is not set
+# CONFIG_SOC_CAMERA is not set
+# CONFIG_V4L_MEM2MEM_DRIVERS is not set
+# CONFIG_V4L_TEST_DRIVERS is not set
 
 #
 # Supported MMC/SDIO adapters
 #
+# CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
 
 #
 # Media ancillary drivers (tuners, sensors, i2c, frontends)
 #
 
 #
+# Encoders, decoders, sensors and other helper chips
+#
+
+#
+# Audio decoders, processors and mixers
+#
+# CONFIG_VIDEO_TVAUDIO is not set
+# CONFIG_VIDEO_TDA7432 is not set
+# CONFIG_VIDEO_TDA9840 is not set
+# CONFIG_VIDEO_TEA6415C is not set
+# CONFIG_VIDEO_TEA6420 is not set
+# CONFIG_VIDEO_MSP3400 is not set
+# CONFIG_VIDEO_CS5345 is not set
+# CONFIG_VIDEO_CS53L32A is not set
+# CONFIG_VIDEO_TLV320AIC23B is not set
+# CONFIG_VIDEO_WM8775 is not set
+# CONFIG_VIDEO_WM8739 is not set
+# CONFIG_VIDEO_VP27SMPX is not set
+
+#
+# RDS decoders
+#
+# CONFIG_VIDEO_SAA6588 is not set
+
+#
+# Video decoders
+#
+# CONFIG_VIDEO_ADV7180 is not set
+# CONFIG_VIDEO_ADV7183 is not set
+CONFIG_VIDEO_ADV7604=y
+# CONFIG_VIDEO_BT819 is not set
+# CONFIG_VIDEO_BT856 is not set
+# CONFIG_VIDEO_BT866 is not set
+# CONFIG_VIDEO_KS0127 is not set
+# CONFIG_VIDEO_SAA7110 is not set
+# CONFIG_VIDEO_SAA711X is not set
+# CONFIG_VIDEO_SAA7191 is not set
+# CONFIG_VIDEO_TVP514X is not set
+# CONFIG_VIDEO_TVP5150 is not set
+# CONFIG_VIDEO_TVP7002 is not set
+# CONFIG_VIDEO_VPX3220 is not set
+
+#
+# Video and audio decoders
+#
+# CONFIG_VIDEO_SAA717X is not set
+# CONFIG_VIDEO_CX25840 is not set
+
+#
+# MPEG video encoders
+#
+# CONFIG_VIDEO_CX2341X is not set
+
+#
+# Video encoders
+#
+# CONFIG_VIDEO_SAA7127 is not set
+# CONFIG_VIDEO_SAA7185 is not set
+# CONFIG_VIDEO_ADV7170 is not set
+# CONFIG_VIDEO_ADV7175 is not set
+# CONFIG_VIDEO_ADV7343 is not set
+# CONFIG_VIDEO_ADV7393 is not set
+CONFIG_VIDEO_ADV7511=y
+# CONFIG_VIDEO_AD9389B is not set
+# CONFIG_VIDEO_AK881X is not set
+
+#
+# Camera sensor devices
+#
+# CONFIG_VIDEO_OV7670 is not set
+# CONFIG_VIDEO_VS6624 is not set
+# CONFIG_VIDEO_MT9M032 is not set
+# CONFIG_VIDEO_MT9P031 is not set
+# CONFIG_VIDEO_MT9T001 is not set
+# CONFIG_VIDEO_MT9V011 is not set
+# CONFIG_VIDEO_MT9V032 is not set
+# CONFIG_VIDEO_TCM825X is not set
+# CONFIG_VIDEO_SR030PC30 is not set
+# CONFIG_VIDEO_NOON010PC30 is not set
+# CONFIG_VIDEO_M5MOLS is not set
+# CONFIG_VIDEO_S5K6AA is not set
+# CONFIG_VIDEO_S5K4ECGX is not set
+# CONFIG_VIDEO_SMIAPP is not set
+
+#
+# Flash devices
+#
+# CONFIG_VIDEO_ADP1653 is not set
+# CONFIG_VIDEO_AS3645A is not set
+
+#
+# Video improvement chips
+#
+# CONFIG_VIDEO_UPD64031A is not set
+# CONFIG_VIDEO_UPD64083 is not set
+
+#
+# Miscelaneous helper chips
+#
+# CONFIG_VIDEO_THS7303 is not set
+# CONFIG_VIDEO_M52790 is not set
+
+#
+# Sensors used on soc_camera driver
+#
+
+#
 # Customise DVB Frontends
 #
+# CONFIG_DVB_AU8522_V4L is not set
 # CONFIG_DVB_TUNER_DIB0070 is not set
 # CONFIG_DVB_TUNER_DIB0090 is not set
 
@@ -1741,7 +1862,7 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 # CONFIG_FB_SVGALIB is not set
 # CONFIG_FB_MACMODES is not set
 # CONFIG_FB_BACKLIGHT is not set
-# CONFIG_FB_MODE_HELPERS is not set
+CONFIG_FB_MODE_HELPERS=y
 # CONFIG_FB_TILEBLITTING is not set
 
 #
@@ -1785,8 +1906,12 @@ CONFIG_FB_CFB_IMAGEBLIT=y
 CONFIG_FB_XYLON=y
 # CONFIG_FB_XYLON_PLATFORM is not set
 CONFIG_FB_XYLON_OF=y
-# CONFIG_FB_XYLON_PIXCLK is not set
-# CONFIG_FB_XYLON_MISC is not set
+CONFIG_FB_XYLON_PIXCLK=y
+# CONFIG_FB_XYLON_PIXCLK_ZYNQ_PS is not set
+# CONFIG_FB_XYLON_PIXCLK_LOGICLK is not set
+CONFIG_FB_XYLON_PIXCLK_SI570=y
+CONFIG_FB_XYLON_MISC=y
+CONFIG_FB_XYLON_MISC_ADV7511=y
 # CONFIG_EXYNOS_VIDEO is not set
 # CONFIG_BACKLIGHT_LCD_SUPPORT is not set
 
@@ -2013,6 +2138,7 @@ CONFIG_XUSBPS_ERRATA_DT654401=y
 CONFIG_USB_XUSBPS=y
 # CONFIG_USB_FUSB300 is not set
 # CONFIG_USB_R8A66597 is not set
+# CONFIG_USB_GADGET_XILINX is not set
 # CONFIG_USB_MV_UDC is not set
 # CONFIG_USB_M66592 is not set
 # CONFIG_USB_AMD5536UDC is not set
@@ -2036,6 +2162,7 @@ CONFIG_USB_ZERO=m
 # CONFIG_USB_G_MULTI is not set
 # CONFIG_USB_G_HID is not set
 # CONFIG_USB_G_DBGP is not set
+# CONFIG_USB_G_WEBCAM is not set
 
 #
 # OTG and related infrastructure
@@ -2181,7 +2308,7 @@ CONFIG_PL330_DMA=y
 #
 # CONFIG_NET_DMA is not set
 # CONFIG_ASYNC_TX_DMA is not set
-CONFIG_DMATEST=y
+# CONFIG_DMATEST is not set
 # CONFIG_AUXDISPLAY is not set
 CONFIG_UIO=y
 # CONFIG_UIO_CIF is not set
@@ -2203,7 +2330,51 @@ CONFIG_VIRTIO=m
 #
 # Microsoft Hyper-V guest support
 #
-# CONFIG_STAGING is not set
+CONFIG_STAGING=y
+# CONFIG_ET131X is not set
+# CONFIG_USBIP_CORE is not set
+# CONFIG_ECHO is not set
+# CONFIG_ASUS_OLED is not set
+# CONFIG_R8187SE is not set
+# CONFIG_RTL8192U is not set
+# CONFIG_RTLLIB is not set
+# CONFIG_R8712U is not set
+# CONFIG_RTS5139 is not set
+# CONFIG_TRANZPORT is not set
+# CONFIG_VT6655 is not set
+# CONFIG_VT6656 is not set
+# CONFIG_DX_SEP is not set
+# CONFIG_ZSMALLOC is not set
+# CONFIG_FB_SM7XX is not set
+# CONFIG_CRYSTALHD is not set
+# CONFIG_FB_XGI is not set
+# CONFIG_USB_ENESTORAGE is not set
+# CONFIG_BCM_WIMAX is not set
+# CONFIG_FT1000 is not set
+
+#
+# Speakup console speech
+#
+# CONFIG_SPEAKUP is not set
+# CONFIG_TOUCHSCREEN_CLEARPAD_TM1217 is not set
+# CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4 is not set
+# CONFIG_STAGING_MEDIA is not set
+
+#
+# Android
+#
+# CONFIG_ANDROID is not set
+# CONFIG_USB_WPAN_HCD is not set
+# CONFIG_USB_G_CCG is not set
+# CONFIG_WIMAX_GDM72XX is not set
+CONFIG_NET_VENDOR_SILICOM=y
+# CONFIG_SBYPASS is not set
+# CONFIG_BPCTL is not set
+# CONFIG_CED1401 is not set
+# CONFIG_DGRP is not set
+CONFIG_XILINX_VIDEO_IP=y
+CONFIG_XILINX_VDMA_WRAPPER=y
+CONFIG_VIDEO_IMAGEON=m
 CONFIG_CLKDEV_LOOKUP=y
 CONFIG_HAVE_CLK_PREPARE=y
 CONFIG_COMMON_CLK=y
