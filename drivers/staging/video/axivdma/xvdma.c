@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/dma-mapping.h>
 #include <linux/dmaengine.h>
+#include <linux/sched.h>
 #include <linux/amba/xilinx_dma.h>
 #include "xvdma.h"
 
@@ -49,7 +50,8 @@ void xvdma_get_dev_info(u32 device_id, struct xvdma_dev *dev)
 	int i;
 
 	for (i = 0; i < MAX_DEVICES; i++) {
-		if (xvdma_dev_info[i]->device_id == device_id)
+		if (xvdma_dev_info[i] &&
+				(xvdma_dev_info[i]->device_id == device_id))
 			break;
 	}
 	memcpy(dev, xvdma_dev_info[i], sizeof(struct xvdma_dev));
@@ -205,6 +207,8 @@ void xvdma_prep_slave_sg(struct xvdma_buf_info *buf_info)
 	int i;
 	u32 device_id;
 	u32 frm_cnt = buf_info->frm_cnt;
+	struct vm_area_struct *vma;
+	struct page *pg;
 
 	buf_size = buf_info->buf_size;
 	chan = (struct dma_chan *) buf_info->chan;
@@ -217,12 +221,16 @@ void xvdma_prep_slave_sg(struct xvdma_buf_info *buf_info)
 		if (buf_info->fixed_buffer) {
 			chan_dev = chan->device;
 			sg_init_table(chansg, frm_cnt);
+			vma = find_vma(current->mm, 0);
 			for (i = 0; i < frm_cnt; i++) {
 				if (!buf_info->shared_buffer) {
+					/* workaround: from va to pa */
+					pg = follow_page(vma,
+							buf_info->addr_base, 0);
 					dma_srcs[i] =
-					buf_info->addr_base + i * buf_size;
+						page_to_phys(pg) + i * buf_size;
 					chan_buf[device_id].dma_addr[i] =
-					dma_srcs[i];
+						dma_srcs[i];
 				}
 				sg_dma_address(&chansg[i]) =
 				chan_buf[device_id].dma_addr[i];
@@ -282,15 +290,13 @@ void xvdma_device_control(struct xvdma_chan_cfg *chan_cfg)
 	}
 }
 
-void xvdma_add_dev_info(struct dma_chan *tx_chan,
-				struct dma_chan *rx_chan)
+void xvdma_add_dev_info(struct dma_chan *rx_chan)
 {
 	static u32 i ;
 
 	xvdma_dev_info[i] = (struct xvdma_dev *)
 		kzalloc(sizeof(struct xvdma_dev), GFP_KERNEL);
 
-	xvdma_dev_info[i]->tx_chan = (u32) tx_chan;
 	xvdma_dev_info[i]->rx_chan = (u32) rx_chan;
 	xvdma_dev_info[i]->device_id = i;
 	num_devices++;
@@ -300,27 +306,23 @@ void xvdma_add_dev_info(struct dma_chan *tx_chan,
 void xvdma_scan_channels(void)
 {
 	dma_cap_mask_t mask;
-	u32 match_tx, match_rx;
-	struct dma_chan *tx_chan, *rx_chan;
+	u32 match_rx;
+	struct dma_chan *rx_chan;
 	u32 device_id = 0;
 
 	dma_cap_zero(mask);
 	dma_cap_set(DMA_SLAVE | DMA_PRIVATE, mask);
 
 	for (;;) {
-		match_tx = (DMA_TO_DEVICE & 0xFF) | XILINX_DMA_IP_VDMA |
-			(device_id << XVDMA_DEVICE_ID_SHIFT);
-		tx_chan = dma_request_channel(mask, xvdma_filter,
-				(void *)&match_tx);
 		match_rx = (DMA_FROM_DEVICE & 0xFF) | XILINX_DMA_IP_VDMA |
 			(device_id << XVDMA_DEVICE_ID_SHIFT);
 		rx_chan = dma_request_channel(mask, xvdma_filter,
 				(void *)&match_rx);
 
-		if (!tx_chan && !rx_chan)
+		if (!rx_chan)
 			break;
 		else
-			xvdma_add_dev_info(tx_chan, rx_chan);
+			xvdma_add_dev_info(rx_chan);
 
 		device_id++;
 	}
@@ -331,10 +333,7 @@ void xvdma_release_channels(void)
 	int i;
 
 	for (i = 0; i < MAX_DEVICES; i++) {
-		if (xvdma_dev_info[i]->tx_chan)
-			dma_release_channel((struct dma_chan *)
-				xvdma_dev_info[i]->tx_chan);
-		if (xvdma_dev_info[i]->rx_chan)
+		if (xvdma_dev_info[i] && xvdma_dev_info[i]->rx_chan)
 			dma_release_channel((struct dma_chan *)
 				xvdma_dev_info[i]->rx_chan);
 	}
@@ -438,3 +437,4 @@ static void __exit xvdma_exit(void)
 
 late_initcall(xvdma_init);
 module_exit(xvdma_exit);
+MODULE_LICENSE("GPL v2");
