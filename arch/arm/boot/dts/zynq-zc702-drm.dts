@@ -410,7 +410,7 @@
 			dma-channel@0x40090000 {
 				compatible = "xlnx,axi-vdma-s2mm-channel";
 				interrupt-parent = <&gic>;
-				interrupts = <0 58 4>;
+				interrupts = <0 57 4>;
 				xlnx,datawidth = <0x08>;
 				xlnx,genlock-mode = <0x0>;
 				xlnx,include-dre = <0x1>;
