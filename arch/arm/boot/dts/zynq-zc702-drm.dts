@@ -354,12 +354,12 @@
 			reg = <0xf8003000 0x1000>;
 		};
 
-		axi_vdma_0: axivdma@43000000 {
+		axi_vdma_0: axivdma@40000000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
-			reg = <0x43000000 0x1000>;
+			reg = <0x40000000 0x1000>;
 			xlnx,include-sg = <0x0>;
 			xlnx,num-fstores = <0x1>;
 			dma-channel@7e200000 {
@@ -371,25 +371,26 @@
 			};
 		};
 
-		fpga_clock: fpga_clock {
-			compatible = "fixed-clock";
-			#clock-cells = <0>;
-			clock-frequency = <200000000>;
+		vtc_0: vtc@0x40010000 {
+			compatible = "xlnx,vtc";
+			reg = <0x40010000 0x10000>;
 		};
 
-		hdmi_clock: axi-clkgen@66000000 {
-			compatible = "adi,axi-clkgen-1.00.a";
-			reg = <0x66000000 0x10000>;
-			#clock-cells = <0>;
-			clocks = <&fpga_clock>;
+		vcresample_0: vcresample@0x40020000 {
+			compatible = "xlnx,vcresample";
+			reg = <0x40020000 0x10000>;
 		};
 
-		axi_hdmi@6c000000 {
-			compatible = "adi,axi-hdmi-1.00.a";
-			reg = <0x6c000000 0x10000>;
+		vrgb2ycrcb_0: vrgb2ycrcb@0x40030000 {
+			compatible = "xlnx,vrgb2ycrcb";
+			reg = <0x40030000 0x10000>;
+		};
+
+		zynq_drm{
+			compatible = "xlnx,zynq_drm";
 			encoder-slave = <&adv7511>;
 			dma-request = <&axi_vdma_0 0>;
-			clocks = <&hdmi_clock>;
+			clocks = <&vtc_0>;
 		};
 	};
 };
