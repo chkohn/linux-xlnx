@@ -50,5 +50,6 @@ obj-$(CONFIG_DRM_UDL) += udl/
 obj-$(CONFIG_DRM_AST) += ast/
 obj-$(CONFIG_DRM_SHMOBILE) +=shmobile/
 obj-$(CONFIG_DRM_TEGRA) += tegra/
+obj-$(CONFIG_DRM_ZYNQ) += zynq/
 obj-$(CONFIG_DRM_ADI_AXI_HDMI) += adi_axi_hdmi/
 obj-y			+= i2c/
