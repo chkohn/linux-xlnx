@@ -810,6 +810,8 @@ static int adv7511_probe(struct i2c_client *i2c,
 	unsigned int val;
 	int ret;
 
+	memset(&link_config, 0x0, sizeof(struct adv7511_link_config));
+
 	if (i2c->dev.of_node) {
 		ret = adv7511_parse_dt(adv7511, i2c->dev.of_node, &link_config);
 		if (ret)
