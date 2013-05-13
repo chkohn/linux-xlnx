@@ -563,12 +563,13 @@ static enum drm_connector_status adv7511_encoder_detect(struct drm_encoder *enco
 	 * there is a pending HPD interrupt and the cable is connected there was
 	 * at least on transition from disconnected to connected and the chip
 	 * has to be reinitialized. */
-	if (status == connector_status_connected && hpd &&
+	if (status == connector_status_connected && (hpd || adv7511->init) &&
 		adv7511->dpms_mode == DRM_MODE_DPMS_ON) {
 		regcache_mark_dirty(adv7511->regmap);
 		adv7511_encoder_dpms(encoder, adv7511->dpms_mode);
 		adv7511_get_modes(encoder, connector);
 		status = connector_status_disconnected;
+		adv7511->init = 0;
 	} else {
 		/* Renable HDP sensing */
 		regmap_update_bits(adv7511->regmap, ADV7511_REG_POWER2,
@@ -873,6 +874,8 @@ static int adv7511_probe(struct i2c_client *i2c,
 	adv7511_audio_init(&i2c->dev);
 
 	adv7511_set_link_config(adv7511, &link_config);
+
+	adv7511->init = 1;
 
 	return 0;
 
