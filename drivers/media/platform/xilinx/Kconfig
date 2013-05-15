@@ -1,0 +1,9 @@
+config VIDEO_XILINX
+	tristate "Xilinx Video IP (EXPERIMENTAL)"
+	depends on VIDEO_V4L2 && VIDEO_V4L2_SUBDEV_API && OF && EXPERIMENTAL
+	---help---
+	  Driver for Xilinx Video IP Pipelines
+
+if VIDEO_XILINX
+
+endif #VIDEO_XILINX

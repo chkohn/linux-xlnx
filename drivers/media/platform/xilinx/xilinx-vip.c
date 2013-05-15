@@ -1,0 +1,121 @@
+/*
+ * xilinx-xvipp.c
+ *
+ * Xilinx Video IP Pipeline
+ *
+ * Copyright (C) 2013 Ideas on Board SPRL
+ *
+ * Contacts: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <linux/export.h>
+#include <linux/kernel.h>
+#include <linux/of.h>
+
+#include "xilinx-vip.h"
+
+/* -----------------------------------------------------------------------------
+ * Helper functions
+ */
+
+static const struct xvip_video_format xvip_video_formats[] = {
+	{ "rgb", 8, 3,
+	  V4L2_MBUS_FMT_RGB888_1X24_LE, V4L2_PIX_FMT_RGB24 },
+	{ "rgb", 10, 4,
+	  V4L2_MBUS_FMT_RGB101010_1X32_PADHI_LE, 0 },
+	{ "rgb", 12, 5,
+	  V4L2_MBUS_FMT_RGB121212_1X40_PADHI_LE, 0 },
+
+	{ "yuv422", 8, 2,
+	  V4L2_MBUS_FMT_YUYV8_1X16, V4L2_PIX_FMT_YUYV },
+	{ "yuv422", 10, 2,
+	  V4L2_MBUS_FMT_YUYV10_1X24_PADHI, 0 },
+	{ "yuv422", 12, 3,
+	  V4L2_MBUS_FMT_RGB121212_1X40_PADHI_LE, V4L2_MBUS_FMT_YUYV12_1X24 },
+};
+
+/*
+ * xvip_get_format_by_code - Retrieve format information for a media bus code
+ * @code: the format media bus code
+ *
+ * Return a pointer to the format information structure corresponding to the
+ * given V4L2 media bus format code, or NULL if no corresponding format can be
+ * found.
+ */
+const struct xvip_video_format *xvip_get_format_by_code(unsigned int code)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(xvip_video_formats); ++i) {
+		const struct xvip_video_format *format = &xvip_video_formats[i];
+
+		if (format->code == code)
+			return format;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL_GPL(xvip_get_format_by_code);
+
+/*
+ * xvip_get_format_by_fourcc - Retrieve format information for a 4CC
+ * @fourcc: the format 4CC
+ *
+ * Return a pointer to the format information structure corresponding to the
+ * given V4L2 format 4CC, or NULL if no corresponding format can be found.
+ */
+const struct xvip_video_format *xvip_get_format_by_fourcc(u32 fourcc)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(xvip_video_formats); ++i) {
+		const struct xvip_video_format *format = &xvip_video_formats[i];
+
+		if (format->fourcc == fourcc)
+			return format;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL_GPL(xvip_get_format_by_fourcc);
+
+/*
+ * xvip_of_get_format - Parse a device tree node and return format information
+ * @node: the device tree node
+ *
+ * Read the xlnx,axi-video-format and xlnx,axi-video-width properties from the
+ * device tree node name passed as an argument and return the corresponding
+ * format information.
+ *
+ * Return a pointer to the format information structure corresponding to the
+ * format name and width, or NULL if no corresponding format can be found.
+ */
+const struct xvip_video_format *xvip_of_get_format(struct device_node *node)
+{
+	const char *name;
+	unsigned int i;
+	u32 width;
+	int ret;
+
+	ret = of_property_read_string(node, "xlnx,axi-video-format", &name);
+	if (ret < 0)
+		return NULL;
+
+	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
+	if (ret < 0)
+		return NULL;
+
+	for (i = 0; i < ARRAY_SIZE(xvip_video_formats); ++i) {
+		const struct xvip_video_format *format = &xvip_video_formats[i];
+
+		if (strcmp(format->name, name) == 0 && format->width == width)
+			return format;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL_GPL(xvip_of_get_format);
