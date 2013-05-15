@@ -51,7 +51,7 @@
 			xlnx,has-ecc = <0x0>;
 		} ;
 
-		ps7_ocm_0: ps7-ocm@0xfffc0000 {
+		ps7_ocm_0: ps7-ocm@fffc0000 {
 			compatible = "xlnx,ps7-ocm";
 			reg = <0xfffc0000 0x40000>; /* 256k */
 		};
@@ -103,7 +103,7 @@
 			} ;
 		};
 
-		timer@0xf8001000 {
+		timer@f8001000 {
 			compatible = "xlnx,ps7-ttc-1.00.a";
 			reg = <0xf8001000 0x1000>;
 			interrupts = <0 10 4>,<0 11 4>,<0 12 4>;
@@ -384,30 +384,30 @@
 			};
 		};
 
-		vtc_0: vtc@0x40010000 {
+		vtc_0: vtc@40010000 {
 			compatible = "xlnx,vtc";
 			reg = <0x40010000 0x10000>;
 		};
 
-		vcresample_0: vcresample@0x40020000 {
+		vcresample_0: vcresample@40020000 {
 			compatible = "xlnx,vcresample";
 			reg = <0x40020000 0x10000>;
 		};
 
-		vrgb2ycrcb_0: vrgb2ycrcb@0x40030000 {
+		vrgb2ycrcb_0: vrgb2ycrcb@40030000 {
 			compatible = "xlnx,vrgb2ycrcb";
 			reg = <0x40030000 0x10000>;
 		};
 
-		vosd_0: vosd@0x40040000 {
+		vosd_0: vosd@40040000 {
 			compatible = "xlnx,vosd";
 			reg = <0x40040000 0x10000>;
-			xlnx,num-layers = <0x2>;
+			xlnx,num-layers = <2>;
 		};
 
 		zynq_drm{
 			compatible = "xlnx,zynq_drm";
-			xlnx,num-planes = <0x2>;
+			xlnx,num-planes = <2>;
 			dma-request0 = <&axi_vdma_0 0>;
 			dma-request1 = <&axi_vdma_1 0>;
 			encoder-slave = <&adv7511>;
