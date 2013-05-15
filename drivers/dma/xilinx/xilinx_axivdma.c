@@ -25,6 +25,7 @@
 #include <linux/dmapool.h>
 #include <linux/io.h>
 #include <linux/of.h>
+#include <linux/of_dma.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/of_address.h>
@@ -1018,7 +1019,6 @@ static int xilinx_vdma_device_control(struct dma_chan *dchan,
 		return -ENXIO;
 }
 
-
 /*
  * Logarithm function to compute alignment shift
  * Only deals with value less than 4096.
@@ -1265,6 +1265,14 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 
 	dma_async_device_register(&xdev->common);
 
+	if (op->dev.of_node) {
+		err = of_dma_controller_register(op->dev.of_node,
+						 of_dma_xlate_by_chan_id,
+						 &xdev->common);
+		if (err < 0)
+			dev_err(&op->dev, "Unable to register DMA to DT\n");
+	}
+
 	return 0;
 
 out_free_xdev:
@@ -1278,6 +1286,9 @@ static int xilinx_vdma_of_remove(struct platform_device *op)
 {
 	struct xilinx_vdma_device *xdev;
 	int i;
+
+	if (op->dev.of_node)
+		of_dma_controller_free(op->dev.of_node);
 
 	xdev = dev_get_drvdata(&op->dev);
 	dma_async_device_unregister(&xdev->common);
