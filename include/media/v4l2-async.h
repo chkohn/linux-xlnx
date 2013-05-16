@@ -15,6 +15,7 @@
 #include <linux/mutex.h>
 
 struct device;
+struct device_node;
 struct v4l2_device;
 struct v4l2_subdev;
 struct v4l2_async_notifier;
@@ -23,6 +24,7 @@ enum v4l2_async_bus_type {
 	V4L2_ASYNC_BUS_CUSTOM,
 	V4L2_ASYNC_BUS_PLATFORM,
 	V4L2_ASYNC_BUS_I2C,
+	V4L2_ASYNC_BUS_DT,
 };
 
 struct v4l2_async_hw_info {
@@ -40,6 +42,9 @@ struct v4l2_async_hw_info {
 				      struct v4l2_async_hw_info *);
 			void *priv;
 		} custom;
+		struct {
+			struct device_node *node;
+		} dt;
 	} match;
 };
 

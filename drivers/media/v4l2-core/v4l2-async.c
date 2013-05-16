@@ -37,6 +37,12 @@ static bool match_platform(struct device *dev, struct v4l2_async_hw_info *hw_dev
 		!strcmp(hw_dev->match.platform.name, dev_name(dev));
 }
 
+static bool match_dt(struct device *dev, struct v4l2_async_hw_info *hw_dev)
+{
+	return hw_dev->bus_type == V4L2_ASYNC_BUS_DT &&
+		hw_dev->match.dt.node == dev->of_node;
+}
+
 static LIST_HEAD(subdev_list);
 static LIST_HEAD(notifier_list);
 static DEFINE_MUTEX(list_lock);
@@ -65,6 +71,9 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct v4l2_async_notifier *
 			break;
 		case V4L2_ASYNC_BUS_I2C:
 			match = match_i2c;
+			break;
+		case V4L2_ASYNC_BUS_DT:
+			match = match_dt;
 			break;
 		default:
 			/* Cannot happen, unless someone breaks us */
@@ -151,6 +160,7 @@ int v4l2_async_notifier_register(struct v4l2_device *v4l2_dev,
 		case V4L2_ASYNC_BUS_CUSTOM:
 		case V4L2_ASYNC_BUS_PLATFORM:
 		case V4L2_ASYNC_BUS_I2C:
+		case V4L2_ASYNC_BUS_DT:
 			break;
 		default:
 			dev_err(notifier->v4l2_dev ? notifier->v4l2_dev->dev : NULL,
