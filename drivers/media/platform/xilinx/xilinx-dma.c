@@ -12,6 +12,7 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG 1
 #include <linux/amba/xilinx_dma.h>
 #include <linux/dmaengine.h>
 #include <linux/lcm.h>
@@ -105,6 +106,9 @@ static void xvip_dma_complete(void *param)
 	struct xvip_dma_buffer *buf = param;
 	struct xvip_dma *dma = buf->dma;
 
+	dev_dbg(dma->xvipp->dev, "%s: %s: buffer %p\n",
+		dma->video.vfl_dir == VFL_DIR_RX ? "s2mm" : "mm2s", __func__,
+		buf);
 	buf->buf.v4l2_buf.sequence = dma->sequence++;
 	v4l2_get_timestamp(&buf->buf.v4l2_buf.timestamp);
 	vb2_set_plane_payload(&buf->buf, 0, buf->length);
@@ -162,10 +166,16 @@ static void xvip_dma_buffer_queue(struct vb2_buffer *vb)
 	desc->callback = xvip_dma_complete;
 	desc->callback_param = buf;
 
+	dev_dbg(dma->xvipp->dev, "%s: %s: submitting desc %p for buffer %p\n",
+		dma->video.vfl_dir == VFL_DIR_RX ? "s2mm" : "mm2s", __func__,
+		desc, buf);
 	dmaengine_submit(desc);
 
-	if (vb2_is_streaming(&dma->queue))
+	if (vb2_is_streaming(&dma->queue)) {
+		dev_dbg(dma->xvipp->dev, "%s: %s: issue pending\n",
+			dma->video.vfl_dir == VFL_DIR_RX ? "s2mm" : "mm2s", __func__);
 		dma_async_issue_pending(dma->dma);
+	}
 }
 
 static void xvip_dma_wait_prepare(struct vb2_queue *vq)
@@ -207,6 +217,8 @@ static int xvip_dma_start_streaming(struct vb2_queue *vq, unsigned int count)
 	/* Start the DMA engine. This must be done before starting the blocks
 	 * in the pipeline to avoid DMA synchronization issues.
 	 */
+	dev_dbg(dma->xvipp->dev, "%s: %s: issue pending\n",
+		dma->video.vfl_dir == VFL_DIR_RX ? "s2mm" : "mm2s", __func__);
 	dma_async_issue_pending(dma->dma);
 
 	/* Start the pipeline. */

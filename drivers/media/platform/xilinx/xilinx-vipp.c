@@ -12,6 +12,7 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG 1
 #include <linux/list.h>
 #include <linux/module.h>
 #include <linux/of.h>

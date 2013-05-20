@@ -80,6 +80,7 @@ struct xvip_device {
 	struct device *dev;
 
 	void __iomem *iomem;
+	phys_addr_t phys;
 };
 
 /*
@@ -104,11 +105,14 @@ const struct xvip_video_format *xvip_of_get_format(struct device_node *node);
 
 static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
 {
-	return ioread32(xvip->iomem + addr);
+	u32 value = ioread32(xvip->iomem + addr);
+	dev_dbg(xvip->dev, "0x%08x -> 0x%08x\n", xvip->phys + addr, value);
+	return value;
 }
 
 static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
 {
+	dev_dbg(xvip->dev, "0x%08x <- 0x%08x\n", xvip->phys + addr, value);
 	iowrite32(value, xvip->iomem + addr);
 }
 

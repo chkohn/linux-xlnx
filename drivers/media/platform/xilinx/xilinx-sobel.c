@@ -12,6 +12,7 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG 1
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -411,6 +412,8 @@ static int xsobel_probe(struct platform_device *pdev)
 	xsobel->xvip.iomem = devm_request_and_ioremap(&pdev->dev, mem);
 	if (xsobel->xvip.iomem == NULL)
 		return -ENODEV;
+
+	xsobel->xvip.phys = mem->start;
 
 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (irq == NULL)

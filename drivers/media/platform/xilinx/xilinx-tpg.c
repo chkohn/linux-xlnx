@@ -12,6 +12,7 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG 1
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -324,6 +325,8 @@ static int xtpg_probe(struct platform_device *pdev)
 	xtpg->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
 	if (xtpg->xvip.iomem == NULL)
 		return -ENODEV;
+
+	xtpg->xvip.phys = res->start;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
