@@ -18,6 +18,7 @@
  *
  */
 
+#define DEBUG 1
 #include <linux/amba/xilinx_dma.h>
 #include <linux/bitops.h>
 #include <linux/dmaengine.h>
@@ -199,6 +200,7 @@ struct xilinx_vdma_chan {
 
 struct xilinx_vdma_device {
 	void __iomem *regs;
+	phys_addr_t phys;
 	struct device *dev;
 	struct dma_device common;
 	struct xilinx_vdma_chan *chan[XILINX_VDMA_MAX_CHANS_PER_DEVICE];
@@ -212,11 +214,18 @@ struct xilinx_vdma_device {
 /* IO accessors */
 static inline u32 vdma_read(struct xilinx_vdma_chan *chan, u32 reg)
 {
-	return ioread32(chan->xdev->regs + reg);
+	u32 value = ioread32(chan->xdev->regs + reg);
+	dev_dbg(chan->xdev->dev, "%s: 0x%08x -> 0x%08x\n",
+		chan->id ? "s2mm" : "mm2s",
+		chan->xdev->phys + reg, value);
+	return value;
 }
 
 static inline void vdma_write(struct xilinx_vdma_chan *chan, u32 reg, u32 value)
 {
+	dev_dbg(chan->xdev->dev, "%s: 0x%08x <- 0x%08x\n",
+		chan->id ? "s2mm" : "mm2s",
+		chan->xdev->phys + reg, value);
 	iowrite32(value, chan->xdev->regs + reg);
 }
 
@@ -385,6 +394,9 @@ static void xilinx_vdma_chan_desc_cleanup(struct xilinx_vdma_chan *chan)
 	list_for_each_entry_safe(desc, next, &chan->done_list, node) {
 		dma_async_tx_callback callback;
 		void *callback_param;
+
+		dev_dbg(chan->xdev->dev, "%s: %s: desc %p\n",
+			chan->id ? "s2mm" : "mm2s", __func__, desc);
 
 		/* Remove from the list of running transactions */
 		list_del(&desc->node);
@@ -592,6 +604,8 @@ static void xilinx_vdma_start_transfer(struct xilinx_vdma_chan *chan)
 		vdma_desc_write(chan, XILINX_VDMA_REG_VSIZE, config->vsize);
 	}
 
+	dev_dbg(chan->xdev->dev, "%s: %s: setting desc %p as active\n",
+		chan->id ? "s2mm" : "mm2s", __func__, desc);
 	list_del(&desc->node);
 	chan->active_desc = desc;
 
@@ -689,6 +703,8 @@ static irqreturn_t xilinx_vdma_irq_handler(int irq, void *data)
 
 	/* Read the status and ack the interrupts. */
 	status = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMASR);
+	dev_dbg(chan->xdev->dev, "%s: %s: status 0x%08x\n",
+		chan->id ? "s2mm" : "mm2s", __func__, status);
 	if (!(status & XILINX_VDMA_DMAXR_ALL_IRQ_MASK))
 		return IRQ_NONE;
 
@@ -727,6 +743,8 @@ static irqreturn_t xilinx_vdma_irq_handler(int irq, void *data)
 	}
 
 	if (status & XILINX_VDMA_DMASR_FRM_CNT_IRQ) {
+		dev_dbg(chan->xdev->dev, "%s: %s: xfer complete\n",
+			chan->id ? "s2mm" : "mm2s", __func__);
 		xilinx_vdma_complete_descriptor(chan);
 		xilinx_vdma_start_transfer(chan);
 	}
@@ -785,6 +803,8 @@ static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
 	chan->cookie = cookie;
 
 	/* Append the transaction to the pending transactions queue. */
+	dev_dbg(chan->xdev->dev, "%s: %s: adding desc %p to pending list\n",
+		chan->id ? "s2mm" : "mm2s", __func__, desc);
 	list_add_tail(&desc->node, &chan->pending_list);
 
 	spin_unlock_irqrestore(&chan->lock, flags);
@@ -1181,6 +1201,8 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	xdev->regs = devm_ioremap_resource(&op->dev, io);
 	if (IS_ERR(xdev->regs))
 		return PTR_ERR(xdev->regs);
+
+	xdev->phys = io->start;
 
 	/* Retrieve the DMA engine properties from the device tree */
 	if (of_property_read_bool(node, "xlnx,include-sg"))
