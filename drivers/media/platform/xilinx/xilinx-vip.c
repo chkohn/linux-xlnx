@@ -23,19 +23,9 @@
  */
 
 static const struct xvip_video_format xvip_video_formats[] = {
-	{ "rgb", 8, 3,
-	  V4L2_MBUS_FMT_RGB888_1X24_LE, V4L2_PIX_FMT_RGB24 },
-	{ "rgb", 10, 4,
-	  V4L2_MBUS_FMT_RGB101010_1X32_PADHI_LE, 0 },
-	{ "rgb", 12, 5,
-	  V4L2_MBUS_FMT_RGB121212_1X40_PADHI_LE, 0 },
-
-	{ "yuv422", 8, 2,
-	  V4L2_MBUS_FMT_YUYV8_1X16, V4L2_PIX_FMT_YUYV },
-	{ "yuv422", 10, 2,
-	  V4L2_MBUS_FMT_YUYV10_1X24_PADHI, 0 },
-	{ "yuv422", 12, 3,
-	  V4L2_MBUS_FMT_RGB121212_1X40_PADHI_LE, V4L2_MBUS_FMT_YUYV12_1X24 },
+	{ "rbg", 8, 3, V4L2_MBUS_FMT_RBG888_1X24, 0 },
+	{ "xrgb", 8, 4, V4L2_MBUS_FMT_RGB888_1X32_PADHI, V4L2_PIX_FMT_BGR32 },
+	{ "yuv422", 8, 2, V4L2_MBUS_FMT_YUYV8_1X16, V4L2_PIX_FMT_YUYV },
 };
 
 /*
