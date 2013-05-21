@@ -36,17 +36,6 @@ struct zynq_drm_encoder {
 	struct i2c_client *si570;	/* si570 pixel clock */
 	struct zynq_vtc *vtc;		/* video timing controller */
 	int dpms;			/* dpms */
-
-	/* timing infomation */
-	int pixel_clock;		/* pixel clock */
-	int htotal;			/* h total */
-	int hfrontporch_start;		/* h frontporch start */
-	int hsync_start;		/* h sync start */
-	int hbackporch_start;		/* h backporch start */
-	int vtotal;			/* v total */
-	int vfrontporch_start;          /* v frontporch start */
-	int vsync_start;                /* v sync start */
-	int vbackporch_start;           /* v backporch start */
 };
 
 #define to_zynq_encoder(x)	container_of(x, struct zynq_drm_encoder, slave)
@@ -81,21 +70,9 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
 			encoder->dpms, dpms);
 
-	/* set dpms */
-	if (encoder->dpms != dpms) {
-		encoder->dpms = dpms;
-
-		encoder_sfuncs = encoder_slave->slave_funcs;
-		if (encoder_sfuncs && encoder_sfuncs->dpms)
-			encoder_sfuncs->dpms(base_encoder, dpms);
-
-		switch (dpms) {
-		case DRM_MODE_DPMS_ON:
-			break;
-		default:
-			break;
-		}
-	}
+	encoder_sfuncs = encoder_slave->slave_funcs;
+	if (encoder_sfuncs && encoder_sfuncs->dpms)
+		encoder_sfuncs->dpms(base_encoder, dpms);
 
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
@@ -135,8 +112,14 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct drm_display_mode *mode, struct drm_display_mode *adjusted_mode)
 {
 	struct zynq_drm_encoder *encoder;
+	struct zynq_vtc_sig_config vtc_sig_config;
+	struct drm_device *dev = base_encoder->dev;
 	struct drm_encoder_slave *encoder_slave;
 	struct drm_encoder_slave_funcs *encoder_sfuncs;
+	struct drm_connector *iter;
+	struct drm_connector *connector = NULL;
+	struct adv7511_video_config config;
+	struct edid *edid;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "h: %d, v: %d, p clock: %d khz\n",
 			mode->hdisplay, mode->vdisplay, mode->clock);
@@ -147,56 +130,6 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 		goto out;
 	}
 
-	encoder_sfuncs = encoder_slave->slave_funcs;
-	encoder = to_zynq_encoder(encoder_slave);
-	if (!encoder) {
-		DRM_ERROR("failed to get zynq encoder\n");
-		goto out;
-	}
-
-	if (encoder_sfuncs && encoder_sfuncs->mode_set)
-		encoder_sfuncs->mode_set(base_encoder, mode, adjusted_mode);
-
-	encoder->pixel_clock = mode->clock * 1000;
-
-	encoder->htotal = mode->htotal;
-	encoder->hfrontporch_start = mode->hdisplay;
-	encoder->hsync_start = mode->hsync_start;
-	encoder->hbackporch_start = mode->hsync_end;
-
-	encoder->vtotal = mode->vtotal;
-	encoder->vfrontporch_start = mode->vdisplay;
-	encoder->vsync_start = mode->vsync_start;
-	encoder->vbackporch_start = mode->vsync_end;
-
-out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
-}
-
-/* commit mode to encoder hardwares */
-static void zynq_drm_encoder_commit(struct drm_encoder *base_encoder)
-{
-	struct zynq_drm_encoder *encoder;
-	struct zynq_vtc_sig_config vtc_sig_config;
-	struct drm_encoder_slave *encoder_slave;
-	struct drm_encoder_slave_funcs *encoder_sfuncs;
-	struct drm_device *dev = base_encoder->dev;
-	struct drm_connector *iter;
-	struct drm_connector *connector = NULL;
-	struct adv7511_video_config config;
-	struct edid *edid;
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
-
-	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_ON);
-
-	encoder_slave = to_encoder_slave(base_encoder);
-	if (!encoder_slave) {
-		DRM_ERROR("failed to get encoder slave\n");
-		goto out;
-	}
-
-	encoder_sfuncs = encoder_slave->slave_funcs;
 	encoder = to_zynq_encoder(encoder_slave);
 	if (!encoder) {
 		DRM_ERROR("failed to get zynq encoder\n");
@@ -245,36 +178,50 @@ static void zynq_drm_encoder_commit(struct drm_encoder *base_encoder)
 		}
 	}
 
-	encoder_sfuncs->set_config(base_encoder, &config);
+	encoder_sfuncs = encoder_slave->slave_funcs;
+	if (encoder_sfuncs && encoder_sfuncs->set_config)
+		encoder_sfuncs->set_config(base_encoder, &config);
+
+	if (encoder_sfuncs && encoder_sfuncs->mode_set)
+		encoder_sfuncs->mode_set(base_encoder, mode, adjusted_mode);
 
 	/* set si570 pixel clock */
-	set_frequency_si570(&encoder->si570->dev, encoder->pixel_clock);
+	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
 
 	/* set vtc */
-	vtc_sig_config.htotal = encoder->htotal;
-	vtc_sig_config.hfrontporch_start = encoder->hfrontporch_start;
-	vtc_sig_config.hsync_start = encoder->hsync_start;
-	vtc_sig_config.hbackporch_start = encoder->hbackporch_start;
+	vtc_sig_config.htotal = mode->htotal;
+	vtc_sig_config.hfrontporch_start = mode->hdisplay;
+	vtc_sig_config.hsync_start = mode->hsync_start;
+	vtc_sig_config.hbackporch_start = mode->hsync_end;
 	vtc_sig_config.hactive_start = 0;
 
-	vtc_sig_config.v0total = encoder->vtotal;
-	vtc_sig_config.v0frontporch_start = encoder->vfrontporch_start;
-	vtc_sig_config.v0sync_start = encoder->vsync_start;
-	vtc_sig_config.v0backporch_start = encoder->vbackporch_start;
+	vtc_sig_config.v0total = mode->vtotal;
+	vtc_sig_config.v0frontporch_start = mode->vdisplay;
+	vtc_sig_config.v0sync_start = mode->vsync_start;
+	vtc_sig_config.v0backporch_start = mode->vsync_end;
 	vtc_sig_config.v0active_start = 0;
 
 	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
 
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
-	return;
+}
+
+/* apply mode to encoder pipe */
+static void zynq_drm_encoder_commit(struct drm_encoder *base_encoder)
+{
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	/* start encoder with new mode */
+	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_ON);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
 
 /* prepare encoder */
 static void zynq_drm_encoder_prepare(struct drm_encoder *base_encoder)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
-	/* nothing has to be done here */
+	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
 
 /* get crtc */
