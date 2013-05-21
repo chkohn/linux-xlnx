@@ -620,9 +620,6 @@ static inline void zynq_vtc_intr_clear(struct zynq_vtc *vtc, u32 intr)
 /* interrupt handler */
 static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
 {
-	struct zynq_vtc *vtc = data;
-	u32 intr;
-
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 	return IRQ_HANDLED;
 }

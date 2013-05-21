@@ -27,8 +27,6 @@
 #include "zynq_cresample.h"
 #include "zynq_rgb2yuv.h"
 
-#define MAX_CRTC	1
-
 struct zynq_drm_crtc_vdma {
 	struct device_node *node;		/* device node */
 	int chan_id;				/* channel id */
