@@ -197,6 +197,8 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 
 	crtc->paddr =  obj->paddr;
 
+	zynq_drm_crtc_commit(base_crtc);
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
 	return 0;
