@@ -70,14 +70,6 @@ struct zynq_rgb2yuv {
 #define zynq_rgb2yuv_readl(device, offset)	\
 	readl(device->base + offset)
 
-/* disable interrupt */
-static inline void zynq_rgb2yuv_intr_disable(struct zynq_rgb2yuv *rgb2yuv)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_IRQ_EN, 0);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-}
-
 /* enable rgb2yuv */
 void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv)
 {
@@ -132,7 +124,7 @@ void zynq_rgb2yuv_configure(struct zynq_rgb2yuv *rgb2yuv,
 void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, RGB_RST_RESET);
+	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, RGB_RST_AUTORESET);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 }
 
@@ -160,9 +152,6 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible)
 		pr_err("failed to ioremap rgb2yuv\n");
 		goto err_iomap;
 	}
-
-	zynq_rgb2yuv_reset(rgb2yuv);
-	zynq_rgb2yuv_intr_disable(rgb2yuv);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
