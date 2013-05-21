@@ -581,7 +581,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 void zynq_vtc_reset(struct zynq_vtc *vtc)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_RESET, VTC_RESET_RESET_MASK);
+	zynq_vtc_writel(vtc, VTC_RESET, VTC_SYNC_RESET_MASK);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
 
@@ -650,8 +650,6 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 		pr_err("failed to iomap vtc\n");
 		goto err_iomap;
 	}
-
-	zynq_vtc_reset(vtc);
 
 	zynq_vtc_intr_disable(vtc, VTC_IXR_ALLINTR_MASK);
 	vtc->irq = irq_of_parse_and_map(vtc->node, 0);
