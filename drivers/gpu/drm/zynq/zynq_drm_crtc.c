@@ -58,7 +58,7 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 {
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "dpms: %d -> %d\n", crtc->dpms, dpms);
 
 	if (crtc->dpms != dpms) {
 		crtc->dpms = dpms;
@@ -90,6 +90,8 @@ static void zynq_drm_crtc_commit(struct drm_crtc *base_crtc)
 	size_t offset;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "h: %d, v: %d, paddr: %p\n",
+			crtc->hsize, crtc->vsize, (void *)crtc->paddr);
 
 	/* make sure crtc is on */
 	zynq_drm_crtc_dpms(base_crtc, DRM_MODE_DPMS_ON);

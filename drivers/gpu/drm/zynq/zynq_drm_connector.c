@@ -113,7 +113,8 @@ static enum drm_connector_status zynq_drm_connector_detect(
 	if (encoder_sfuncs && encoder_sfuncs->detect)
 		status = encoder_sfuncs->detect(encoder, base_connector);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "status: %d\n", status);
+
 	return status;
 }
 

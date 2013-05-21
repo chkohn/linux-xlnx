@@ -78,6 +78,9 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 		goto out;
 	}
 
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
+			encoder->dpms, dpms);
+
 	/* set dpms */
 	if (encoder->dpms != dpms) {
 		encoder->dpms = dpms;
@@ -135,7 +138,8 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct drm_encoder_slave *encoder_slave;
 	struct drm_encoder_slave_funcs *encoder_sfuncs;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "h: %d, v: %d, p clock: %d khz\n",
+			mode->hdisplay, mode->vdisplay, mode->clock);
 
 	encoder_slave = to_encoder_slave(base_encoder);
 	if (!encoder_slave) {
