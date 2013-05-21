@@ -57,14 +57,6 @@ struct zynq_cresample {
 #define zynq_cresample_readl(device, offset)	\
 	readl(device->base + offset)
 
-/* disable interrupt */
-static inline void zynq_cresample_intr_disable(struct zynq_cresample *cresample)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
-	zynq_cresample_writel(cresample, CRESAMPLE_IRQ_ENABLE, 0);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
-}
-
 /* enable cresample */
 void zynq_cresample_enable(struct zynq_cresample *cresample)
 {
@@ -123,7 +115,7 @@ void zynq_cresample_reset(struct zynq_cresample *cresample)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL,
-			CRESAMPLE_CTL_RESET);
+			CRESAMPLE_CTL_AUTORESET);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 }
 
@@ -150,9 +142,6 @@ struct zynq_cresample *zynq_cresample_probe(char *compatible)
 		pr_err("failed to ioremap cresample\n");
 		goto err_iomap;
 	}
-
-	zynq_cresample_reset(cresample);
-	zynq_cresample_intr_disable(cresample);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
