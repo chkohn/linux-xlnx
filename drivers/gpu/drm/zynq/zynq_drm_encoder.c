@@ -88,11 +88,8 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 
 		switch (dpms) {
 		case DRM_MODE_DPMS_ON:
-			zynq_vtc_reset(encoder->vtc);
-			zynq_vtc_enable(encoder->vtc);
 			break;
 		default:
-			zynq_vtc_disable(encoder->vtc);
 			break;
 		}
 	}
@@ -344,6 +341,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 		DRM_ERROR("failed to probe video timing controller\n");
 		goto err_vtc;
 	}
+	zynq_vtc_enable(encoder->vtc);
 
 	/* get slave encoder */
 	slave_node = of_parse_phandle(pdev->dev.of_node, "encoder-slave", 0);
