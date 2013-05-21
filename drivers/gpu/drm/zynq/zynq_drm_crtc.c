@@ -64,18 +64,10 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 		crtc->dpms = dpms;
 		switch (dpms) {
 		case DRM_MODE_DPMS_ON:
-			/* reset / enable cresample */
-			zynq_cresample_reset(crtc->cresample);
-			zynq_cresample_enable(crtc->cresample);
-			/* reset / enable rgb2yuv */
-			zynq_rgb2yuv_reset(crtc->rgb2yuv);
-			zynq_rgb2yuv_enable(crtc->rgb2yuv);
 			break;
 		default:
 			/* stop vdma engine */
 			dmaengine_terminate_all(crtc->vdma.chan);
-			zynq_cresample_disable(crtc->cresample);
-			zynq_rgb2yuv_disable(crtc->rgb2yuv);
 			break;
 		}
 	}
@@ -307,6 +299,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 		DRM_ERROR("failed to probe cresample\n");
 		goto err_cresample;
 	}
+	zynq_cresample_enable(crtc->cresample);
 
 	/* probe color space converter and enable */
 	crtc->rgb2yuv = zynq_rgb2yuv_probe("xlnx,vrgb2ycrcb");
@@ -314,6 +307,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 		DRM_ERROR("failed to probe vrgb2yuv\n");
 		goto err_rgb2yuv;
 	}
+	zynq_rgb2yuv_enable(crtc->rgb2yuv);
 
 	/* initialize drm crtc */
 	if (drm_crtc_init(drm, &crtc->base, &zynq_drm_crtc_funcs)) {
