@@ -125,6 +125,9 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	drm->dev_private = private;
 
+	/* call hotplug event to initialize pipelines */
+	drm_fbdev_cma_hotplug_event(private->fbdev);
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
 	return 0;
