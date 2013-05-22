@@ -1054,10 +1054,8 @@ static int my_log(int value)
 
 static void xilinx_vdma_chan_remove(struct xilinx_vdma_chan *chan)
 {
-	free_irq(chan->irq, chan);
 	irq_dispose_mapping(chan->irq);
 	list_del(&chan->common.device_node);
-	kfree(chan);
 }
 
 /*
@@ -1075,11 +1073,10 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 	u32 width = 0, device_id = 0, flush_fsync = 0;
 
 	/* Alloc channel */
-	chan = kzalloc(sizeof(*chan), GFP_KERNEL);
+	chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
 	if (!chan) {
 		dev_err(xdev->dev, "no free memory for DMA channels!\n");
-		err = -ENOMEM;
-		goto out_return;
+		return -ENOMEM;
 	}
 
 	chan->xdev = xdev;
@@ -1158,7 +1155,7 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 	/* Initialize the channel */
 	if (vdma_init(chan)) {
 		dev_err(xdev->dev, "Reset channel failed\n");
-		goto out_free_chan;
+		return err;
 	}
 
 	spin_lock_init(&chan->lock);
@@ -1169,8 +1166,8 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 
 	/* Find the IRQ line, if it exists in the device tree */
 	chan->irq = irq_of_parse_and_map(node, 0);
-	err = request_irq(chan->irq, vdma_intr_handler, IRQF_SHARED,
-				"xilinx-vdma-controller", chan);
+	err = devm_request_irq(xdev->dev, chan->irq, vdma_intr_handler,
+			       IRQF_SHARED, "xilinx-vdma-controller", chan);
 	if (err) {
 		dev_err(xdev->dev, "unable to request IRQ\n");
 		goto out_free_irq;
@@ -1183,11 +1180,7 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 	return 0;
 
 out_free_irq:
-	free_irq(chan->irq, chan);
 	irq_dispose_mapping(chan->irq);
-out_free_chan:
-	kfree(chan);
-out_return:
 	return err;
 }
 
@@ -1201,11 +1194,10 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 
 	dev_info(&op->dev, "Probing xilinx axi vdma engine\n");
 
-	xdev = kzalloc(sizeof(struct xilinx_vdma_device), GFP_KERNEL);
+	xdev = devm_kzalloc(&op->dev, sizeof(*xdev), GFP_KERNEL);
 	if (!xdev) {
 		dev_err(&op->dev, "Not enough memory for device\n");
-		err = -ENOMEM;
-		goto out_return;
+		return -ENOMEM;
 	}
 
 	xdev->dev = &(op->dev);
@@ -1218,8 +1210,7 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	xdev->regs = of_iomap(node, 0);
 	if (!xdev->regs) {
 		dev_err(&op->dev, "unable to iomap registers\n");
-		err = -ENOMEM;
-		goto out_free_xdev;
+		return -ENOMEM;
 	}
 
 	/* Axi VDMA only do slave transfers */
@@ -1277,12 +1268,6 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	}
 
 	return 0;
-
-out_free_xdev:
-	kfree(xdev);
-
-out_return:
-	return err;
 }
 
 static int xilinx_vdma_of_remove(struct platform_device *op)
@@ -1303,7 +1288,6 @@ static int xilinx_vdma_of_remove(struct platform_device *op)
 
 	iounmap(xdev->regs);
 	dev_set_drvdata(&op->dev, NULL);
-	kfree(xdev);
 
 	return 0;
 }
