@@ -125,16 +125,6 @@
 #define XILINX_VDMA_FLUSH_MM2S			2
 #define XILINX_VDMA_FLUSH_BOTH			1
 
-/* Feature encodings */
-#define XILINX_VDMA_FTR_HAS_SG			0x00000100
-						/* Has SG */
-#define XILINX_VDMA_FTR_HAS_SG_SHIFT		8
-						/* Has SG shift */
-#define XILINX_VDMA_FTR_FLUSH_MASK		0x00000600
-						/* Flush-on-FSync Mask */
-#define XILINX_VDMA_FTR_FLUSH_SHIFT		9
-						/* Flush-on-FSync shift */
-
 /* Delay loop counter to prevent hardware failure */
 #define XILINX_VDMA_RESET_LOOP			1000000
 #define XILINX_VDMA_HALT_LOOP			1000000
@@ -179,7 +169,6 @@ struct xilinx_vdma_chan {
 	bool genlock;				/* Support genlock mode */
 	int err;				/* Channel has errors */
 	struct tasklet_struct tasklet;		/* Cleanup work after irq */
-	u32 feature;				/* IP feature */
 	u32 private;				/* Match info for
 							channel request */
 	void (*start_transfer)(struct xilinx_vdma_chan *chan);
@@ -192,7 +181,8 @@ struct xilinx_vdma_device {
 	struct device *dev;
 	struct dma_device common;
 	struct xilinx_vdma_chan *chan[XILINX_VDMA_MAX_CHANS_PER_DEVICE];
-	u32 feature;
+	bool has_sg;				/* Support scatter transfers */
+	u32 flush_fsync;
 };
 
 #define to_xilinx_chan(chan) \
@@ -1045,12 +1035,12 @@ static void xilinx_vdma_chan_remove(struct xilinx_vdma_chan *chan)
  * . Initialize special channel handling routines
  */
 static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
-	struct device_node *node, u32 feature)
+				  struct device_node *node)
 {
 	struct xilinx_vdma_chan *chan;
-	int err;
-	u32 width = 0, device_id = 0, flush_fsync = 0;
+	u32 device_id = 0;
 	u32 value;
+	int err;
 
 	/* Alloc channel */
 	chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
@@ -1060,7 +1050,6 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 	}
 
 	chan->xdev = xdev;
-	chan->feature = feature;
 
 	if (of_property_read_bool(node, "xlnx,include-dre"))
 		chan->has_dre = true;
@@ -1070,24 +1059,21 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 
 	err = of_property_read_u32(node, "xlnx,datawidth", &value);
 	if (!err) {
-		width = value >> 3; /* Convert bits to bytes */
+		unsigned int width = value >> 3; /* Convert bits to bytes */
 
 		/* If data width is greater than 8 bytes, DRE is not in hw */
 		if (width > 8)
 			chan->has_dre = false;
 
-		chan->feature |= width - 1;
+		if (!chan->has_dre)
+			xdev->common.copy_align = fls(width - 1);
 	}
 
 	of_property_read_u32(node, "xlnx,device-id", &device_id);
 
-	flush_fsync = (xdev->feature & XILINX_VDMA_FTR_FLUSH_MASK) >>
-			XILINX_VDMA_FTR_FLUSH_SHIFT;
-
 	chan->start_transfer = xilinx_vdma_start_transfer;
 
-	chan->has_sg = (xdev->feature & XILINX_VDMA_FTR_HAS_SG) >>
-		XILINX_VDMA_FTR_HAS_SG_SHIFT;
+	chan->has_sg = xdev->has_sg;
 
 	if (of_device_is_compatible(node, "xlnx,axi-vdma-mm2s-channel")) {
 		chan->direction = DMA_MEM_TO_DEV;
@@ -1096,8 +1082,8 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 		chan->ctrl_offset = XILINX_VDMA_MM2S_CTRL_OFFSET;
 		chan->desc_offset = XILINX_VDMA_MM2S_DESC_OFFSET;
 
-		if (flush_fsync == XILINX_VDMA_FLUSH_BOTH ||
-			flush_fsync == XILINX_VDMA_FLUSH_MM2S)
+		if (xdev->flush_fsync == XILINX_VDMA_FLUSH_BOTH ||
+		    xdev->flush_fsync == XILINX_VDMA_FLUSH_MM2S)
 			chan->flush_fsync = 1;
 	} else if (of_device_is_compatible(node, "xlnx,axi-vdma-s2mm-channel")) {
 		chan->direction = DMA_DEV_TO_MEM;
@@ -1106,8 +1092,8 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 		chan->ctrl_offset = XILINX_VDMA_S2MM_CTRL_OFFSET;
 		chan->desc_offset = XILINX_VDMA_S2MM_DESC_OFFSET;
 
-		if (flush_fsync == XILINX_VDMA_FLUSH_BOTH ||
-			flush_fsync == XILINX_VDMA_FLUSH_S2MM)
+		if (xdev->flush_fsync == XILINX_VDMA_FLUSH_BOTH ||
+		    xdev->flush_fsync == XILINX_VDMA_FLUSH_S2MM)
 			chan->flush_fsync = 1;
 	}
 
@@ -1119,9 +1105,6 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 		      | XILINX_DMA_IP_VDMA
 		      | (device_id << XILINX_DMA_DEVICE_ID_SHIFT);
 	chan->common.private = (void *)&(chan->private);
-
-	if (!chan->has_dre)
-		xdev->common.copy_align = fls(width - 1);
 
 	chan->dev = xdev->dev;
 	xdev->chan[chan->id] = chan;
@@ -1198,9 +1181,8 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	struct xilinx_vdma_device *xdev;
 	struct device_node *child, *node;
 	struct resource *io;
-	int err, i;
 	int num_frames = 0;
-	u32 value;
+	int err, i;
 
 	dev_info(&op->dev, "Probing xilinx axi vdma engine\n");
 
@@ -1214,7 +1196,6 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	INIT_LIST_HEAD(&xdev->common.channels);
 
 	node = op->dev.of_node;
-	xdev->feature = 0;
 
 	/* Request and map I/O memory */
 	io = platform_get_resource(op, IORESOURCE_MEM, 0);
@@ -1224,13 +1205,10 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 
 	/* Axi VDMA only do slave transfers */
 	if (of_property_read_bool(node, "xlnx,include-sg"))
-		xdev->feature |= XILINX_VDMA_FTR_HAS_SG;
+		xdev->has_sg = true;
 
 	of_property_read_u32(node, "xlnx,num-fstores", &num_frames);
-
-	err = of_property_read_u32(node, "xlnx,flush-fsync", &value);
-	if (!err)
-		xdev->feature |= value << XILINX_VDMA_FTR_FLUSH_SHIFT;
+	of_property_read_u32(node, "xlnx,flush-fsync", &xdev->flush_fsync);
 
 	dma_cap_set(DMA_SLAVE, xdev->common.cap_mask);
 	dma_cap_set(DMA_PRIVATE, xdev->common.cap_mask);
@@ -1247,9 +1225,8 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 
 	platform_set_drvdata(op, xdev);
 
-	for_each_child_of_node(node, child) {
-		xilinx_vdma_chan_probe(xdev, child, xdev->feature);
-	}
+	for_each_child_of_node(node, child)
+		xilinx_vdma_chan_probe(xdev, child);
 
 	for (i = 0; i < XILINX_VDMA_MAX_CHANS_PER_DEVICE; i++) {
 		if (xdev->chan[i])
