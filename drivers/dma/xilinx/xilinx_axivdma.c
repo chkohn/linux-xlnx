@@ -1188,6 +1188,7 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 {
 	struct xilinx_vdma_device *xdev;
 	struct device_node *child, *node;
+	struct resource *io;
 	int err, i;
 	const __be32 *value;
 	int num_frames = 0;
@@ -1206,8 +1207,14 @@ static int xilinx_vdma_of_probe(struct platform_device *op)
 	node = op->dev.of_node;
 	xdev->feature = 0;
 
-	/* iomap registers */
-	xdev->regs = of_iomap(node, 0);
+	/* Request and map I/O memory */
+	io = platform_get_resource(op, IORESOURCE_MEM, 0);
+	if (io == NULL) {
+		dev_err(&op->dev, "missing memory resource\n");
+		return -EINVAL;
+	}
+
+	xdev->regs = devm_request_and_ioremap(&op->dev, io);
 	if (!xdev->regs) {
 		dev_err(&op->dev, "unable to iomap registers\n");
 		return -ENOMEM;
@@ -1286,7 +1293,6 @@ static int xilinx_vdma_of_remove(struct platform_device *op)
 			xilinx_vdma_chan_remove(xdev->chan[i]);
 	}
 
-	iounmap(xdev->regs);
 	dev_set_drvdata(&op->dev, NULL);
 
 	return 0;
