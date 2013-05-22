@@ -360,14 +360,12 @@
 			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
 			reg = <0x40000000 0x10000>;
-			xlnx,include-sg = <0x0>;
-			xlnx,num-fstores = <0x1>;
+
+			xlnx,num-fstores = <1>;
 			dma-channel@7e200000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupts = <0 59 0x4>;
 				xlnx,datawidth = <0x40>;
-				xlnx,genlock-mode = <0x0>;
-				xlnx,include-dre = <0x0>;
 			};
 		};
 
@@ -377,14 +375,12 @@
 			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
 			reg = <0x40060000 0x1000>;
-			xlnx,include-sg = <0x0>;
-			xlnx,num-fstores = <0x1>;
+
+			xlnx,num-fstores = <1>;
 			dma-channel@7e200000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupts = <0 60 0x4>;
 				xlnx,datawidth = <0x40>;
-				xlnx,genlock-mode = <0x0>;
-				xlnx,include-dre = <0x0>;
 			};
 		};
 
