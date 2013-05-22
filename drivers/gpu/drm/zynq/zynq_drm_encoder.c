@@ -70,9 +70,13 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
 			encoder->dpms, dpms);
 
-	encoder_sfuncs = encoder_slave->slave_funcs;
-	if (encoder_sfuncs && encoder_sfuncs->dpms)
-		encoder_sfuncs->dpms(base_encoder, dpms);
+	if (encoder->dpms != dpms) {
+		encoder->dpms = dpms;
+
+		encoder_sfuncs = encoder_slave->slave_funcs;
+		if (encoder_sfuncs && encoder_sfuncs->dpms)
+			encoder_sfuncs->dpms(base_encoder, dpms);
+	}
 
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
