@@ -2,7 +2,7 @@
  * Xilinx DRM crtc driver for Zynq
  *
  * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon<hyunk@xilinx.com>
+ * Author: hyun woo kwon <hyunk@xilinx.com>
  *
  * Description:
  *
@@ -184,6 +184,10 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 	struct drm_framebuffer *fb = base_crtc->fb;
 	struct drm_gem_cma_object *obj;
+	struct drm_device *dev = base_crtc->dev;
+	struct drm_connector *iter;
+	struct drm_encoder *encoder = NULL;
+	struct drm_encoder_helper_funcs *encoder_funcs = NULL;
 	size_t offset;
 	int ret;
 
@@ -208,6 +212,20 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 		DRM_ERROR("failed to set mode\n");
 		goto err_out;
 	}
+
+	/* search for an encoder for this crtc */
+	/* assume there's only one encoder/connector for this crtc */
+	list_for_each_entry(iter, &dev->mode_config.connector_list, head) {
+		if (iter->encoder && (iter->encoder->crtc == base_crtc)) {
+			encoder = iter->encoder;
+			encoder_funcs = encoder->helper_private;
+			/* make sure encoder is on.
+			   sometimes it's suspended and off. */
+			encoder_funcs->dpms(encoder, DRM_MODE_DPMS_ON);
+			break;
+		}
+	}
+
 
 	/* apply the new fb addr */
 	zynq_drm_crtc_commit(base_crtc);

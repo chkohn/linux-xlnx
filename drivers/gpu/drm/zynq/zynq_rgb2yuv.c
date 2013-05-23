@@ -2,7 +2,7 @@
  * Xilinx rgb to yuv converter support for Zynq DRM KMS
  *
  * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon<hyunk@xilinx.com>
+ * Author: hyun woo kwon <hyunk@xilinx.com>
  *
  * Description:
  *
@@ -15,7 +15,6 @@
 
 #include <linux/io.h>
 #include <linux/slab.h>
-#include <linux/interrupt.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 

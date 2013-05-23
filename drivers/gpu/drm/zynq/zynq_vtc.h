@@ -2,7 +2,7 @@
  * Video Timing Controller Header for Zynq DRM KMS
  *
  * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon<hyunk@xilinx.com>
+ * Author: hyun woo kwon <hyunk@xilinx.com>
  *
  * Description:
  *

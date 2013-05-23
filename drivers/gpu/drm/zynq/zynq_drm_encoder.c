@@ -2,7 +2,7 @@
  * Xilinx DRM encoder driver for Zynq
  *
  * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon<hyunk@xilinx.com>
+ * Author: hyun woo kwon <hyunk@xilinx.com>
  *
  * Description:
  *
@@ -141,6 +141,7 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	}
 
 	/* search for a connector for this encoder */
+	/* assume there's only one connector for this encoder */
 	list_for_each_entry(iter, &dev->mode_config.connector_list, head) {
 		if (iter->encoder == base_encoder) {
 			connector = iter;

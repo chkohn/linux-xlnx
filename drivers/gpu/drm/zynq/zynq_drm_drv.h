@@ -2,7 +2,7 @@
  * Xilinx DRM KMS Header for Zynq
  *
  * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon<hyunk@xilinx.com>
+ * Author: hyun woo kwon <hyunk@xilinx.com>
  *
  * Description:
  *
