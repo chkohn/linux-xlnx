@@ -142,7 +142,7 @@ struct xilinx_vdma_desc_hw {
 	u32 stride;	/* 0x18 */
 } __aligned(64);
 
-struct xilinx_vdma_desc_sw {
+struct xilinx_vdma_tx_segment {
 	struct xilinx_vdma_desc_hw hw;
 	struct list_head node;
 	struct list_head tx_list;
@@ -244,8 +244,8 @@ static int xilinx_vdma_alloc_chan_resources(struct dma_chan *dchan)
 	 */
 	chan->desc_pool = dma_pool_create("xilinx_vdma_desc_pool",
 				chan->dev,
-				sizeof(struct xilinx_vdma_desc_sw),
-				__alignof__(struct xilinx_vdma_desc_sw), 0);
+				sizeof(struct xilinx_vdma_tx_segment),
+				__alignof__(struct xilinx_vdma_tx_segment), 0);
 	if (!chan->desc_pool) {
 		dev_err(chan->dev,
 			"unable to allocate channel %d descriptor pool\n",
@@ -263,7 +263,7 @@ static int xilinx_vdma_alloc_chan_resources(struct dma_chan *dchan)
 static void xilinx_vdma_free_desc_list(struct xilinx_vdma_chan *chan,
 					struct list_head *list)
 {
-	struct xilinx_vdma_desc_sw *desc, *_desc;
+	struct xilinx_vdma_tx_segment *desc, *_desc;
 
 	list_for_each_entry_safe(desc, _desc, list, node) {
 		list_del(&desc->node);
@@ -274,7 +274,7 @@ static void xilinx_vdma_free_desc_list(struct xilinx_vdma_chan *chan,
 static void xilinx_vdma_free_desc_list_reverse(struct xilinx_vdma_chan *chan,
 						struct list_head *list)
 {
-	struct xilinx_vdma_desc_sw *desc, *_desc;
+	struct xilinx_vdma_tx_segment *desc, *_desc;
 
 	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
 		list_del(&desc->node);
@@ -282,23 +282,29 @@ static void xilinx_vdma_free_desc_list_reverse(struct xilinx_vdma_chan *chan,
 	}
 }
 
-static void xilinx_vdma_free_chan_resources(struct dma_chan *dchan)
+static void xilinx_vdma_free_descriptors(struct xilinx_vdma_chan *chan)
 {
-	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
 	unsigned long flags;
 
-	dev_dbg(chan->dev, "Free all channel resources.\n");
 	spin_lock_irqsave(&chan->lock, flags);
 	xilinx_vdma_free_desc_list(chan, &chan->active_list);
 	xilinx_vdma_free_desc_list(chan, &chan->pending_list);
 	spin_unlock_irqrestore(&chan->lock, flags);
+}
 
+static void xilinx_vdma_free_chan_resources(struct dma_chan *dchan)
+{
+	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+
+	dev_dbg(chan->dev, "Free all channel resources.\n");
+
+	xilinx_vdma_free_descriptors(chan);
 	dma_pool_destroy(chan->desc_pool);
 	chan->desc_pool = NULL;
 }
 
 static enum dma_status xilinx_vdma_desc_status(struct xilinx_vdma_chan *chan,
-					struct xilinx_vdma_desc_sw *desc)
+					struct xilinx_vdma_tx_segment *desc)
 {
 	return dma_async_is_complete(desc->async_tx.cookie,
 					chan->completed_cookie,
@@ -307,7 +313,7 @@ static enum dma_status xilinx_vdma_desc_status(struct xilinx_vdma_chan *chan,
 
 static void xilinx_vdma_chan_desc_cleanup(struct xilinx_vdma_chan *chan)
 {
-	struct xilinx_vdma_desc_sw *desc, *_desc;
+	struct xilinx_vdma_tx_segment *desc, *_desc;
 	unsigned long flags;
 
 	spin_lock_irqsave(&chan->lock, flags);
@@ -427,7 +433,7 @@ static void xilinx_vdma_start(struct xilinx_vdma_chan *chan)
 static void xilinx_vdma_start_transfer(struct xilinx_vdma_chan *chan)
 {
 	unsigned long flags;
-	struct xilinx_vdma_desc_sw *desch, *desct = NULL;
+	struct xilinx_vdma_tx_segment *desch, *desct = NULL;
 	struct xilinx_vdma_config *config;
 	u32 reg;
 
@@ -455,10 +461,10 @@ static void xilinx_vdma_start_transfer(struct xilinx_vdma_chan *chan)
 
 	if (chan->has_SG) {
 		desch = list_first_entry(&chan->pending_list,
-				struct xilinx_vdma_desc_sw, node);
+				struct xilinx_vdma_tx_segment, node);
 
 		desct = container_of(chan->pending_list.prev,
-				struct xilinx_vdma_desc_sw, node);
+				struct xilinx_vdma_tx_segment, node);
 
 		vdma_ctrl_write(chan, XILINX_VDMA_REG_CURDESC,
 				desch->async_tx.phys);
@@ -542,7 +548,7 @@ static void xilinx_vdma_issue_pending(struct dma_chan *dchan)
  */
 static void xilinx_vdma_update_completed_cookie(struct xilinx_vdma_chan *chan)
 {
-	struct xilinx_vdma_desc_sw *desc = NULL;
+	struct xilinx_vdma_tx_segment *desc = NULL;
 	unsigned long flags;
 	dma_cookie_t cookie = -EBUSY;
 	int done = 0;
@@ -674,10 +680,10 @@ static void xilinx_vdma_do_tasklet(unsigned long data)
 
 /* Append the descriptor list to the pending list */
 static void xilinx_vdma_append_desc_queue(struct xilinx_vdma_chan *chan,
-					  struct xilinx_vdma_desc_sw *desc)
+					  struct xilinx_vdma_tx_segment *desc)
 {
-	struct xilinx_vdma_desc_sw *tail = container_of(chan->pending_list.prev,
-					struct xilinx_vdma_desc_sw, node);
+	struct xilinx_vdma_tx_segment *tail = container_of(chan->pending_list.prev,
+					struct xilinx_vdma_tx_segment, node);
 	struct xilinx_vdma_desc_hw *hw;
 
 	if (list_empty(&chan->pending_list))
@@ -705,9 +711,9 @@ out_splice:
 static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
 {
 	struct xilinx_vdma_chan *chan = to_xilinx_chan(tx->chan);
-	struct xilinx_vdma_desc_sw *desc = container_of(tx,
-				struct xilinx_vdma_desc_sw, async_tx);
-	struct xilinx_vdma_desc_sw *child;
+	struct xilinx_vdma_tx_segment *desc = container_of(tx,
+				struct xilinx_vdma_tx_segment, async_tx);
+	struct xilinx_vdma_tx_segment *child;
 	unsigned long flags;
 	dma_cookie_t cookie = -EBUSY;
 
@@ -747,10 +753,10 @@ static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
 	return cookie;
 }
 
-static struct xilinx_vdma_desc_sw *xilinx_vdma_alloc_descriptor(
+static struct xilinx_vdma_tx_segment *xilinx_vdma_alloc_descriptor(
 					struct xilinx_vdma_chan *chan)
 {
-	struct xilinx_vdma_desc_sw *desc;
+	struct xilinx_vdma_tx_segment *desc;
 	dma_addr_t pdesc;
 
 	desc = dma_pool_alloc(chan->desc_pool, GFP_ATOMIC, &pdesc);
@@ -782,7 +788,7 @@ static struct dma_async_tx_descriptor *xilinx_vdma_prep_slave_sg(
 	void *context)
 {
 	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-	struct xilinx_vdma_desc_sw *first = NULL, *prev = NULL, *new = NULL;
+	struct xilinx_vdma_tx_segment *first = NULL, *prev = NULL, *new = NULL;
 	struct xilinx_vdma_desc_hw *hw = NULL, *prev_hw = NULL;
 	struct scatterlist *sg;
 	dma_addr_t dma_src;
@@ -882,18 +888,11 @@ fail:
 
 static void xilinx_vdma_terminate_all(struct xilinx_vdma_chan *chan)
 {
-	unsigned long flags;
-
 	/* Halt the DMA engine */
 	xilinx_vdma_halt(chan);
 
-	spin_lock_irqsave(&chan->lock, flags);
-
 	/* Remove and free all of the descriptors in the lists */
-	xilinx_vdma_free_desc_list(chan, &chan->pending_list);
-	xilinx_vdma_free_desc_list(chan, &chan->active_list);
-
-	spin_unlock_irqrestore(&chan->lock, flags);
+	xilinx_vdma_free_descriptors(chan);
 }
 
 static int xilinx_vdma_slave_config(struct xilinx_vdma_chan *chan,
