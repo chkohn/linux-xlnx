@@ -359,12 +359,29 @@
 			#size-cells = <1>;
 			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
-			reg = <0x40000000 0x1000>;
+			reg = <0x40000000 0x10000>;
 			xlnx,include-sg = <0x0>;
 			xlnx,num-fstores = <0x1>;
 			dma-channel@7e200000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupts = <0 59 0x4>;
+				xlnx,datawidth = <0x40>;
+				xlnx,genlock-mode = <0x0>;
+				xlnx,include-dre = <0x0>;
+			};
+		};
+
+		axi_vdma_1: axivdma@40060000 {
+			#address-cells = <1>;
+			#size-cells = <1>;
+			#dma-cells = <1>;
+			compatible = "xlnx,axi-vdma";
+			reg = <0x40060000 0x1000>;
+			xlnx,include-sg = <0x0>;
+			xlnx,num-fstores = <0x1>;
+			dma-channel@7e200000 {
+				compatible = "xlnx,axi-vdma-mm2s-channel";
+				interrupts = <0 60 0x4>;
 				xlnx,datawidth = <0x40>;
 				xlnx,genlock-mode = <0x0>;
 				xlnx,include-dre = <0x0>;
@@ -386,10 +403,18 @@
 			reg = <0x40030000 0x10000>;
 		};
 
+		vosd_0: vosd@0x40040000 {
+			compatible = "xlnx,vosd";
+			reg = <0x40040000 0x10000>;
+			xlnx,num-layers = <0x2>;
+		};
+
 		zynq_drm{
 			compatible = "xlnx,zynq_drm";
+			xlnx,num-planes = <0x2>;
+			dma-request0 = <&axi_vdma_0 0>;
+			dma-request1 = <&axi_vdma_1 0>;
 			encoder-slave = <&adv7511>;
-			dma-request = <&axi_vdma_0 0>;
 			clocks = <&vtc_0>;
 		};
 	};
