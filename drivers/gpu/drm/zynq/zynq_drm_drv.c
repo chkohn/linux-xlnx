@@ -44,7 +44,8 @@ static void zynq_drm_output_poll_changed(struct drm_device *drm)
 {
 	struct zynq_drm_private *private = drm->dev_private;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-	drm_fbdev_cma_hotplug_event(private->fbdev);
+	if (private && private->fbdev)
+		drm_fbdev_cma_hotplug_event(private->fbdev);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 }
 
@@ -139,6 +140,8 @@ err_connector:
 err_encoder:
 	zynq_drm_crtc_destroy(private->crtc);
 err_crtc:
+	drm_kms_helper_poll_fini(drm);
+	drm_mode_config_cleanup(drm);
 	kfree(private);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
@@ -250,7 +253,7 @@ static struct platform_driver zynq_drm_private_driver = {
 };
 
 #if ZYNQ_KMS_DEBUG
-int zynq_kms_debug_enabled = 0xff;
+int zynq_kms_debug_enabled = ZYNQ_KMS_DEBUG_ALL;
 module_param_named(zynq_kms_debug, zynq_kms_debug_enabled, int, 0600);
 #endif
 

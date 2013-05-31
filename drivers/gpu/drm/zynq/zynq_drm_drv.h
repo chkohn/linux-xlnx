@@ -26,9 +26,10 @@
 #define ZYNQ_KMS_ENCODER	(3)
 #define ZYNQ_KMS_CONNECTOR	(4)
 #define ZYNQ_KMS_CRESAMPLE	(5)
-#define ZYNQ_KMS_RGB2YUV	(6)
-#define ZYNQ_KMS_VTC		(7)
-#define ZYNQ_KMS_DEBUG_ALL	(0xff)
+#define ZYNQ_KMS_OSD		(6)
+#define ZYNQ_KMS_RGB2YUV	(7)
+#define ZYNQ_KMS_VTC		(8)
+#define ZYNQ_KMS_DEBUG_ALL	(0x1ff)
 
 extern int zynq_kms_debug_enabled;
 
@@ -38,6 +39,7 @@ static char *zynq_kms_type[] = {"KMS DRV",
 				"ENCODER",
 				"CONNECTOR",
 				"CRESMAPLE",
+				"OSD",
 				"RGB2YUV",
 				"VTC"};
 
