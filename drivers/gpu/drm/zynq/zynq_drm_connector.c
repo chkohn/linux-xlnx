@@ -75,7 +75,7 @@ static int zynq_drm_connector_mode_valid(struct drm_connector *base_connector,
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
-	return MODE_OK;
+	return ret;
 }
 
 /* find best encoder: return stored encoder */
@@ -145,7 +145,6 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 		struct drm_encoder *base_encoder)
 {
 	struct zynq_drm_connector *connector;
-	int type;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
@@ -155,12 +154,11 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 		goto err_alloc;
 	}
 
-	type = DRM_MODE_CONNECTOR_HDMIA;
 	connector->base.polled = DRM_CONNECTOR_POLL_CONNECT |
 				DRM_CONNECTOR_POLL_DISCONNECT;
 
 	if (drm_connector_init(drm, &connector->base, &zynq_drm_connector_funcs,
-			type)) {
+			DRM_MODE_CONNECTOR_HDMIA)) {
 		DRM_ERROR("failed to initialize connector\n");
 		goto err_init;
 	}
