@@ -425,13 +425,13 @@ static void zynq_vtc_config_hori_offset(struct zynq_vtc *vtc,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
-	reg = (hori_offset->v0blank_hori_start) & VTC_XVXHOX_HSTART_MASK;
-	reg |= (hori_offset->v0blank_hori_end << VTC_XVXHOX_HEND_SHIFT) &
+	reg = (hori_offset->vblank_hori_start) & VTC_XVXHOX_HSTART_MASK;
+	reg |= (hori_offset->vblank_hori_end << VTC_XVXHOX_HEND_SHIFT) &
 		VTC_XVXHOX_HSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GVBHOFF, reg);
 
-	reg = (hori_offset->v0sync_hori_start) & VTC_XVXHOX_HSTART_MASK;
-	reg |= (hori_offset->v0sync_hori_end << VTC_XVXHOX_HEND_SHIFT) &
+	reg = (hori_offset->vsync_hori_start) & VTC_XVXHOX_HSTART_MASK;
+	reg |= (hori_offset->vsync_hori_end << VTC_XVXHOX_HEND_SHIFT) &
 		VTC_XVXHOX_HSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GVSHOFF, reg);
 
@@ -534,10 +534,10 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	zynq_vtc_writel(vtc, VTC_CTL, reg & ~VTC_CTL_RU_MASK);
 
 	htotal = sig_config->htotal;
-	vtotal = sig_config->v0total;
+	vtotal = sig_config->vtotal;
 
 	hactive = sig_config->hfrontporch_start;
-	vactive = sig_config->v0frontporch_start;
+	vactive = sig_config->vfrontporch_start;
 
 	reg = htotal & 0x1fff;
 	zynq_vtc_writel(vtc, VTC_GHSIZE, reg);
@@ -554,19 +554,15 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 		VTC_GH1_BPSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GHSYNC, reg);
 
-	reg = (sig_config->v0sync_start) & VTC_GV1_SYNCSTART_MASK;
-	reg |= (sig_config->v0backporch_start) << VTC_GV1_BPSTART_SHIFT &
+	reg = (sig_config->vsync_start) & VTC_GV1_SYNCSTART_MASK;
+	reg |= (sig_config->vbackporch_start) << VTC_GV1_BPSTART_SHIFT &
 		VTC_GV1_BPSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GVSYNC, reg);
 
-	hori_offset.v0blank_hori_start = hactive;
-	hori_offset.v0blank_hori_end = hactive;
-	hori_offset.v0sync_hori_start = hactive;
-	hori_offset.v0sync_hori_end = hactive;
-	hori_offset.v1blank_hori_start = hactive;
-	hori_offset.v1blank_hori_end = hactive;
-	hori_offset.v1sync_hori_start = hactive;
-	hori_offset.v1sync_hori_end = hactive;
+	hori_offset.vblank_hori_start = hactive;
+	hori_offset.vblank_hori_end = hactive;
+	hori_offset.vsync_hori_start = hactive;
+	hori_offset.vsync_hori_end = hactive;
 
 	zynq_vtc_config_hori_offset(vtc, &hori_offset);
 

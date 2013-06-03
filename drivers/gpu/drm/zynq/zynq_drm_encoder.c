@@ -200,11 +200,11 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	vtc_sig_config.hbackporch_start = mode->hsync_end;
 	vtc_sig_config.hactive_start = 0;
 
-	vtc_sig_config.v0total = mode->vtotal;
-	vtc_sig_config.v0frontporch_start = mode->vdisplay;
-	vtc_sig_config.v0sync_start = mode->vsync_start;
-	vtc_sig_config.v0backporch_start = mode->vsync_end;
-	vtc_sig_config.v0active_start = 0;
+	vtc_sig_config.vtotal = mode->vtotal;
+	vtc_sig_config.vfrontporch_start = mode->vdisplay;
+	vtc_sig_config.vsync_start = mode->vsync_start;
+	vtc_sig_config.vbackporch_start = mode->vsync_end;
+	vtc_sig_config.vactive_start = 0;
 
 	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
 

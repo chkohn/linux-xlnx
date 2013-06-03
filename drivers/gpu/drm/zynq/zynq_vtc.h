@@ -29,14 +29,10 @@ struct zynq_vtc_polarity {
 };
 
 struct zynq_vtc_hori_offset {
-	u16 v0blank_hori_start;
-	u16 v0blank_hori_end;
-	u16 v0sync_hori_start;
-	u16 v0sync_hori_end;
-	u16 v1blank_hori_start;
-	u16 v1blank_hori_end;
-	u16 v1sync_hori_start;
-	u16 v1sync_hori_end;
+	u16 vblank_hori_start;
+	u16 vblank_hori_end;
+	u16 vsync_hori_start;
+	u16 vsync_hori_end;
 };
 
 struct zynq_vtc_src_config {
@@ -69,19 +65,11 @@ struct zynq_vtc_sig_config {
 	u16 hbackporch_start;
 	u16 hactive_start;
 
-	u16 v0total;
-	u16 v0frontporch_start;
-	u16 v0sync_start;
-	u16 v0backporch_start;
-	u16 v0active_start;
-	u16 v0chroma_start;
-
-	u16 v1total;
-	u16 v1frontporch_start;
-	u16 v1sync_start;
-	u16 v1backporch_start;
-	u16 v1active_start;
-	u16 v1chroma_start;
+	u16 vtotal;
+	u16 vfrontporch_start;
+	u16 vsync_start;
+	u16 vbackporch_start;
+	u16 vactive_start;
 };
 
 void zynq_vtc_config_sig(struct zynq_vtc *vtc,
