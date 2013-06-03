@@ -21,6 +21,7 @@ struct zynq_rgb2yuv;
 void zynq_rgb2yuv_configure(struct zynq_rgb2yuv *rgb2yuv,
 		int hactive, int vactive);
 void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv);
+void zynq_rgb2yuv_fsync_reset(struct zynq_rgb2yuv *rgb2yuv);
 void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv);
 void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv);
 
