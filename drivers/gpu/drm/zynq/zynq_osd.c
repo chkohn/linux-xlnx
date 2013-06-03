@@ -106,17 +106,17 @@
 /*
  * osd background color channel 0
  */
-#define OSD_BC0_YG_MASK		0x00000FFF	/* Y (luma) or Green */
+#define OSD_BC0_YG_MASK		0x000000FF	/* Y (luma) or Green */
 
 /*
  * osd background color channel 1
  */
-#define OSD_BC1_UCBB_MASK	0x00000FFF	/* U (Cb) or Blue */
+#define OSD_BC1_UCBB_MASK	0x000000FF	/* U (Cb) or Blue */
 
 /*
  * osd background color channel 2
  */
-#define OSD_BC2_VCRR_MASK	0x00000FFF	/* V(Cr) or Red */
+#define OSD_BC2_VCRR_MASK	0x000000FF	/* V(Cr) or Red */
 
 /*
  * maximum number of the layers
@@ -474,6 +474,23 @@ void zynq_osd_layer_destroy(struct zynq_osd_layer *layer)
 	kfree(layer);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return;
+}
+
+/* set osd color*/
+void zynq_osd_set_color(struct zynq_osd *osd, u8 r, u8 g, u8 b)
+{
+	u32 value;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	zynq_osd_disable_rue(osd);
+	value = g & OSD_BC0_YG_MASK;
+	zynq_osd_writel(osd, OSD_BC0, value);
+	value = b & OSD_BC1_UCBB_MASK;
+	zynq_osd_writel(osd, OSD_BC1, value);
+	value = r & OSD_BC2_VCRR_MASK;
+	zynq_osd_writel(osd, OSD_BC2, value);
+	zynq_osd_enable_rue(osd);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
 /* set osd dimension*/

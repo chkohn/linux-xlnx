@@ -289,8 +289,6 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		goto err_alloc;
 	}
 
-	/* TODO; exit gracefully ? */
-
 	/* create an osd layer */
 	plane->osd_layer = zynq_osd_layer_create(manager->osd);
 	if (!plane->osd_layer) {
@@ -462,6 +460,8 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 		DRM_ERROR("failed to probe an osd\n");
 		goto err_osd;
 	}
+	/* set background color as black */
+	zynq_osd_set_color(manager->osd, 0x0, 0x0, 0x0);
 	zynq_osd_enable(manager->osd);
 
 	/* TODO: duplicate get_prop in osd, consider clean up */

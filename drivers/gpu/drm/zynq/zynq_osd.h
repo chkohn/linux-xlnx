@@ -33,6 +33,7 @@ struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd);
 void zynq_osd_layer_destroy(struct zynq_osd_layer *layer);
 
 /* osd configuration */
+void zynq_osd_set_color(struct zynq_osd *osd, u8 r, u8 g, u8 b);
 void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height);
 
 /* osd operation */
