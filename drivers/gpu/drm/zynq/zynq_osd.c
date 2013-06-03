@@ -444,7 +444,7 @@ struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd)
 		goto err_out;
 	}
 
-	layer = kzalloc(sizeof(struct zynq_osd_layer), GFP_KERNEL);
+	layer = kzalloc(sizeof(*layer), GFP_KERNEL);
 	if (!layer) {
 		pr_err("failed to allocate layer\n");
 		goto err_out;
@@ -557,7 +557,7 @@ struct zynq_osd *zynq_osd_probe(char *compatible)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
-	osd = kzalloc(sizeof(struct zynq_osd), GFP_KERNEL);
+	osd = kzalloc(sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
 		pr_err("failed to alloc osd\n");
 		goto err_osd;

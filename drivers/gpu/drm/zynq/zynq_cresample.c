@@ -124,7 +124,7 @@ struct zynq_cresample *zynq_cresample_probe(char *compatible)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
-	cresample = kzalloc(sizeof(struct zynq_cresample), GFP_KERNEL);
+	cresample = kzalloc(sizeof(*cresample), GFP_KERNEL);
 	if (!cresample) {
 		pr_err("failed to alloc cresample\n");
 		goto err_cresample;

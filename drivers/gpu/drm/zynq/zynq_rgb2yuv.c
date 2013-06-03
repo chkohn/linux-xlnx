@@ -134,7 +134,7 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
-	rgb2yuv = kzalloc(sizeof(struct zynq_rgb2yuv), GFP_KERNEL);
+	rgb2yuv = kzalloc(sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
 		pr_err("failed to alloc rgb2yuv\n");
 		goto err_rgb2yuv;

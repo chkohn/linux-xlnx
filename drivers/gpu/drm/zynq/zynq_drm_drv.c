@@ -78,7 +78,7 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
-	private = kzalloc(sizeof(struct zynq_drm_private), GFP_KERNEL);
+	private = kzalloc(sizeof(*private), GFP_KERNEL);
 	if (!private) {
 		DRM_ERROR("failed to allocate private\n");
 		err = -ENOMEM;

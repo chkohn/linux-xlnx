@@ -629,7 +629,7 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
-	vtc = kzalloc(sizeof(struct zynq_vtc), GFP_KERNEL);
+	vtc = kzalloc(sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
 		pr_err("failed to alloc vtc\n");
 		goto err_vtc;
@@ -659,7 +659,7 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 	}
 
 	/* set up polarity */
-	memset(&polarity, 0x0, sizeof(struct zynq_vtc_polarity));
+	memset(&polarity, 0x0, sizeof(polarity));
 	polarity.hsync = 1;
 	polarity.vsync = 1;
 	polarity.hblank = 1;
@@ -670,7 +670,7 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 	zynq_vtc_config_polarity(vtc, &polarity);
 
 	/* set up src config */
-	memset(&src, 0x0, sizeof(struct zynq_vtc_src_config));
+	memset(&src, 0x0, sizeof(src));
 	src.vchroma = 1;
 	src.vactive = 1;
 	src.vbackporch = 1;
