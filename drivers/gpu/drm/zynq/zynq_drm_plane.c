@@ -444,7 +444,7 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 {
 	struct zynq_drm_plane_manager *manager;
 	struct platform_device *pdev = drm->platformdev;
-	const __be32 *prop;
+	u32 prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
@@ -465,12 +465,11 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	zynq_osd_enable(manager->osd);
 
 	/* TODO: duplicate get_prop in osd, consider clean up */
-	prop = of_get_property(pdev->dev.of_node, "xlnx,num-planes", NULL);
-	if (!prop) {
+	if (of_property_read_u32(pdev->dev.of_node, "xlnx,num-planes", &prop)) {
 		pr_err("failed to get num of planes prop\n");
 		goto err_prop;
 	}
-	manager->num_planes = be32_to_cpup(prop);
+	manager->num_planes = prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 

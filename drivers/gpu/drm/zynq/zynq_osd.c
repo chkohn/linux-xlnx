@@ -555,7 +555,7 @@ static inline void zynq_osd_disable_rue(struct zynq_osd *osd)
 struct zynq_osd *zynq_osd_probe(char *compatible)
 {
 	struct zynq_osd *osd;
-	const __be32 *prop;
+	u32 prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
@@ -578,12 +578,11 @@ struct zynq_osd *zynq_osd_probe(char *compatible)
 	}
 
 	/* TODO: duplicate get prop in plane. consider clean up */
-	prop = of_get_property(osd->node, "xlnx,num-layers", NULL);
-	if (!prop) {
+	if (of_property_read_u32(osd->node, "xlnx,num-layers", &prop)) {
 		pr_err("failed to get num of layers prop\n");
 		goto err_prop;
 	}
-	osd->num_layers = be32_to_cpup(prop);
+	osd->num_layers = prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
