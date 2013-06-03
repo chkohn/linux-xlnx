@@ -87,8 +87,6 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	drm_mode_config_init(drm);
 
-	drm_kms_helper_poll_init(drm);
-
 	/* set up mode config for zynq */
 	zynq_drm_mode_config_init(drm);
 
@@ -116,6 +114,8 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		goto err_connector;
 	}
 
+	drm_kms_helper_poll_init(drm);
+
 	/* initialize zynq cma framebuffer */
 	private->fbdev = drm_fbdev_cma_init(drm, 32, 1, 1);
 	if (IS_ERR(private->fbdev)) {
@@ -140,7 +140,6 @@ err_connector:
 err_encoder:
 	zynq_drm_crtc_destroy(private->crtc);
 err_crtc:
-	drm_kms_helper_poll_fini(drm);
 	drm_mode_config_cleanup(drm);
 	kfree(private);
 err_alloc:
@@ -157,9 +156,9 @@ static int zynq_drm_unload(struct drm_device *drm)
 
 	private = drm->dev_private;
 
-	drm_fbdev_cma_fini(private->fbdev);
-
 	drm_kms_helper_poll_fini(drm);
+
+	drm_fbdev_cma_fini(private->fbdev);
 
 	drm_mode_config_cleanup(drm);
 
