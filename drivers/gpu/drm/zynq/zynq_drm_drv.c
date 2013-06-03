@@ -198,7 +198,7 @@ static const struct file_operations zynq_drm_fops = {
 };
 
 static struct drm_driver zynq_drm_driver = {
-	.driver_features = DRIVER_BUS_PLATFORM | DRIVER_MODESET | DRIVER_GEM,
+	.driver_features = DRIVER_MODESET | DRIVER_GEM,
 	.load = zynq_drm_load,
 	.unload = zynq_drm_unload,
 	.lastclose = zynq_drm_lastclose,
