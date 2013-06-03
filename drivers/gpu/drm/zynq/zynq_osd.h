@@ -38,6 +38,7 @@ void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height);
 
 /* osd operation */
 void zynq_osd_reset(struct zynq_osd *osd);
+void zynq_osd_fsync_reset(struct zynq_osd *osd);
 void zynq_osd_enable(struct zynq_osd *osd);
 void zynq_osd_disable(struct zynq_osd *osd);
 

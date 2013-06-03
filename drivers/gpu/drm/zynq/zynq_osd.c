@@ -195,6 +195,7 @@
  * osd software reset
  */
 #define OSD_RST_RESET	0x80000000	/* software reset */
+#define OSD_SYNC_RESET	0x40000000	/* frame sync reset */
 
 /*
  * global interrupt enable register bit definition
@@ -510,7 +511,14 @@ void zynq_osd_reset(struct zynq_osd *osd)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	zynq_osd_writel(osd, OSD_RST, OSD_RST_RESET);
-	zynq_osd_writel(osd, OSD_CTL, 0);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+}
+
+/* frame synced reset osd */
+void zynq_osd_fsync_reset(struct zynq_osd *osd)
+{
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	zynq_osd_writel(osd, OSD_RST, OSD_SYNC_RESET);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
