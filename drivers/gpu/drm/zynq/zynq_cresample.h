@@ -21,6 +21,7 @@ struct zynq_cresample;
 void zynq_cresample_configure(struct zynq_cresample *cresample,
 		int hactive, int vactive);
 void zynq_cresample_reset(struct zynq_cresample *cresample);
+void zynq_cresample_fsync_reset(struct zynq_cresample *cresample);
 void zynq_cresample_enable(struct zynq_cresample *cresample);
 void zynq_cresample_disable(struct zynq_cresample *cresample);
 
