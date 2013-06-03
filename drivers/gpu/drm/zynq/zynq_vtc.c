@@ -13,13 +13,14 @@
  *
  */
 
-#include <linux/slab.h>
-#include <linux/of_address.h>
-#include <linux/io.h>
 #include <linux/interrupt.h>
+#include <linux/io.h>
+#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/slab.h>
 
 #include "zynq_drm_drv.h"
+
 #include "zynq_vtc.h"
 
 /* register offsets */

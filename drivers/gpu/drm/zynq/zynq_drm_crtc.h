@@ -16,6 +16,9 @@
 #ifndef _ZYNQ_DRM_CRTC_H_
 #define _ZYNQ_DRM_CRTC_H_
 
+#include <drm/drmP.h>
+#include <drm/drm_crtc.h>
+
 struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm);
 void zynq_drm_crtc_destroy(struct drm_crtc *crtc);
 

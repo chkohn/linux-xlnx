@@ -13,9 +13,9 @@
  *
  */
 
-#include <linux/platform_device.h>
-#include <linux/dmaengine.h>
 #include <linux/amba/xilinx_dma.h>
+#include <linux/dmaengine.h>
+#include <linux/platform_device.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -23,6 +23,7 @@
 #include <drm/drm_gem_cma_helper.h>
 
 #include "zynq_drm_drv.h"
+
 #include "zynq_osd.h"
 
 struct zynq_drm_plane_vdma {

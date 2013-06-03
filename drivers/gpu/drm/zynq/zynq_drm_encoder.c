@@ -13,12 +13,12 @@
  *
  */
 
-#include <linux/platform_device.h>
+#include <linux/hdmi.h>
 #include <linux/i2c.h>
+#include <linux/i2c/si570.h>
 #include <linux/of.h>
 #include <linux/of_i2c.h>
-#include <linux/i2c/si570.h>
-#include <linux/hdmi.h>
+#include <linux/platform_device.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -26,7 +26,9 @@
 #include <drm/drm_encoder_slave.h>
 
 #include "../i2c/adv7511.h"
+
 #include "zynq_drm_drv.h"
+
 #include "zynq_vtc.h"
 
 struct zynq_drm_encoder {

@@ -13,15 +13,13 @@
  *
  */
 
-#include <linux/module.h>
-#include <linux/slab.h>
-#include <linux/of_address.h>
 #include <linux/io.h>
+#include <linux/module.h>
+#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/slab.h>
 
 #include "zynq_drm_drv.h"
-
-#define DRIVER_NAME		"zynq_osd"
 
 /*
  * registers

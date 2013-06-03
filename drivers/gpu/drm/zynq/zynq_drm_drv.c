@@ -17,14 +17,14 @@
 #include <linux/platform_device.h>
 
 #include <drm/drmP.h>
-#include <drm/drm_gem_cma_helper.h>
-#include <drm/drm_fb_cma_helper.h>
 #include <drm/drm_crtc_helper.h>
+#include <drm/drm_fb_cma_helper.h>
+#include <drm/drm_gem_cma_helper.h>
 
-#include "zynq_drm_drv.h"
-#include "zynq_drm_crtc.h"
-#include "zynq_drm_encoder.h"
 #include "zynq_drm_connector.h"
+#include "zynq_drm_crtc.h"
+#include "zynq_drm_drv.h"
+#include "zynq_drm_encoder.h"
 
 #define DRIVER_NAME	"zynq_drm"
 #define DRIVER_DESC	"Xilinx DRM KMS support for Zynq"

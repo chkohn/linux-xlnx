@@ -16,6 +16,9 @@
 #ifndef _ZYNQ_DRM_ENCODER_H_
 #define _ZYNQ_DRM_ENCODER_H_
 
+#include <drm/drmP.h>
+#include <drm/drm_crtc.h>
+
 struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm);
 void zynq_drm_encoder_destroy(struct drm_encoder *encoder);
 
