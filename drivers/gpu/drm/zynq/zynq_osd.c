@@ -99,24 +99,24 @@
 /*
  * osd screen size register bit definition
  */
-#define OSD_SS_YSIZE_MASK   0x0FFF0000	/* vertical height of OSD output */
+#define OSD_SS_YSIZE_MASK   0x0fff0000	/* vertical height of OSD output */
 #define OSD_SS_YSIZE_SHIFT  16		/* bit shift of OSD_SS_YSIZE_MASK */
-#define OSD_SS_XSIZE_MASK   0x00000FFF	/* horizontal width of OSD output */
+#define OSD_SS_XSIZE_MASK   0x00000fff	/* horizontal width of OSD output */
 
 /*
  * osd background color channel 0
  */
-#define OSD_BC0_YG_MASK		0x000000FF	/* Y (luma) or Green */
+#define OSD_BC0_YG_MASK		0x000000ff	/* Y (luma) or Green */
 
 /*
  * osd background color channel 1
  */
-#define OSD_BC1_UCBB_MASK	0x000000FF	/* U (Cb) or Blue */
+#define OSD_BC1_UCBB_MASK	0x000000ff	/* U (Cb) or Blue */
 
 /*
  * osd background color channel 2
  */
-#define OSD_BC2_VCRR_MASK	0x000000FF	/* V(Cr) or Red */
+#define OSD_BC2_VCRR_MASK	0x000000ff	/* V(Cr) or Red */
 
 /*
  * maximum number of the layers
@@ -126,7 +126,7 @@
 /*
  * osd layer control (layer 0 through (OSD_MAX_NUM_OF_LAYERS - 1))
  */
-#define OSD_LXC_ALPHA_MASK	0x0FFF0000	/* global alpha value */
+#define OSD_LXC_ALPHA_MASK	0x0fff0000	/* global alpha value */
 #define OSD_LXC_ALPHA_SHIFT	16	  	/* bit shift of alpha value */
 #define OSD_LXC_PRIORITY_MASK	0x00000700	/* layer priority */
 #define OSD_LXC_PRIORITY_SHIFT	8	  	/* bit shift of priority */
@@ -136,17 +136,17 @@
 /*
  * osd layer position (layer 0 through (OSD_MAX_NUM_OF_LAYERS - 1))
  */
-#define OSD_LXP_YSTART_MASK	0x0FFF0000	/* vertical start line */
+#define OSD_LXP_YSTART_MASK	0x0fff0000	/* vertical start line */
 #define OSD_LXP_YSTART_SHIFT	16		/* bit shift of vertical start
 						   line */
-#define OSD_LXP_XSTART_MASK	0x00000FFF	/* horizontal start pixel */
+#define OSD_LXP_XSTART_MASK	0x00000fff	/* horizontal start pixel */
 
 /*
  * osd layer size (layer 0 through (OSD_MAX_NUM_OF_LAYERS - 1))
  */
-#define OSD_LXS_YSIZE_MASK	0x0FFF0000	/* vertical size of layer */
+#define OSD_LXS_YSIZE_MASK	0x0fff0000	/* vertical size of layer */
 #define OSD_LXS_YSIZE_SHIFT	16	  	/* bit shift of vertical size */
-#define OSD_LXS_XSIZE_MASK	0x00000FFF	/* horizontal size of layer */
+#define OSD_LXS_XSIZE_MASK	0x00000fff	/* horizontal size of layer */
 
 /*
  * osd graphics controller write bank address
@@ -169,28 +169,28 @@
 /*
  * osd graphics controller active bank address
  */
-#define OSD_GCABA_CHR_MASK	0xFF000000	/* set the active character
+#define OSD_GCABA_CHR_MASK	0xff000000	/* set the active character
 						   bank */
 #define OSD_GCABA_CHR_SHIFT	24		/* bit shift of active
 						   character bank */
-#define OSD_GCABA_TXT_MASK	0x00FF0000	/* set the active text bank */
+#define OSD_GCABA_TXT_MASK	0x00ff0000	/* set the active text bank */
 #define OSD_GCABA_TXT_SHIFT	16		/* bit shift of active text
 						   bank */
-#define OSD_GCABA_COL_MASK	0x0000FF00	/* set the active color table
+#define OSD_GCABA_COL_MASK	0x0000ff00	/* set the active color table
 						   bank */
 #define OSD_GCABA_COL_SHIFT	8		/* bit shift of active color
 						   table bank */
-#define OSD_GCABA_INS_MASK	0x000000FF	/* set the active instruction
+#define OSD_GCABA_INS_MASK	0x000000ff	/* set the active instruction
 						   bank */
 
 /*
  * version register bit definition
  */
-#define OSD_VER_MAJOR_MASK	0xFF000000	/* major version */
+#define OSD_VER_MAJOR_MASK	0xff000000	/* major version */
 #define OSD_VER_MAJOR_SHIFT	24		/* major version bit shift*/
-#define OSD_VER_MINOR_MASK	0x00FF0000	/* minor version */
+#define OSD_VER_MINOR_MASK	0x00ff0000	/* minor version */
 #define OSD_VER_MINOR_SHIFT	16		/* minor version bit shift*/
-#define OSD_VER_REV_MASK	0x0000F000	/* revision version */
+#define OSD_VER_REV_MASK	0x0000f000	/* revision version */
 #define OSD_VER_REV_SHIFT	12		/* revision bit shift*/
 
 /*
@@ -206,8 +206,8 @@
 /*
  * interrupt status/enable register bit definition
  */
-#define OSD_IXR_GAO_MASK	0xFF000000	/* GC instruction overflow */
-#define OSD_IXR_GIE_MASK	0x00FF0000	/* GC instruction error */
+#define OSD_IXR_GAO_MASK	0xff000000	/* GC instruction overflow */
+#define OSD_IXR_GIE_MASK	0x00ff0000	/* GC instruction error */
 #define OSD_IXR_OOE_MASK	0x00000010	/* OSD output overflow error */
 #define OSD_IXR_IUE_MASK	0x00ff0000	/* OSD input underflow error */
 #define OSD_IXR_VBIE_MASK	0x00000004	/* vert blank interval end */
@@ -252,48 +252,48 @@
 /*
  * GC instruction word 0 definition
  */
-#define OSD_INS0_OPCODE_MASK	0xF0000000	/* operation code (OpCode) */
+#define OSD_INS0_OPCODE_MASK	0xf0000000	/* operation code (OpCode) */
 #define OSD_INS0_OPCODE_SHIFT	28		/* bit shift of OpCode */
 #define OSD_INS0_GCNUM_MASK	0x07000000	/* GC number */
 #define OSD_INS0_GCNUM_SHIFT	24		/* bit shift of GC# */
-#define OSD_INS0_XEND_MASK	0x00FFF000	/* horizontal end pixel of
+#define OSD_INS0_XEND_MASK	0x00fff000	/* horizontal end pixel of
 						   the object */
 #define OSD_INS0_XEND_SHIFT	12		/* bit shift ofhorizontal end
 						   pixel of the object */
-#define OSD_INS0_XSTART_MASK	0x00000FFF	/* horizontal start pixel of the
+#define OSD_INS0_XSTART_MASK	0x00000fff	/* horizontal start pixel of the
 						   object */
 
 /*
  * GC instruction word 1 definition
  */
-#define OSD_INS1_TXTINDEX_MASK	0x0000000F	/* string index */
+#define OSD_INS1_TXTINDEX_MASK	0x0000000f	/* string index */
 
 /*
  * GC instruction word 2 definition
  */
-#define OSD_INS2_OBJSIZE_MASK	0xFF000000	/* object size */
+#define OSD_INS2_OBJSIZE_MASK	0xff000000	/* object size */
 #define OSD_INS2_OBJSIZE_SHIFT	24		/* bit shift of object size */
-#define OSD_INS2_YEND_MASK	0x00FFF000	/* vertical end line of
+#define OSD_INS2_YEND_MASK	0x00fff000	/* vertical end line of
 						   the object */
 #define OSD_INS2_YEND_SHIFT	12		/* bit shift of vertical end
 						   line of the object */
-#define OSD_INS2_YSTART_MASK	0x00000FFF	/* vertical start line of the
+#define OSD_INS2_YSTART_MASK	0x00000fff	/* vertical start line of the
 						   object */
 
 /*
  * GC instruction word 3 definition
  */
-#define OSD_INS3_COL_MASK	0x0000000F	/* color index for box/text */
+#define OSD_INS3_COL_MASK	0x0000000f	/* color index for box/text */
 
 /*
  * GC instruction operation code definition (used in instruction word 0)
  */
 #define OSD_INS_OPCODE_END	0x0	/* end of instruction list */
 #define OSD_INS_OPCODE_NOP	0x8	/* nop */
-#define OSD_INS_OPCODE_BOX	0xA	/* box */
-#define OSD_INS_OPCODE_LINE	0xC	/* line */
-#define OSD_INS_OPCODE_TXT	0xE	/* text */
-#define OSD_INS_OPCODE_BOXTXT	0xF	/* box text */
+#define OSD_INS_OPCODE_BOX	0xa	/* box */
+#define OSD_INS_OPCODE_LINE	0xc	/* line */
+#define OSD_INS_OPCODE_TXT	0xe	/* text */
+#define OSD_INS_OPCODE_BOXTXT	0xf	/* box text */
 
 /*
  * GC color size

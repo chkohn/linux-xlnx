@@ -25,11 +25,11 @@
 #define CRESAMPLE_CONTROL		0x0000	/* control */
 #define CRESAMPLE_STATUS		0x0004	/* status */
 #define CRESAMPLE_ERROR			0x0008	/* error */
-#define CRESAMPLE_IRQ_ENABLE		0x000C	/* irq enable */
+#define CRESAMPLE_IRQ_ENABLE		0x000c	/* irq enable */
 #define CRESAMPLE_VERSION		0x0010	/* version */
 #define CRESAMPLE_SYSDEBUG0		0x0014	/* system debug 0 */
 #define CRESAMPLE_SYSDEBUG1		0x0018	/* system debug 1 */
-#define CRESAMPLE_SYSDEBUG2		0x001C	/* system debug 2 */
+#define CRESAMPLE_SYSDEBUG2		0x001c	/* system debug 2 */
 
 /* timing control registers */
 #define CRESAMPLE_ACTIVE_SIZE		0x0020	/* horizontal and vertical

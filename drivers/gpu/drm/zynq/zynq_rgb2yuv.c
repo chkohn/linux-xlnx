@@ -37,15 +37,15 @@
 #define RGB_YMAX           0x100    /* luma clipping */
 #define RGB_YMIN           0x104    /* luma clamping */
 #define RGB_CBMAX          0x108    /* cb clipping   */
-#define RGB_CBMIN          0x10C    /* cb clamping   */
+#define RGB_CBMIN          0x10c    /* cb clamping   */
 #define RGB_CRMAX          0x110    /* cr clipping   */
 #define RGB_CRMIN          0x114    /* cr clamping   */
 #define RGB_YOFFSET        0x118    /* lumma offset  */
-#define RGB_CBOFFSET       0x11C    /* cb offset     */
+#define RGB_CBOFFSET       0x11c    /* cb offset     */
 #define RGB_CROFFSET       0x120    /* cr offset     */
 #define RGB_ACOEF          0x124    /* matrix coversion coefficient */
 #define RGB_BCOEF          0x128    /* matrix coversion coefficient */
-#define RGB_CCOEF          0x12C    /* matrix coversion coefficient */
+#define RGB_CCOEF          0x12c    /* matrix coversion coefficient */
 #define RGB_DCOEF          0x130    /* matrix coversion coefficient */
 
 /* ccm control register bit definition */

@@ -38,10 +38,10 @@
 #define VTC_GVSYNC	0x080	/* generator vertical sync */
 #define VTC_GVSHOFF	0x084	/* generator vsync horizontal offset */
 
-#define VTC_DVBHO0	0x0B0	/* detector vblank hori offset 0 register */
-#define VTC_DVSHO0	0x0B4	/* detector vsync  hori offset 0 register */
-#define VTC_DVBHO1	0x0B8	/* detector vblank hori offset 1 register */
-#define VTC_DVSHO1	0x0BC	/* detector vsync  hori offset 1 register */
+#define VTC_DVBHO0	0x0b0	/* detector vblank hori offset 0 register */
+#define VTC_DVSHO0	0x0b4	/* detector vsync  hori offset 0 register */
+#define VTC_DVBHO1	0x0b8	/* detector vblank hori offset 1 register */
+#define VTC_DVSHO1	0x0bc	/* detector vsync  hori offset 1 register */
 
 #define VTC_VER		0x010	/* version register */
 #define VTC_RESET	0x000	/* reset register */
@@ -62,7 +62,7 @@
 						   polarity */
 #define VTC_CTL_VBP_MASK	0x00000001	/* vertical blank output
 						   polarity */
-#define VTC_CTL_ALLP_MASK	0x0000007F	/* bit mask for all polarity
+#define VTC_CTL_ALLP_MASK	0x0000007f	/* bit mask for all polarity
 						   bits */
 
 
@@ -111,7 +111,7 @@
 						   source select (frame size) */
 
 
-#define VTC_CTL_ALLSS_MASK	0x03F7EF00	/* bit mask for all source
+#define VTC_CTL_ALLSS_MASK	0x03f7ef00	/* bit mask for all source
 						   select */
 #define VTC_CTL_GACPS_MASK	0x00000200	/* generator active chroma
 						   pixel skip */
@@ -122,40 +122,40 @@
 #define VTC_CTL_SW_MASK	0x00000001	/* vtc core enable */
 
 /* vtc generator horizontal 0 */
-#define VTC_GH0_FPSTART_MASK	0x1FFF0000	/* horizontal front porch start
+#define VTC_GH0_FPSTART_MASK	0x1fff0000	/* horizontal front porch start
 						   cycle count */
 #define VTC_GH0_FPSTART_SHIFT	16		/* bit shift for horizontal
 						   front porch start cycle
 						   count */
-#define VTC_GH0_TOTAL_MASK	0x00001FFF	/* total clock cycles per
+#define VTC_GH0_TOTAL_MASK	0x00001fff	/* total clock cycles per
 						   line */
 
 /* vtc generator horizontal 1 */
-#define VTC_GH1_BPSTART_MASK   0x1FFF0000	/* horizontal back porch start
+#define VTC_GH1_BPSTART_MASK   0x1fff0000	/* horizontal back porch start
 						   cycle count */
 #define VTC_GH1_BPSTART_SHIFT  16		/* bit shift for horizontal back
 						   porch start cycle count */
-#define VTC_GH1_SYNCSTART_MASK 0x00001FFF	/* horizontal sync start cycle
+#define VTC_GH1_SYNCSTART_MASK 0x00001fff	/* horizontal sync start cycle
 						   count */
 
 /* vtc generator horizontal 2 */
-#define VTC_GH2_ACTIVESTART_MASK	0x00001FFF	/* Horizontal Active
+#define VTC_GH2_ACTIVESTART_MASK	0x00001fff	/* Horizontal Active
 							   Video Start Cycle
 							   Count */
 
 /* vtc generator vertical 0 (filed 0)*/
-#define VTC_GV0_FPSTART_MASK   0x1FFF0000	/* vertical front porch start
+#define VTC_GV0_FPSTART_MASK   0x1fff0000	/* vertical front porch start
 						   cycle count */
 #define VTC_GV0_FPSTART_SHIFT  16		/* bit shift for vertical front
 						   porch start cycle count */
-#define VTC_GV0_TOTAL_MASK	0x00001FFF	/* total lines per frame */
+#define VTC_GV0_TOTAL_MASK	0x00001fff	/* total lines per frame */
 
 /* vtc generator vertical 1 (filed 0) */
-#define VTC_GV1_BPSTART_MASK   0x1FFF0000	/* vertical back porch start
+#define VTC_GV1_BPSTART_MASK   0x1fff0000	/* vertical back porch start
 						   cycle count */
 #define VTC_GV1_BPSTART_SHIFT  16		/* bit shift for vertical back
 						   porch start cycle count */
-#define VTC_GV1_SYNCSTART_MASK 0x00001FFF	/* vertical sync start cycle
+#define VTC_GV1_SYNCSTART_MASK 0x00001fff	/* vertical sync start cycle
 						   count */
 
 /* vtc generator vertical 2 (filed 0) */
@@ -164,32 +164,32 @@
 #define VTC_GV2_CHROMASTART_SHIFT	8		/* bit shift for active
 							   chroma start line
 							   count */
-#define VTC_GV2_ACTIVESTART_MASK	0x00001FFF	/* vertical active
+#define VTC_GV2_ACTIVESTART_MASK	0x00001fff	/* vertical active
 							   video start
 							   cycle count */
 
 /* vtc generator vertical 3 (filed 1) */
-#define VTC_GV3_FPSTART_MASK	0x1FFF0000	/* vertical front porch start
+#define VTC_GV3_FPSTART_MASK	0x1fff0000	/* vertical front porch start
 						   cycle count */
 #define VTC_GV3_FPSTART_SHIFT	16		/* bit shift for vertical front
 						   porch start cycle count */
-#define VTC_GV3_TOTAL_MASK	0x00001FFF	/* total lines per frame */
+#define VTC_GV3_TOTAL_MASK	0x00001fff	/* total lines per frame */
 
 /* vtc generator vertical 4 (filed 1) */
-#define VTC_GV4_BPSTART_MASK	0x1FFF0000	/* vertical back porch start
+#define VTC_GV4_BPSTART_MASK	0x1fff0000	/* vertical back porch start
 						   cycle count */
 #define VTC_GV4_BPSTART_SHIFT	16		/* bit shift for vertical back
 						   porch start cycle count */
-#define VTC_GV4_SYNCSTART_MASK	0x00001FFF	/* vertical sync start cycle
+#define VTC_GV4_SYNCSTART_MASK	0x00001fff	/* vertical sync start cycle
 						   count */
 
 /* vtc generator vertical 5 (filed 1) */
-#define VTC_GV5_CHROMASTART_MASK	0x1FFF0000	/* active chroma start
+#define VTC_GV5_CHROMASTART_MASK	0x1fff0000	/* active chroma start
 							   line count */
 #define VTC_GV5_CHROMASTART_SHIFT	16		/* bit shift for active
 							   chroma start line
 							   count */
-#define VTC_GV5_ACTIVESTART_MASK	0x00001FFF	/* vertical active
+#define VTC_GV5_ACTIVESTART_MASK	0x00001fff	/* vertical active
 							   video start
 							   cycle count */
 
@@ -211,111 +211,111 @@
 						   skip */
 
 /* vtc detector horizontal 0 */
-#define VTC_DH0_FPSTART_MASK	0x1FFF0000	/* detected horizontal front
+#define VTC_DH0_FPSTART_MASK	0x1fff0000	/* detected horizontal front
 						   porch start cycle count */
 #define VTC_DH0_FPSTART_SHIFT	16		/* bit shift for detected
 						   horizontal front porch start
 						   cycle count */
-#define VTC_DH0_TOTAL_MASK	0x00001FFF	/* detected total clock cycles
+#define VTC_DH0_TOTAL_MASK	0x00001fff	/* detected total clock cycles
 						   per line */
 
 /* vtc detector horizontal 1 */
-#define VTC_DH1_BPSTART_MASK	0x1FFF0000	/* detected horizontal back
+#define VTC_DH1_BPSTART_MASK	0x1fff0000	/* detected horizontal back
 						   porch start cycle count */
 #define VTC_DH1_BPSTART_SHIFT	16		/* bit shift for detected
 						   horizontal back porch start
 						   cycle count */
-#define VTC_DH1_SYNCSTART_MASK	0x00001FFF	/* detected horizontal sync
+#define VTC_DH1_SYNCSTART_MASK	0x00001fff	/* detected horizontal sync
 						   start cycle count */
 
 /* vtc detector horizontal 0 */
-#define VTC_DH2_ACTIVESTART_MASK	0x00001FFF	/* detected horizontal
+#define VTC_DH2_ACTIVESTART_MASK	0x00001fff	/* detected horizontal
 							   active video start
 							   cycle count */
 
 /* vtc detector vertical 0 (field 0) */
-#define VTC_DV0_FPSTART_MASK	0x1FFF0000	/* detected vertical front
+#define VTC_DV0_FPSTART_MASK	0x1fff0000	/* detected vertical front
 						   porch start cycle count */
 #define VTC_DV0_FPSTART_SHIFT	16		/* bit shift for detected
 						   vertical front porch start
 						   cycle count */
-#define VTC_DV0_TOTAL_MASK	0x00001FFF	/* detected total lines per
+#define VTC_DV0_TOTAL_MASK	0x00001fff	/* detected total lines per
 						   frame */
 
 /* vtc detector vertical 1 (field 0) */
-#define VTC_DV1_BPSTART_MASK	0x1FFF0000	/* detected vertical back porch
+#define VTC_DV1_BPSTART_MASK	0x1fff0000	/* detected vertical back porch
 						   start cycle count */
 #define VTC_DV1_BPSTART_SHIFT	16		/* bit shift for detected
 						   vertical back porch start
 						   cycle count */
-#define VTC_DV1_SYNCSTART_MASK	0x00001FFF	/* detected vertical sync start
+#define VTC_DV1_SYNCSTART_MASK	0x00001fff	/* detected vertical sync start
 						   cycle count */
 
 /* vtc detector vertical 2 (field 0) */
-#define VTC_DV2_CHROMASTART_MASK	0x1FFF0000	/* detected active
+#define VTC_DV2_CHROMASTART_MASK	0x1fff0000	/* detected active
 							   chroma start
 							   line count */
 #define VTC_DV2_CHROMASTART_SHIFT	16		/* bit shift for
 							   detected active
 							   chroma start line
 							   count */
-#define VTC_DV2_ACTIVESTART_MASK	0x00001FFF	/* detected vertical
+#define VTC_DV2_ACTIVESTART_MASK	0x00001fff	/* detected vertical
 							   active video start
 							   cycle count */
 
 /* vtc detector vertical 3 (field 1) */
-#define VTC_DV3_FPSTART_MASK	0x1FFF0000	/* detected vertical front
+#define VTC_DV3_FPSTART_MASK	0x1fff0000	/* detected vertical front
 						   porch start cycle count */
 #define VTC_DV3_FPSTART_SHIFT	16		/* bit shift for detected
 						   vertical front porch start
 						   cycle count */
-#define VTC_DV3_TOTAL_MASK	0x00001FFF	/* detected total lines per
+#define VTC_DV3_TOTAL_MASK	0x00001fff	/* detected total lines per
 						   frame */
 
 /* vtc detector vertical 4 (field 1) */
-#define VTC_DV4_BPSTART_MASK	0x1FFF0000	/* detected vertical back porch
+#define VTC_DV4_BPSTART_MASK	0x1fff0000	/* detected vertical back porch
 						   start cycle count */
 #define VTC_DV4_BPSTART_SHIFT	16		/* bit shift for detected
 						   vertical back porch start
 						   cycle count */
-#define VTC_DV4_SYNCSTART_MASK	0x00001FFF	/* detected vertical sync start
+#define VTC_DV4_SYNCSTART_MASK	0x00001fff	/* detected vertical sync start
 						   cycle count */
 
 /* vtc detector vertical 5 (field 1) */
-#define VTC_DV5_CHROMASTART_MASK	0x1FFF0000	/* detected active
+#define VTC_DV5_CHROMASTART_MASK	0x1fff0000	/* detected active
 							   chroma start
 							   line count */
 #define VTC_DV5_CHROMASTART_SHIFT	16		/* bit shift for
 							   detected active
 							   chroma start line
 							   count */
-#define VTC_DV5_ACTIVESTART_MASK	0x00001FFF	/* detected vertical
+#define VTC_DV5_ACTIVESTART_MASK	0x00001fff	/* detected vertical
 							   active video start
 							   cycle count */
 
 /* vtc frame sync 00 --- 15 */
-#define VTC_FSXX_VSTART_MASK	0x1FFF0000	/* vertical line count during
+#define VTC_FSXX_VSTART_MASK	0x1fff0000	/* vertical line count during
 						   which current frame sync is
 						   active */
 #define VTC_FSXX_VSTART_SHIFT	16		/* bit shift for the vertical
 						   line count */
-#define VTC_FSXX_HSTART_MASK	0x00001FFF	/* horizontal cycle count
+#define VTC_FSXX_HSTART_MASK	0x00001fff	/* horizontal cycle count
 						   during which current frame
 						   sync is active */
 
 /* vtc generator global delay */
-#define VTC_GGD_VDELAY_MASK	0x1FFF0000	/* total lines per frame to
+#define VTC_GGD_VDELAY_MASK	0x1fff0000	/* total lines per frame to
 						   delay generator output */
 #define VTC_GGD_VDELAY_SHIFT	16		/* bit shift for the total
 						   lines */
-#define VTC_GGD_HDELAY_MASK	0x00001FFF	/* total clock cycles per line
+#define VTC_GGD_HDELAY_MASK	0x00001fff	/* total clock cycles per line
 						   to delay generator output */
 
 /* vtc generator/detector vblank/vsync horizontal offset registers */
-#define VTC_XVXHOX_HEND_MASK	0x1FFF0000	/* horizontal offset end */
+#define VTC_XVXHOX_HEND_MASK	0x1fff0000	/* horizontal offset end */
 #define VTC_XVXHOX_HEND_SHIFT	16		/* horizontal offset end
 						   shift */
-#define VTC_XVXHOX_HSTART_MASK	0x00001FFF	/* horizontal offset start */
+#define VTC_XVXHOX_HSTART_MASK	0x00001fff	/* horizontal offset start */
 
 /* reset register bit definition */
 #define VTC_RESET_RESET_MASK	0x80000000	/* Software Reset */
@@ -323,11 +323,11 @@
 						   Reset */
 
 /* version register bit definition */
-#define VTC_VER_MAJOR_MASK	0xFF000000	/* major version*/
+#define VTC_VER_MAJOR_MASK	0xff000000	/* major version*/
 #define VTC_VER_MAJOR_SHIFT	24		/* major version bit shift*/
-#define VTC_VER_MINOR_MASK	0x00FF0000	/* minor version */
+#define VTC_VER_MINOR_MASK	0x00ff0000	/* minor version */
 #define VTC_VER_MINOR_SHIFT	16		/* minor version bit shift*/
-#define VTC_VER_REV_MASK	0x0000F000	/* revision version */
+#define VTC_VER_REV_MASK	0x0000f000	/* revision version */
 #define VTC_VER_REV_SHIFT	12		/* revision bit shift*/
 
 /* interrupt status/enable register bit definition */
@@ -347,7 +347,7 @@
 #define VTC_IXR_FSYNC02_MASK	0x00040000	/* frame sync interrupt 02 */
 #define VTC_IXR_FSYNC01_MASK	0x00020000	/* frame sync interrupt 01 */
 #define VTC_IXR_FSYNC00_MASK	0x00010000	/* frame sync interrupt 00 */
-#define VTC_IXR_FSYNCALL_MASK	0xFFFF0000	/* all frame sync interrupts */
+#define VTC_IXR_FSYNCALL_MASK	0xffff0000	/* all frame sync interrupts */
 
 #define VTC_IXR_G_AV_MASK	0x00002000	/* generator actv video intr */
 #define VTC_IXR_G_VBLANK_MASK	0x00001000	/* generator vblank interrupt */
@@ -355,7 +355,7 @@
 
 #define VTC_IXR_D_AV_MASK	0x00000800	/* detector active video intr */
 #define VTC_IXR_D_VBLANK_MASK	0x00000400	/* detector vblank interrupt */
-#define VTC_IXR_D_ALL_MASK	0x00000C00	/* all detector interrupts */
+#define VTC_IXR_D_ALL_MASK	0x00000c00	/* all detector interrupts */
 
 #define VTC_IXR_LOL_MASK	0x00000200	/* lock loss */
 #define VTC_IXR_LO_MAS		0x00000100	/* lock  */
