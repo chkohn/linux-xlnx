@@ -494,6 +494,8 @@ void zynq_drm_plane_remove_manager(struct zynq_drm_plane_manager *manager)
 
 	for (i = 0; i < manager->num_planes; i++) {
 		if (manager->planes[i] && !manager->planes[i]->priv) {
+			zynq_drm_plane_dpms(&manager->planes[i]->base,
+					DRM_MODE_DPMS_OFF);
 			zynq_drm_plane_destroy(&manager->planes[i]->base);
 			manager->planes[i] = NULL;
 		}
