@@ -290,7 +290,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 
 	encoder->si570 = get_i2c_client_si570();
 	if (!encoder->si570) {
-		DRM_ERROR("failed to get si570 clock i2c client\n");
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get si570 clock\n");
 		goto err_si570;
 	}
 
@@ -311,7 +311,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	encoder->i2c_slave = of_find_i2c_device_by_node(slave_node);
 	of_node_put(slave_node);
 	if (!encoder->i2c_slave) {
-		DRM_ERROR("failed to get i2c encoder slave client\n");
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get encoder slv\n");
 		goto err_slave;
 	}
 

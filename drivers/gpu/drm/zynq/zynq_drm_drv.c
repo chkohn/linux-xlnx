@@ -70,6 +70,8 @@ static void zynq_drm_mode_config_init(struct drm_device *drm)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 }
 
+static bool zynq_drm_defered = false;
+
 /* load zynq drm */
 static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 {
@@ -93,24 +95,25 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 	/* create a zynq crtc */
 	private->crtc = zynq_drm_crtc_create(drm);
 	if (!private->crtc) {
-		DRM_ERROR("failed to create xilinx crtc\n");
-		err = -ENODEV;
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq crtc\n");
+		err = -EPROBE_DEFER;
 		goto err_crtc;
 	}
 
 	/* create a zynq encoder */
 	private->encoder = zynq_drm_encoder_create(drm);
 	if (!private->encoder) {
-		DRM_ERROR("failed to create xilinx encoder\n");
-		err = -ENODEV;
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq encoder\n");
+		err = -EPROBE_DEFER;
 		goto err_encoder;
 	}
 
 	/* create a zynq connector */
 	private->connector = zynq_drm_connector_create(drm, private->encoder);
 	if (!private->connector) {
-		DRM_ERROR("failed to create xilinx connector\n");
-		err = -ENODEV;
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV,
+				"failed to create zynq connector\n");
+		err = -EPROBE_DEFER;
 		goto err_connector;
 	}
 
@@ -145,6 +148,14 @@ err_crtc:
 	drm_mode_config_cleanup(drm);
 	kfree(private);
 err_alloc:
+	if (err == -EPROBE_DEFER) {
+		if (!zynq_drm_defered) {
+			zynq_drm_defered = true;
+			DRM_INFO("load() is defered & will be called again\n");
+		}
+		else
+			DRM_ERROR("failed to load zynq_drm drivers\n");
+	}
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 	return err;
 }
@@ -258,37 +269,7 @@ int zynq_kms_debug_enabled = ZYNQ_KMS_DEBUG_ALL;
 module_param_named(zynq_kms_debug, zynq_kms_debug_enabled, int, 0600);
 #endif
 
-/* init zynq drm module */
-static int __init zynq_drm_init(void)
-{
-	int ret;
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-
-	ret = platform_driver_register(&zynq_drm_private_driver);
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-
-	return ret;
-}
-
-#ifdef MODULE
-/* exit zynq drm module */
-static void __exit zynq_drm_exit(void)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-
-	platform_driver_unregister(&zynq_drm_private_driver);
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-}
-
-/* XXX: with module_init() zynq_drm is loaded before si570 driver */
-module_init(zynq_drm_init);
-module_exit(zynq_drm_exit);
-#else
-late_initcall(zynq_drm_init);
-#endif
+module_platform_driver(zynq_drm_private_driver);
 
 MODULE_AUTHOR("hyun woo kwon, Xilinx, Inc. <hyunk@xilinx.com>");
 MODULE_DESCRIPTION("Xilinx DRM KMS Driver");
