@@ -33,8 +33,9 @@ static int zynq_drm_connector_get_modes(struct drm_connector *base_connector)
 	struct zynq_drm_connector *connector =
 		to_zynq_connector(base_connector);
 	struct drm_encoder *encoder = connector->encoder;
-	struct drm_encoder_slave *encoder_slave;
-	struct drm_encoder_slave_funcs *encoder_sfuncs = NULL;
+	struct drm_encoder_slave *encoder_slave = to_encoder_slave(encoder);
+	struct drm_encoder_slave_funcs *encoder_sfuncs =
+		encoder_slave->slave_funcs;
 	int count = 0;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
@@ -42,8 +43,6 @@ static int zynq_drm_connector_get_modes(struct drm_connector *base_connector)
 	kfree(base_connector->display_info.raw_edid);
 	base_connector->display_info.raw_edid = NULL;
 
-	encoder_slave = to_encoder_slave(encoder);
-	encoder_sfuncs = encoder_slave->slave_funcs;
 	if (encoder_sfuncs->get_modes)
 		count += encoder_sfuncs->get_modes(encoder, base_connector);
 
@@ -83,7 +82,7 @@ static struct drm_encoder *zynq_drm_connector_best_encoder(
 	struct zynq_drm_connector *connector =
 		to_zynq_connector(base_connector);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
-	return connector ? connector->encoder : NULL;
+	return connector->encoder;
 }
 
 static struct drm_connector_helper_funcs zynq_drm_connector_helper_funcs = {
@@ -99,13 +98,12 @@ static enum drm_connector_status zynq_drm_connector_detect(
 		to_zynq_connector(base_connector);
 	enum drm_connector_status status = connector_status_unknown;
 	struct drm_encoder *encoder = connector->encoder;
-	struct drm_encoder_slave *encoder_slave;
-	struct drm_encoder_slave_funcs *encoder_sfuncs = NULL;
+	struct drm_encoder_slave *encoder_slave = to_encoder_slave(encoder);
+	struct drm_encoder_slave_funcs *encoder_sfuncs =
+		encoder_slave->slave_funcs;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
-	encoder_slave = to_encoder_slave(encoder);
-	encoder_sfuncs = encoder_slave->slave_funcs;
 	if (encoder_sfuncs->detect)
 		status = encoder_sfuncs->detect(encoder, base_connector);
 

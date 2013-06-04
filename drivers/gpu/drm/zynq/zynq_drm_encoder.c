@@ -120,16 +120,7 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 			mode->hdisplay, mode->vdisplay, mode->clock);
 
 	encoder_slave = to_encoder_slave(base_encoder);
-	if (!encoder_slave) {
-		DRM_ERROR("failed to get encoder slave\n");
-		goto out;
-	}
-
 	encoder = to_zynq_encoder(encoder_slave);
-	if (!encoder) {
-		DRM_ERROR("failed to get zynq encoder\n");
-		goto out;
-	}
 
 	/* search for a connector for this encoder */
 	/* assume there's only one connector for this encoder */
