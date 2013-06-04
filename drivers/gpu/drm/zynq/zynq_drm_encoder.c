@@ -58,29 +58,18 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 
 	encoder_slave = to_encoder_slave(base_encoder);
-	if (!encoder_slave) {
-		DRM_ERROR("failed to get encoder slave\n");
-		goto out;
-	}
-
 	encoder = to_zynq_encoder(encoder_slave);
-	if (!encoder) {
-		DRM_ERROR("failed to get zynq encoder\n");
-		goto out;
-	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
 			encoder->dpms, dpms);
 
 	if (encoder->dpms != dpms) {
 		encoder->dpms = dpms;
-
 		encoder_sfuncs = encoder_slave->slave_funcs;
-		if (encoder_sfuncs && encoder_sfuncs->dpms)
+		if (encoder_sfuncs->dpms)
 			encoder_sfuncs->dpms(base_encoder, dpms);
 	}
 
-out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
 
@@ -103,7 +92,7 @@ static bool zynq_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
 	}
 
 	encoder_sfuncs = encoder_slave->slave_funcs;
-	if (encoder_sfuncs && encoder_sfuncs->mode_fixup)
+	if (encoder_sfuncs->mode_fixup)
 		ret = encoder_sfuncs->mode_fixup(base_encoder, mode,
 				adjusted_mode);
 
@@ -186,10 +175,10 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	}
 
 	encoder_sfuncs = encoder_slave->slave_funcs;
-	if (encoder_sfuncs && encoder_sfuncs->set_config)
+	if (encoder_sfuncs->set_config)
 		encoder_sfuncs->set_config(base_encoder, &config);
 
-	if (encoder_sfuncs && encoder_sfuncs->mode_set)
+	if (encoder_sfuncs->mode_set)
 		encoder_sfuncs->mode_set(base_encoder, mode, adjusted_mode);
 
 	/* set si570 pixel clock */
@@ -251,10 +240,13 @@ static struct drm_encoder_helper_funcs zynq_drm_encoder_helper_funcs = {
 /* destroy encoder */
 void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder)
 {
-	struct drm_encoder_slave *slave = to_encoder_slave(base_encoder);
-	struct zynq_drm_encoder *encoder = to_zynq_encoder(slave);
+	struct zynq_drm_encoder *encoder;
+	struct drm_encoder_slave *encoder_slave;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+
+	encoder_slave = to_encoder_slave(base_encoder);
+	encoder = to_zynq_encoder(encoder_slave);
 
 	/* make sure encoder is off */
 	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
@@ -320,7 +312,12 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	if (i2c_driver->encoder_init(encoder->i2c_slave, drm,
 				&encoder->slave)) {
 		DRM_ERROR("failed to initialize encoder slave\n");
-		goto err_slave;
+		goto err_slave_init;
+	}
+
+	if (!encoder->slave.slave_funcs) {
+		DRM_ERROR("there's no encoder slave function\n");
+		goto err_slave_func;
 	}
 
 	encoder->rgb = of_property_read_bool(pdev->dev.of_node, "adi,is-rgb");
@@ -340,9 +337,11 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 
 	return &encoder->slave.base;
 
-err_slave:
-	put_device(&encoder->i2c_slave->dev);
 err_init:
+err_slave_func:
+err_slave_init:
+	put_device(&encoder->i2c_slave->dev);
+err_slave:
 	zynq_vtc_remove(encoder->vtc);
 err_vtc:
 err_si570:

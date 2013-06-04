@@ -39,14 +39,12 @@ static int zynq_drm_connector_get_modes(struct drm_connector *base_connector)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
-	encoder_slave = to_encoder_slave(encoder);
-	if (encoder_slave)
-		encoder_sfuncs = encoder_slave->slave_funcs;
-
 	kfree(base_connector->display_info.raw_edid);
 	base_connector->display_info.raw_edid = NULL;
 
-	if (encoder_sfuncs && encoder_sfuncs->get_modes)
+	encoder_slave = to_encoder_slave(encoder);
+	encoder_sfuncs = encoder_slave->slave_funcs;
+	if (encoder_sfuncs->get_modes)
 		count += encoder_sfuncs->get_modes(encoder, base_connector);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
@@ -73,7 +71,7 @@ static int zynq_drm_connector_mode_valid(struct drm_connector *base_connector,
 	}
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "ret: %d\n", ret);
 
 	return ret;
 }
@@ -107,10 +105,8 @@ static enum drm_connector_status zynq_drm_connector_detect(
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
 	encoder_slave = to_encoder_slave(encoder);
-	if (encoder_slave)
-		encoder_sfuncs = encoder_slave->slave_funcs;
-
-	if (encoder_sfuncs && encoder_sfuncs->detect)
+	encoder_sfuncs = encoder_slave->slave_funcs;
+	if (encoder_sfuncs->detect)
 		status = encoder_sfuncs->detect(encoder, base_connector);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "status: %d\n", status);
