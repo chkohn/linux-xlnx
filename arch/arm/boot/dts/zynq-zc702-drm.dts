@@ -415,7 +415,6 @@
 			dma-request0 = <&axi_vdma_0 0>;
 			dma-request1 = <&axi_vdma_1 0>;
 			encoder-slave = <&adv7511>;
-			clocks = <&vtc_0>;
 		};
 	};
 };
