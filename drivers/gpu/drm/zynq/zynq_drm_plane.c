@@ -107,6 +107,7 @@ void zynq_drm_plane_commit(struct drm_plane *base_plane)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
 
+/* mode set a plane */
 int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 		struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		int crtc_x, int crtc_y,
@@ -123,14 +124,6 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	int ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
-
-	/* if a plane is private, it's for crtc */
-	if (plane->priv) {
-		zynq_osd_set_dimension(plane->manager->osd, crtc_w, crtc_h);
-	}
-
-	zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
-			src_w, src_h);
 
 	obj = drm_fb_cma_get_gem_obj(fb, 0);
 	if (!obj) {
@@ -165,6 +158,14 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	/* submit vdma desc */
 	dmaengine_submit(desc);
 
+	/* if a plane is private, it's for crtc */
+	if (plane->priv) {
+		zynq_osd_set_dimension(plane->manager->osd, crtc_w, crtc_h);
+	}
+
+	zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
+			src_w, src_h);
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 	return 0;
 
@@ -172,7 +173,7 @@ err_out:
 	return ret;
 }
 
-
+/* update a plane. just call mode_set() with bit-shifted values */
 int zynq_drm_plane_update(struct drm_plane *base_plane, struct drm_crtc *crtc,
 		struct drm_framebuffer *fb, int crtc_x, int crtc_y,
 		unsigned int crtc_w, unsigned int crtc_h,
@@ -201,6 +202,7 @@ err_out:
 	return ret;
 }
 
+/* disable a plane */
 static int zynq_drm_plane_disable(struct drm_plane *base_plane)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -209,6 +211,7 @@ static int zynq_drm_plane_disable(struct drm_plane *base_plane)
 	return 0;
 }
 
+/*destroy a plane */
 static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
 {
 	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
@@ -227,6 +230,7 @@ static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
 
+/* set property of a plane */
 static int zynq_drm_plane_set_property(struct drm_plane *base_plane,
 				     struct drm_property *property,
 				     uint64_t val)
@@ -329,6 +333,8 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		DRM_ERROR("failed to request dma channel\n");
 		goto err_dma_request;
 	}
+
+	zynq_osd_layer_set_alpha(plane->osd_layer, 1, 0xff);
 
 	/* initialize drm plane */
 	if (drm_plane_init(manager->drm, &plane->base, possible_crtcs,

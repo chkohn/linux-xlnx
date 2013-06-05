@@ -135,6 +135,24 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 		goto out;
 	}
 
+	/* set si570 pixel clock */
+	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
+
+	/* set vtc */
+	vtc_sig_config.htotal = mode->htotal;
+	vtc_sig_config.hfrontporch_start = mode->hdisplay;
+	vtc_sig_config.hsync_start = mode->hsync_start;
+	vtc_sig_config.hbackporch_start = mode->hsync_end;
+	vtc_sig_config.hactive_start = 0;
+
+	vtc_sig_config.vtotal = mode->vtotal;
+	vtc_sig_config.vfrontporch_start = mode->vdisplay;
+	vtc_sig_config.vsync_start = mode->vsync_start;
+	vtc_sig_config.vbackporch_start = mode->vsync_end;
+	vtc_sig_config.vactive_start = 0;
+
+	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
+
 	if (connector->display_info.raw_edid) {
 		edid = (struct edid *)connector->display_info.raw_edid;
 		config.hdmi_mode = drm_detect_hdmi_monitor(edid);
@@ -171,24 +189,6 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 
 	if (encoder_sfuncs->mode_set)
 		encoder_sfuncs->mode_set(base_encoder, mode, adjusted_mode);
-
-	/* set si570 pixel clock */
-	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
-
-	/* set vtc */
-	vtc_sig_config.htotal = mode->htotal;
-	vtc_sig_config.hfrontporch_start = mode->hdisplay;
-	vtc_sig_config.hsync_start = mode->hsync_start;
-	vtc_sig_config.hbackporch_start = mode->hsync_end;
-	vtc_sig_config.hactive_start = 0;
-
-	vtc_sig_config.vtotal = mode->vtotal;
-	vtc_sig_config.vfrontporch_start = mode->vdisplay;
-	vtc_sig_config.vsync_start = mode->vsync_start;
-	vtc_sig_config.vbackporch_start = mode->vsync_end;
-	vtc_sig_config.vactive_start = 0;
-
-	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
 
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
