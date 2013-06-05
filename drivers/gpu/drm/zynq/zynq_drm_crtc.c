@@ -260,10 +260,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	}
 
 	/* create extra planes */
-	if(zynq_drm_plane_create_planes(crtc->plane_manager, possible_crtcs)) {
-		DRM_ERROR("failed to create planes\n");
-		goto err_planes;
-	}
+	zynq_drm_plane_create_planes(crtc->plane_manager, possible_crtcs);
 
 	/* initialize drm crtc */
 	if (drm_crtc_init(drm, &crtc->base, &zynq_drm_crtc_funcs)) {

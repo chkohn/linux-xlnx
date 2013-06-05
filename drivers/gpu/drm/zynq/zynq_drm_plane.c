@@ -158,13 +158,17 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	/* submit vdma desc */
 	dmaengine_submit(desc);
 
-	/* if a plane is private, it's for crtc */
-	if (plane->priv) {
-		zynq_osd_set_dimension(plane->manager->osd, crtc_w, crtc_h);
-	}
+	/* set OSD dimentions */
+	if (plane->manager->osd) {
+		/* if a plane is private, it's for crtc */
+		if (plane->priv) {
+			zynq_osd_set_dimension(plane->manager->osd,
+					crtc_w, crtc_h);
+		}
 
-	zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
-			src_w, src_h);
+		zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
+				src_w, src_h);
+	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 	return 0;
@@ -223,8 +227,10 @@ static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
 	plane->manager->planes[plane->id] = NULL;
 	drm_plane_cleanup(base_plane);
 	dma_release_channel(plane->vdma.chan);
-	zynq_osd_layer_disable(plane->osd_layer);
-	zynq_osd_layer_destroy(plane->osd_layer);
+	if (plane->manager->osd) {
+		zynq_osd_layer_disable(plane->osd_layer);
+		zynq_osd_layer_destroy(plane->osd_layer);
+	}
 	kfree(plane);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -294,22 +300,11 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		goto err_alloc;
 	}
 
-	/* create an osd layer */
-	plane->osd_layer = zynq_osd_layer_create(manager->osd);
-	if (!plane->osd_layer) {
-		DRM_ERROR("failed to create a osd layer\n");
-		goto err_osd_layer;
-	}
-
 	plane->priv = priv;
 	plane->id = i;
 	plane->zorder = i;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	/* TODO: add to the manager's zorder list */
-
-	/* set zorder */
-	zynq_osd_layer_set_priority(plane->osd_layer, plane->zorder);
-	zynq_osd_layer_enable(plane->osd_layer);
 
 	/* get a vdma node */
 	snprintf(node_name, sizeof(node_name), "dma-request%d", i);
@@ -334,7 +329,21 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		goto err_dma_request;
 	}
 
-	zynq_osd_layer_set_alpha(plane->osd_layer, 1, 0xff);
+	/* create an OSD layer when OSD is available */
+	if (manager->osd) {
+		/* create an osd layer */
+		plane->osd_layer = zynq_osd_layer_create(manager->osd);
+		if (!plane->osd_layer) {
+			DRM_ERROR("failed to create a osd layer\n");
+			goto err_osd_layer;
+		}
+
+		/* set zorder */
+		zynq_osd_layer_set_priority(plane->osd_layer, plane->zorder);
+		zynq_osd_layer_enable(plane->osd_layer);
+
+		zynq_osd_layer_set_alpha(plane->osd_layer, 1, 0xff);
+	}
 
 	/* initialize drm plane */
 	if (drm_plane_init(manager->drm, &plane->base, possible_crtcs,
@@ -351,12 +360,14 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	return plane;
 
 err_init:
+	if (plane->manager->osd) {
+		zynq_osd_layer_disable(plane->osd_layer);
+		zynq_osd_layer_destroy(plane->osd_layer);
+	}
+err_osd_layer:
 	dma_release_channel(plane->vdma.chan);
 err_dma_request:
 err_dma_node:
-	zynq_osd_layer_disable(plane->osd_layer);
-	zynq_osd_layer_destroy(plane->osd_layer);
-err_osd_layer:
 	kfree(plane);
 err_alloc:
 err_plane:
@@ -424,6 +435,7 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
+	/* find if there any available plane */
 	for (i = 0; i < manager->num_planes; i++) {
 		if (manager->planes[i])
 			continue;
@@ -461,16 +473,6 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 		goto err_alloc;
 	}
 	manager->drm = drm;
-
-	manager->osd = zynq_osd_probe("xlnx,vosd");
-	if (!manager->osd) {
-		DRM_ERROR("failed to probe an osd\n");
-		goto err_osd;
-	}
-	/* set background color as black */
-	zynq_osd_set_color(manager->osd, 0x0, 0x0, 0x0);
-	zynq_osd_enable(manager->osd);
-
 	/* TODO: duplicate get_prop in osd, consider clean up */
 	if (of_property_read_u32(pdev->dev.of_node, "xlnx,num-planes", &prop)) {
 		pr_err("failed to get num of planes prop\n");
@@ -478,14 +480,20 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	}
 	manager->num_planes = prop;
 
+	/* probe an OSD. proceed even if there's not OSD */
+	manager->osd = zynq_osd_probe("xlnx,vosd");
+	if (manager->osd) {
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");
+		/* set background color as black */
+		zynq_osd_set_color(manager->osd, 0x0, 0x0, 0x0);
+		zynq_osd_enable(manager->osd);
+	}
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
 	return manager;
 
 err_prop:
-	zynq_osd_disable(manager->osd);
-	zynq_osd_remove(manager->osd);
-err_osd:
 	kfree(manager);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -506,8 +514,10 @@ void zynq_drm_plane_remove_manager(struct zynq_drm_plane_manager *manager)
 			manager->planes[i] = NULL;
 		}
 	}
-	zynq_osd_disable(manager->osd);
-	zynq_osd_remove(manager->osd);
+	if (manager->osd) {
+		zynq_osd_disable(manager->osd);
+		zynq_osd_remove(manager->osd);
+	}
 	kfree(manager);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
