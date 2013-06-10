@@ -40,6 +40,55 @@ struct zynq_drm_private {
 	struct platform_device *pdev;		/* platform device */
 };
 
+struct zynq_drm_format_info {
+	u32 fourcc;
+	unsigned int bpp;
+	bool yuv;
+};
+
+static const struct zynq_drm_format_info zynq_drm_format_infos[] = {
+	{
+		.fourcc = DRM_FORMAT_XRGB8888,
+	},
+};
+
+/* get supported format info */
+const struct zynq_drm_format_info *zynq_drm_format_get(u32 fourcc)
+{
+	const struct zynq_drm_format_info *info = NULL;
+	unsigned int i;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	for (i = 0; i < ARRAY_SIZE(zynq_drm_format_infos); ++i) {
+		if (zynq_drm_format_infos[i].fourcc == fourcc)
+			info = &zynq_drm_format_infos[i];
+	}
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	return info;
+}
+
+static struct drm_framebuffer *zynq_drm_fb_create(struct drm_device *drm,
+		struct drm_file *file_priv, struct drm_mode_fb_cmd2 *mode_cmd)
+{
+	const struct zynq_drm_format_info *format;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	format = zynq_drm_format_get(mode_cmd->pixel_format);
+	if (format == NULL) {
+		DRM_ERROR("unsupported pixel format %08x\n",
+			mode_cmd->pixel_format);
+		return ERR_PTR(-EINVAL);
+	}
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	return drm_fb_cma_create(drm, file_priv, mode_cmd);
+}
+
 static void zynq_drm_output_poll_changed(struct drm_device *drm)
 {
 	struct zynq_drm_private *private = drm->dev_private;
@@ -50,7 +99,7 @@ static void zynq_drm_output_poll_changed(struct drm_device *drm)
 }
 
 static const struct drm_mode_config_funcs zynq_drm_mode_config_funcs = {
-	.fb_create = drm_fb_cma_create,
+	.fb_create = zynq_drm_fb_create,
 	.output_poll_changed = zynq_drm_output_poll_changed,
 };
 
