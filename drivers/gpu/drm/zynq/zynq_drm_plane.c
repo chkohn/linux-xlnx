@@ -480,7 +480,7 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	}
 	manager->num_planes = prop;
 
-	/* probe an OSD. proceed even if there's not OSD */
+	/* probe an OSD. proceed even if there's no OSD */
 	manager->osd = zynq_osd_probe("xlnx,vosd");
 	if (manager->osd) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");

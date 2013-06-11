@@ -275,7 +275,6 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 
 err_init:
 	zynq_drm_plane_destroy_planes(crtc->plane_manager);
-err_planes:
 	zynq_drm_plane_destroy_private(crtc->plane_manager, crtc->priv_plane);
 err_plane:
 	zynq_drm_plane_remove_manager(crtc->plane_manager);

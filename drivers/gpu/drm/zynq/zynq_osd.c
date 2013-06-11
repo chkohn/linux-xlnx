@@ -317,13 +317,13 @@
 #define OSD_LAYER_PRIORITY_7	7	/* priority 7 --- highest */
 
 struct zynq_osd_layer {
-	void __iomem *base;	/* layer base addr */
+	void __iomem *base;		/* layer base addr */
 	int id;				/* layer id */
 	struct zynq_osd *osd;		/* osd */
 };
 
 struct zynq_osd {
-	void __iomem *base;	/* osd base addr */
+	void __iomem *base;		/* osd base addr */
 	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
