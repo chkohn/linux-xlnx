@@ -50,11 +50,19 @@ struct zynq_cresample {
 	struct device_node *node;	/* device node */
 };
 
-/* io operations */
-#define zynq_cresample_writel(device, offset, val)	\
-	writel(val, device->base + offset)
-#define zynq_cresample_readl(device, offset)	\
-	readl(device->base + offset)
+/* io write operations */
+static inline void zynq_cresample_writel(struct zynq_cresample *cresample,
+		int offset, u32 val)
+{
+	writel(val, cresample->base + offset);
+}
+
+/* io read operations */
+static inline u32 zynq_cresample_readl(struct zynq_cresample *cresample,
+		int offset)
+{
+	return readl(cresample->base + offset);
+}
 
 /* enable cresample */
 void zynq_cresample_enable(struct zynq_cresample *cresample)

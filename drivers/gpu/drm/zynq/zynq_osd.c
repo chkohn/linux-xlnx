@@ -317,26 +317,45 @@
 #define OSD_LAYER_PRIORITY_7	7	/* priority 7 --- highest */
 
 struct zynq_osd_layer {
-	void __iomem *base_addr;	/* layer base addr */
+	void __iomem *base;	/* layer base addr */
 	int id;				/* layer id */
 	struct zynq_osd *osd;		/* osd */
 };
 
 struct zynq_osd {
-	void __iomem *base_addr;	/* osd base addr */
+	void __iomem *base;	/* osd base addr */
 	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
 	u32 width, height;		/* width / height */
 };
 
-/*
- * io operations
- */
-#define zynq_osd_writel(device, offset, val)	\
-	writel(val, device->base_addr + offset)
-#define zynq_osd_readl(device, offset)	\
-	readl(device->base_addr + offset)
+/* io write operations */
+static inline void zynq_osd_writel(struct zynq_osd *osd, int offset, u32 val)
+{
+	writel(val, osd->base + offset);
+}
+
+/* io read operations */
+static inline u32 zynq_osd_readl(struct zynq_osd *osd, int offset)
+{
+	return readl(osd->base + offset);
+}
+
+/* layer io write operations */
+static inline void zynq_osd_layer_writel(struct zynq_osd_layer *layer,
+		int offset, u32 val)
+{
+	writel(val, layer->base + offset);
+}
+
+/* layer io read operations */
+static inline u32 zynq_osd_layer_readl(struct zynq_osd_layer *layer,
+		int offset)
+{
+	return readl(layer->base + offset);
+}
+
 
 static inline void zynq_osd_enable_rue(struct zynq_osd *osd);
 static inline void zynq_osd_disable_rue(struct zynq_osd *osd);
@@ -350,12 +369,12 @@ void zynq_osd_layer_set_alpha(struct zynq_osd_layer *layer, u32 enable,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "alpha: 0x%08x\n", alpha);
 	zynq_osd_disable_rue(layer->osd);
-	value = zynq_osd_readl(layer, OSD_LXC);
+	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value = enable ? (value | OSD_LXC_GALPHAEN_MASK) :
 		(value & ~OSD_LXC_GALPHAEN_MASK);
 	value &= ~OSD_LXC_ALPHA_MASK;
 	value |= (alpha << OSD_LXC_ALPHA_SHIFT) & OSD_LXC_ALPHA_MASK;
-	zynq_osd_writel(layer, OSD_LXC, value);
+	zynq_osd_layer_writel(layer, OSD_LXC, value);
 	zynq_osd_enable_rue(layer->osd);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
@@ -368,10 +387,10 @@ void zynq_osd_layer_set_priority(struct zynq_osd_layer *layer, u32 prio)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "prio: %d\n", prio);
 	zynq_osd_disable_rue(layer->osd);
-	value = zynq_osd_readl(layer, OSD_LXC);
+	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value &= ~OSD_LXC_PRIORITY_MASK;
 	value |= (prio << OSD_LXC_PRIORITY_SHIFT) & OSD_LXC_PRIORITY_MASK;
-	zynq_osd_writel(layer, OSD_LXC, value);
+	zynq_osd_layer_writel(layer, OSD_LXC, value);
 	zynq_osd_enable_rue(layer->osd);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
@@ -391,12 +410,12 @@ void zynq_osd_layer_set_dimension(struct zynq_osd_layer *layer,
 	value = xstart & OSD_LXP_XSTART_MASK;
 	value |= (ystart << OSD_LXP_YSTART_SHIFT) & OSD_LXP_YSTART_MASK;
 
-	zynq_osd_writel(layer, OSD_LXP, value);
+	zynq_osd_layer_writel(layer, OSD_LXP, value);
 
 	value = xsize & OSD_LXS_XSIZE_MASK;
 	value |= (ysize << OSD_LXS_YSIZE_SHIFT) & OSD_LXS_YSIZE_MASK;
 
-	zynq_osd_writel(layer, OSD_LXS, value);
+	zynq_osd_layer_writel(layer, OSD_LXS, value);
 
 	zynq_osd_enable_rue(layer->osd);
 
@@ -409,9 +428,9 @@ void zynq_osd_layer_enable(struct zynq_osd_layer *layer)
 	u32 value;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	value = zynq_osd_readl(layer, OSD_LXC);
+	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value |= OSD_LXC_EN_MASK;
-	zynq_osd_writel(layer, OSD_LXC, value);
+	zynq_osd_layer_writel(layer, OSD_LXC, value);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
@@ -421,9 +440,9 @@ void zynq_osd_layer_disable(struct zynq_osd_layer *layer)
 	u32 value;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	value = zynq_osd_readl(layer, OSD_LXC);
+	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value &= ~OSD_LXC_EN_MASK;
-	zynq_osd_writel(layer, OSD_LXC, value);
+	zynq_osd_layer_writel(layer, OSD_LXC, value);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
@@ -451,7 +470,7 @@ struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd)
 		goto err_out;
 	}
 
-	layer->base_addr = osd->base_addr + OSD_L0C + OSD_LAYER_SIZE * i;
+	layer->base = osd->base + OSD_L0C + OSD_LAYER_SIZE * i;
 	layer->id = i;
 	layer->osd = osd;
 	osd->layers[i] = layer;
@@ -577,8 +596,8 @@ struct zynq_osd *zynq_osd_probe(char *compatible)
 		goto err_node;
 	}
 
-	osd->base_addr = of_iomap(osd->node, 0);
-	if (!osd->base_addr) {
+	osd->base = of_iomap(osd->node, 0);
+	if (!osd->base) {
 		pr_err("failed to ioremap osd\n");
 		goto err_iomap;
 	}
@@ -595,7 +614,7 @@ struct zynq_osd *zynq_osd_probe(char *compatible)
 	return osd;
 
 err_prop:
-	iounmap(osd->base_addr);
+	iounmap(osd->base);
 err_iomap:
 	of_node_put(osd->node);
 err_node:
@@ -617,7 +636,7 @@ void zynq_osd_remove(struct zynq_osd *osd)
 			continue;
 		zynq_osd_layer_destroy(osd->layers[i]);
 	}
-	iounmap(osd->base_addr);
+	iounmap(osd->base);
 	of_node_put(osd->node);
 	kfree(osd);
 

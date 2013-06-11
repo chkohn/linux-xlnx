@@ -63,11 +63,18 @@ struct zynq_rgb2yuv {
 	struct device_node *node;	/* device node */
 };
 
-/* io operations */
-#define zynq_rgb2yuv_writel(device, offset, val)	\
-	writel(val, device->base + offset)
-#define zynq_rgb2yuv_readl(device, offset)	\
-	readl(device->base + offset)
+/* io write operations */
+static inline void zynq_rgb2yuv_writel(struct zynq_rgb2yuv *rgb2yuv, int offset,
+		u32 val)
+{
+	writel(val, rgb2yuv->base + offset);
+}
+
+/* io read operations */
+static inline u32 zynq_rgb2yuv_readl(struct zynq_rgb2yuv *rgb2yuv, int offset)
+{
+	return readl(rgb2yuv->base + offset);
+}
 
 /* enable rgb2yuv */
 void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv)

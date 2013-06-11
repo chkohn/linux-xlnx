@@ -382,11 +382,17 @@ struct zynq_vtc {
 	struct device_node *node;	/* device node */
 };
 
-/* IO operations */
-#define zynq_vtc_writel(device, offset, val)	\
-	writel(val, device->base + offset)
-#define zynq_vtc_readl(device, offset)	\
-	readl(device->base + offset)
+/* io write operations */
+static inline void zynq_vtc_writel(struct zynq_vtc *vtc, int offset, u32 val)
+{
+	writel(val, vtc->base + offset);
+}
+
+/* io read operations */
+static inline u32 zynq_vtc_readl(struct zynq_vtc *vtc, int offset)
+{
+	return readl(vtc->base + offset);
+}
 
 /* configure polarity of signals */
 static void zynq_vtc_config_polarity(struct zynq_vtc *vtc,
