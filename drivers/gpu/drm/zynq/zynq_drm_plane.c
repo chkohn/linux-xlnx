@@ -27,8 +27,6 @@
 #include "zynq_osd.h"
 
 struct zynq_drm_plane_vdma {
-	struct device_node *node;		/* device node */
-	int chan_id;				/* channel id */
 	struct dma_chan *chan;			/* dma channel */
 	struct xilinx_vdma_config dma_config;	/* dma config */
 };
@@ -253,23 +251,6 @@ static struct drm_plane_funcs zynq_drm_plane_funcs = {
 	.set_property = zynq_drm_plane_set_property,
 };
 
-/* xilinx vdma filter */
-static bool zynq_drm_plane_xvdma_filter(struct dma_chan *chan, void *param)
-{
-	struct zynq_drm_plane_vdma *vdma = param;
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "node match: %d\n",
-			chan->device->dev->of_node == vdma->node);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "chan->device->dev->of_node: %p\n",
-			chan->device->dev->of_node);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "vdma->node: %p\n", vdma->node);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "chan->chan_id: %d\n", chan->chan_id);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "vdma->chan_id: %d\n", vdma->chan_id);
-
-	return (chan->device->dev->of_node == vdma->node) &&
-		(chan->chan_id == vdma->chan_id);
-}
-
 /* create a plane */
 static struct zynq_drm_plane *_zynq_drm_plane_create(
 		struct zynq_drm_plane_manager *manager,
@@ -277,9 +258,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 {
 	struct zynq_drm_plane *plane;
 	struct platform_device *pdev = manager->drm->platformdev;
-	char node_name[16];
-	struct of_phandle_args dma_spec;
-	dma_cap_mask_t mask;
+	char dma_name[16];
 	int i;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -306,24 +285,8 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	/* TODO: add to the manager's zorder list */
 
-	/* get a vdma node */
-	snprintf(node_name, sizeof(node_name), "dma-request%d", i);
-	if (of_parse_phandle_with_args(pdev->dev.of_node, node_name,
-			"#dma-cells", 0, &dma_spec)) {
-		DRM_ERROR("failed to get vdma node\n");
-		goto err_dma_node;
-	}
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "vdma name: %s\n",
-			dma_spec.np->full_name);
-	plane->vdma.node = dma_spec.np;
-	plane->vdma.chan_id = dma_spec.args[0];
-
-	/* configure and request dma channel */
-	dma_cap_zero(mask);
-	dma_cap_set(DMA_SLAVE, mask);
-	dma_cap_set(DMA_PRIVATE, mask);
-	plane->vdma.chan = dma_request_channel(mask,
-			zynq_drm_plane_xvdma_filter, &plane->vdma);
+	snprintf(dma_name, sizeof(dma_name), "vdma%d", i);
+	plane->vdma.chan = dma_request_slave_channel(&pdev->dev, dma_name);
 	if (!plane->vdma.chan) {
 		DRM_ERROR("failed to request dma channel\n");
 		goto err_dma_request;
@@ -367,7 +330,6 @@ err_init:
 err_osd_layer:
 	dma_release_channel(plane->vdma.chan);
 err_dma_request:
-err_dma_node:
 	kfree(plane);
 err_alloc:
 err_plane:

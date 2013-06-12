@@ -364,7 +364,7 @@
 			xlnx,num-fstores = <1>;
 			dma-channel@7e200000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
-				interrupts = <0 59 0x4>;
+				interrupts = <0 58 0x4>;
 				xlnx,datawidth = <0x40>;
 			};
 		};
@@ -379,7 +379,7 @@
 			xlnx,num-fstores = <1>;
 			dma-channel@7e200000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
-				interrupts = <0 60 0x4>;
+				interrupts = <0 57 0x4>;
 				xlnx,datawidth = <0x40>;
 			};
 		};
@@ -408,8 +408,8 @@
 		zynq_drm{
 			compatible = "xlnx,zynq_drm";
 			xlnx,num-planes = <2>;
-			dma-request0 = <&axi_vdma_0 0>;
-			dma-request1 = <&axi_vdma_1 0>;
+			dmas = <&axi_vdma_0 0>, <&axi_vdma_1 0>;
+			dma-names = "vdma0", "vdma1";
 			encoder-slave = <&adv7511>;
 		};
 	};
