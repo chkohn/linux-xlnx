@@ -264,6 +264,10 @@ static struct drm_driver zynq_drm_driver = {
 	.unload = zynq_drm_unload,
 	.lastclose = zynq_drm_lastclose,
 
+	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
+	.gem_prime_export = drm_gem_cma_dmabuf_export,
+	.gem_prime_import = drm_gem_cma_dmabuf_import,
 	.gem_free_object = drm_gem_cma_free_object,
 	.gem_vm_ops = &drm_gem_cma_vm_ops,
 	.dumb_create = drm_gem_cma_dumb_create,
