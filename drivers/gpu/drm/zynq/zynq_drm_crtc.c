@@ -13,6 +13,8 @@
  *
  */
 
+#include <linux/device.h>
+
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
@@ -203,7 +205,6 @@ void zynq_drm_crtc_destroy(struct drm_crtc *base_crtc)
 	zynq_drm_plane_remove_manager(crtc->plane_manager);
 	zynq_rgb2yuv_remove(crtc->rgb2yuv);
 	zynq_cresample_remove(crtc->cresample);
-	kfree(crtc);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
@@ -221,7 +222,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-	crtc = kzalloc(sizeof(*crtc), GFP_KERNEL);
+	crtc = devm_kzalloc(drm->dev, sizeof(*crtc), GFP_KERNEL);
 	if (!crtc) {
 		DRM_ERROR("failed to allocate crtc\n");
 		goto err_alloc;
@@ -283,7 +284,6 @@ err_plane_manager:
 err_rgb2yuv:
 	zynq_cresample_remove(crtc->cresample);
 err_cresample:
-	kfree(crtc);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 	return NULL;

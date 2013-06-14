@@ -14,6 +14,7 @@
  */
 
 #include <linux/amba/xilinx_dma.h>
+#include <linux/device.h>
 #include <linux/dmaengine.h>
 #include <linux/platform_device.h>
 
@@ -229,7 +230,6 @@ static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
 		zynq_osd_layer_disable(plane->osd_layer);
 		zynq_osd_layer_destroy(plane->osd_layer);
 	}
-	kfree(plane);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
@@ -330,7 +330,6 @@ err_init:
 err_osd_layer:
 	dma_release_channel(plane->vdma.chan);
 err_dma_request:
-	kfree(plane);
 err_alloc:
 err_plane:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -429,7 +428,7 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
-	manager = kzalloc(sizeof(*manager), GFP_KERNEL);
+	manager = devm_kzalloc(drm->dev, sizeof(*manager), GFP_KERNEL);
 	if (!manager) {
 		DRM_ERROR("failed to allocate a plane manager\n");
 		goto err_alloc;

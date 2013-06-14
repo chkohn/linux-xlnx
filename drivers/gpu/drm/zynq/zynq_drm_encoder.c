@@ -245,7 +245,6 @@ void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder)
 	drm_encoder_cleanup(base_encoder);
 	put_device(&encoder->i2c_slave->dev);
 	zynq_vtc_remove(encoder->vtc);
-	kfree(encoder);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
@@ -264,7 +263,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 
-	encoder = kzalloc(sizeof(*encoder), GFP_KERNEL);
+	encoder = devm_kzalloc(drm->dev, sizeof(*encoder), GFP_KERNEL);
 	if (!encoder) {
 		DRM_ERROR("failed to allocate encoder\n");
 		goto err_alloc;
@@ -336,7 +335,6 @@ err_slave:
 	zynq_vtc_remove(encoder->vtc);
 err_vtc:
 err_si570:
-	kfree(encoder);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 	return NULL;

@@ -13,6 +13,8 @@
  *
  */
 
+#include <linux/device.h>
+
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
 #include <drm/drm_crtc_helper.h>
@@ -115,14 +117,10 @@ static enum drm_connector_status zynq_drm_connector_detect(
 /* destroy connector */
 void zynq_drm_connector_destroy(struct drm_connector *base_connector)
 {
-	struct zynq_drm_connector *connector =
-		to_zynq_connector(base_connector);
-
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
 	drm_sysfs_connector_remove(base_connector);
 	drm_connector_cleanup(base_connector);
-	kfree(connector);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 }
@@ -142,7 +140,7 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
-	connector = kzalloc(sizeof(*connector), GFP_KERNEL);
+	connector = devm_kzalloc(drm->dev, sizeof(*connector), GFP_KERNEL);
 	if (!connector) {
 		DRM_ERROR("failed to allocate connector\n");
 		goto err_alloc;
@@ -183,7 +181,6 @@ err_attach:
 err_sysfs:
 	drm_connector_cleanup(&connector->base);
 err_init:
-	kfree(connector);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 	return NULL;

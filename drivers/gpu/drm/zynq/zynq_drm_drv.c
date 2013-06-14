@@ -14,6 +14,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/device.h>
 #include <linux/platform_device.h>
 
 #include <drm/drmP.h>
@@ -131,7 +132,7 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
-	private = kzalloc(sizeof(*private), GFP_KERNEL);
+	private = devm_kzalloc(drm->dev, sizeof(*private), GFP_KERNEL);
 	if (!private) {
 		DRM_ERROR("failed to allocate private\n");
 		err = -ENOMEM;
@@ -200,7 +201,6 @@ err_encoder:
 	zynq_drm_crtc_destroy(private->crtc);
 err_crtc:
 	drm_mode_config_cleanup(drm);
-	kfree(private);
 err_alloc:
 	if (err == -EPROBE_DEFER) {
 		if (!zynq_drm_defered) {
@@ -228,8 +228,6 @@ static int zynq_drm_unload(struct drm_device *drm)
 	drm_fbdev_cma_fini(private->fbdev);
 
 	drm_mode_config_cleanup(drm);
-
-	kfree(private);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
