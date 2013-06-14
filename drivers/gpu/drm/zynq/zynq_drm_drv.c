@@ -33,6 +33,7 @@
 #define DRIVER_MINOR	0
 
 struct zynq_drm_private {
+	struct drm_device *drm;			/* drm device */
 	struct drm_crtc *crtc;			/* crtc */
 	struct drm_encoder *encoder;		/* encoder */
 	struct drm_connector *connector;	/* connector */
@@ -125,6 +126,7 @@ static bool zynq_drm_defered = false;
 static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 {
 	struct zynq_drm_private *private;
+	struct platform_device *pdev = drm->platformdev;
 	int err;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
@@ -177,8 +179,11 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 	}
 
 	drm->dev_private = private;
+	private->drm = drm;
 
 	drm_helper_disable_unused_functions(drm);
+
+	platform_set_drvdata(pdev, private);
 
 	/* call hotplug event to initialize pipelines */
 	drm_fbdev_cma_hotplug_event(private->fbdev);
@@ -283,6 +288,43 @@ static struct drm_driver zynq_drm_driver = {
 	.minor = DRIVER_MINOR,
 };
 
+#if defined (CONFIG_PM_SLEEP) || defined (CONFIG_PM_RUNTIME)
+/* suspend zynq drm */
+static int zynq_drm_pm_suspend(struct device *dev)
+{
+	struct zynq_drm_private *private = dev_get_drvdata(dev);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+	
+	drm_kms_helper_poll_disable(private->drm);
+	drm_helper_connector_dpms(private->connector, DRM_MODE_DPMS_SUSPEND);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	return 0;
+}
+
+/* resume zynq drm */
+static int zynq_drm_pm_resume(struct device *dev)
+{
+	struct zynq_drm_private *private = dev_get_drvdata(dev);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	drm_helper_connector_dpms(private->connector, DRM_MODE_DPMS_ON);
+	drm_kms_helper_poll_enable(private->drm);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	return 0;
+}
+#endif
+
+static const struct dev_pm_ops zynq_drm_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(zynq_drm_pm_suspend, zynq_drm_pm_resume)
+	SET_RUNTIME_PM_OPS(zynq_drm_pm_suspend, zynq_drm_pm_resume, NULL)
+};
+
 /* init zynq drm platform */
 static int zynq_drm_platform_probe(struct platform_device *pdev)
 {
@@ -313,6 +355,7 @@ static struct platform_driver zynq_drm_private_driver = {
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= "zynq-drm",
+		.pm	= &zynq_drm_pm_ops,
 		.of_match_table = zynq_drm_of_match,
 	},
 };
