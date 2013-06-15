@@ -355,32 +355,45 @@
 		};
 
 		axi_vdma_0: axivdma@40000000 {
-			#address-cells = <1>;
-			#size-cells = <1>;
-			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
 			reg = <0x40000000 0x10000>;
 
+			xlnx,flush-fsync = <1>;
 			xlnx,num-fstores = <1>;
-			dma-channel@7e200000 {
+			xlnx,family = "zynq-770";
+
+			#dma-cells = <1>;
+			dma-channel@40000000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
+				interrupt-parent = <&gic>;
 				interrupts = <0 58 0x4>;
 				xlnx,datawidth = <0x40>;
 			};
 		};
 
 		axi_vdma_1: axivdma@40060000 {
-			#address-cells = <1>;
-			#size-cells = <1>;
-			#dma-cells = <1>;
 			compatible = "xlnx,axi-vdma";
 			reg = <0x40060000 0x1000>;
 
+			xlnx,flush-fsync = <1>;
 			xlnx,num-fstores = <1>;
-			dma-channel@7e200000 {
+			xlnx,family = "zynq-770";
+
+			#dma-cells = <1>;
+			dma-mm2schannel@40060000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
+				interrupt-parent = <&gic>;
 				interrupts = <0 57 0x4>;
 				xlnx,datawidth = <0x40>;
+				xlnx,device-id = <0>;
+			};
+			dma-s2mmchannel@40060000 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupt-parent = <&gic>;
+				interrupts = <0 56 4>;
+				xlnx,datawidth = <0x40>;
+				xlnx,include-dre;
+				xlnx,device-id = <1>;
 			};
 		};
 
@@ -411,6 +424,60 @@
 			dmas = <&axi_vdma_0 0>, <&axi_vdma_1 0>;
 			dma-names = "vdma0", "vdma1";
 			encoder-slave = <&adv7511>;
+		};
+
+		axi_tpg_0: axi_tpg@40050000 {
+			compatible = "xlnx,axi-tpg";
+			reg = <0x40050000 0x10000>;
+
+			xlnx,axi-video-format = "rbg";
+			xlnx,axi-video-width = <8>;
+
+			port {
+				tpg0_out: endpoint {
+					remote-endpoint = <&remap0_in>;
+				};
+			};
+		};
+
+		axi_remapper_0: axi_remapper {
+			compatible = "xlnx,axi-remapper";
+
+			xlnx,axi-video-width = <8>;
+
+			#xlnx,axi-s-components = <3>;
+			#xlnx,axi-m-components = <4>;
+			xlnx,axi-component-maps = <1 0 2 4>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					remap0_in: endpoint {
+						remote-endpoint = <&tpg0_out>;
+					};
+				};
+				port@1 {
+					reg = <1>;
+					remap0_out: endpoint {
+						remote-endpoint = <&vcap0_in>;
+					};
+				};
+			};
+		};
+
+		axi_video {
+			compatible = "xlnx,axi-video";
+			dmas = <&axi_vdma_1 1>;
+			dma-names = "vdma";
+
+			port {
+				vcap0_in: endpoint {
+					remote-endpoint = <&remap0_out>;
+				};
+			};
 		};
 	};
 };
