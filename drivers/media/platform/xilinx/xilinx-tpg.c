@@ -72,6 +72,8 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 	const u32 height = xtpg->format.height;
 
 	if (!enable) {
+		xvip_write(&xtpg->xvip, XVIP_CTRL_CONTROL,
+			   XVIP_CTRL_CONTROL_SW_RESET);
 		xvip_write(&xtpg->xvip, XVIP_CTRL_CONTROL, 0);
 		return 0;
 	}
