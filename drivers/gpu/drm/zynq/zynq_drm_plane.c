@@ -34,7 +34,7 @@ struct zynq_drm_plane_vdma {
 
 struct zynq_drm_plane {
 	struct drm_plane base;			/* base drm plane object */
-	int id;					/* plane id(= fb id) */
+	int id;					/* plane id */
 	int zorder;				/* z-plane order */
 	int dpms;				/* dpms */
 	bool priv;				/* private flag */
@@ -141,6 +141,8 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	plane->vdma.dma_config.hsize = src_w * bpp;
 	plane->vdma.dma_config.vsize = src_h;
 	plane->vdma.dma_config.stride = pitch;
+	plane->vdma.dma_config.park = 1;
+	plane->vdma.dma_config.park_frm = 0;
 
 	dmaengine_device_control(plane->vdma.chan, DMA_SLAVE_CONFIG,
 			(unsigned long)&plane->vdma.dma_config);

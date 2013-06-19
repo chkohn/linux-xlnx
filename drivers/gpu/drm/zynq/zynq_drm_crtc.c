@@ -85,7 +85,6 @@ static int _zynq_drm_crtc_mode_set(struct zynq_drm_crtc *crtc,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-
 	/* configure cresample and rgb2yuv */
 	zynq_cresample_configure(crtc->cresample,
 			mode->hdisplay, mode->vdisplay);
