@@ -73,8 +73,12 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 		case DRM_MODE_DPMS_ON:
 			/* start vdma engine */
 			dma_async_issue_pending(plane->vdma.chan);
+			zynq_osd_layer_enable(plane->osd_layer);
 			break;
 		default:
+			zynq_osd_layer_set_dimension(plane->osd_layer, 0, 0,
+					0, 0);
+			zynq_osd_layer_disable(plane->osd_layer);
 			/* stop vdma engine */
 			dmaengine_terminate_all(plane->vdma.chan);
 			break;
@@ -284,6 +288,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	plane->priv = priv;
 	plane->id = i;
 	plane->zorder = i;
+	plane->dpms = DRM_MODE_DPMS_OFF;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	/* TODO: add to the manager's zorder list */
 
@@ -305,7 +310,6 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 
 		/* set zorder */
 		zynq_osd_layer_set_priority(plane->osd_layer, plane->zorder);
-		zynq_osd_layer_enable(plane->osd_layer);
 
 		zynq_osd_layer_set_alpha(plane->osd_layer, 1, 0xff);
 	}
