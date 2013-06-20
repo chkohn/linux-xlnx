@@ -35,7 +35,6 @@ struct zynq_drm_plane_vdma {
 struct zynq_drm_plane {
 	struct drm_plane base;			/* base drm plane object */
 	int id;					/* plane id */
-	int zorder;				/* z-plane order */
 	int dpms;				/* dpms */
 	bool priv;				/* private flag */
 	struct zynq_drm_plane_vdma vdma;	/* vdma */
@@ -63,6 +62,8 @@ static const uint32_t zynq_drm_plane_formats[] = {
 void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 {
 	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
+	struct zynq_drm_plane_manager *manager = plane->manager;
+	struct xilinx_vdma_config dma_config;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "dpms: %d -> %d\n", plane->dpms, dpms);
@@ -73,27 +74,47 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 		case DRM_MODE_DPMS_ON:
 			/* start vdma engine */
 			dma_async_issue_pending(plane->vdma.chan);
-			zynq_osd_layer_enable(plane->osd_layer);
+
+			/* enable osd */
+			if (manager->osd) {
+				/* set zorder(= id for now) */
+				zynq_osd_layer_set_priority(plane->osd_layer,
+						plane->id);
+				/* FIXME: set global alpha for now */
+				zynq_osd_layer_set_alpha(plane->osd_layer, 1,
+						0xff);
+				zynq_osd_layer_enable(plane->osd_layer);
+				if (plane->priv) {
+					/* set background color as black */
+					zynq_osd_set_color(manager->osd, 0x0,
+							0x0, 0x0);
+					zynq_osd_enable(manager->osd);
+				}
+			}
+
 			break;
 		default:
-			zynq_osd_layer_set_dimension(plane->osd_layer, 0, 0,
-					0, 0);
-			zynq_osd_layer_disable(plane->osd_layer);
-			/* stop vdma engine */
+			/* disable/reset osd */
+			if (manager->osd) {
+				zynq_osd_layer_set_dimension(plane->osd_layer,
+						0, 0, 0, 0);
+				zynq_osd_layer_disable(plane->osd_layer);
+				if (plane->priv)
+					zynq_osd_reset(manager->osd);
+			}
+
+			/* reset vdma */
+			dma_config.reset = 1;
+			dmaengine_device_control(plane->vdma.chan,
+					DMA_SLAVE_CONFIG,
+					(unsigned long)&dma_config);
+
+			/* stop vdma engine and release descriptors */
 			dmaengine_terminate_all(plane->vdma.chan);
 			break;
 		}
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-}
-
-/* prepare plane */
-void zynq_drm_plane_prepare(struct drm_plane *base_plane)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	/* turn off the pipeline before set mode */
-	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_OFF);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
 
@@ -103,9 +124,7 @@ void zynq_drm_plane_commit(struct drm_plane *base_plane)
 	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
-	/* start vdma engine with new mode*/
-	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_ON);
-	/* make sure that vdma starts with new mode */
+	/* start vdma with new mode */
 	dma_async_issue_pending(plane->vdma.chan);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
@@ -201,6 +220,8 @@ int zynq_drm_plane_update(struct drm_plane *base_plane, struct drm_crtc *crtc,
 		goto err_out;
 	}
 
+	/* make sure a plane is on */
+	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_ON);
 	/* apply the new fb addr */
 	zynq_drm_plane_commit(base_plane);
 
@@ -287,7 +308,6 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 
 	plane->priv = priv;
 	plane->id = i;
-	plane->zorder = i;
 	plane->dpms = DRM_MODE_DPMS_OFF;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	/* TODO: add to the manager's zorder list */
@@ -308,10 +328,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 			goto err_osd_layer;
 		}
 
-		/* set zorder */
-		zynq_osd_layer_set_priority(plane->osd_layer, plane->zorder);
-
-		zynq_osd_layer_set_alpha(plane->osd_layer, 1, 0xff);
+	
 	}
 
 	/* initialize drm plane */
@@ -451,9 +468,6 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	manager->osd = zynq_osd_probe("xlnx,vosd");
 	if (manager->osd) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");
-		/* set background color as black */
-		zynq_osd_set_color(manager->osd, 0x0, 0x0, 0x0);
-		zynq_osd_enable(manager->osd);
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");

@@ -20,14 +20,8 @@
 #include <drm/drm_crtc.h>
 
 void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms);
-void zynq_drm_plane_prepare(struct drm_plane *base_plane);
 void zynq_drm_plane_commit(struct drm_plane *base_plane);
 int zynq_drm_plane_mode_set(struct drm_plane *base_plane, struct drm_crtc *crtc,
-		struct drm_framebuffer *fb, int crtc_x, int crtc_y,
-		unsigned int crtc_w, unsigned int crtc_h,
-		uint32_t src_x, uint32_t src_y,
-		uint32_t src_w, uint32_t src_h);
-int zynq_drm_plane_update(struct drm_plane *base_plane, struct drm_crtc *crtc,
 		struct drm_framebuffer *fb, int crtc_x, int crtc_y,
 		unsigned int crtc_w, unsigned int crtc_h,
 		uint32_t src_x, uint32_t src_y,
