@@ -33,6 +33,7 @@ struct zynq_drm_crtc {
 	struct zynq_cresample *cresample;	/* chroma resampler */
 	struct zynq_rgb2yuv *rgb2yuv;		/* color space converter */
 	struct zynq_drm_plane_manager *plane_manager;	/* plane manager */
+	int dpms;				/* dpms */
 };
 
 #define to_zynq_crtc(x)	container_of(x, struct zynq_drm_crtc, base)
@@ -42,9 +43,25 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 {
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "dpms: %d -> %d\n", crtc->dpms, dpms);
 
-	zynq_drm_plane_dpms(crtc->priv_plane, dpms);
+	if (crtc->dpms != dpms) {
+		crtc->dpms = dpms;
+		switch (dpms) {
+		case DRM_MODE_DPMS_ON:
+			zynq_drm_plane_dpms(crtc->priv_plane, dpms);
+			zynq_rgb2yuv_enable(crtc->rgb2yuv);
+			zynq_cresample_enable(crtc->cresample);
+			break;
+		default:
+			zynq_cresample_disable(crtc->cresample);
+			zynq_cresample_reset(crtc->cresample);
+			zynq_rgb2yuv_disable(crtc->rgb2yuv);
+			zynq_rgb2yuv_reset(crtc->rgb2yuv);
+			zynq_drm_plane_dpms(crtc->priv_plane, dpms);
+			break;
+		}
+	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
@@ -52,10 +69,8 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 /* prepare crtc */
 static void zynq_drm_crtc_prepare(struct drm_crtc *base_crtc)
 {
-	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
-
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
-	zynq_drm_plane_prepare(crtc->priv_plane);
+	zynq_drm_crtc_dpms(base_crtc, DRM_MODE_DPMS_OFF);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
 
@@ -65,6 +80,7 @@ static void zynq_drm_crtc_commit(struct drm_crtc *base_crtc)
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	zynq_drm_crtc_dpms(base_crtc, DRM_MODE_DPMS_ON);
 	zynq_drm_plane_commit(crtc->priv_plane);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
@@ -233,7 +249,6 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 		DRM_ERROR("failed to probe cresample\n");
 		goto err_cresample;
 	}
-	zynq_cresample_enable(crtc->cresample);
 
 	/* probe color space converter and enable */
 	crtc->rgb2yuv = zynq_rgb2yuv_probe("xlnx,vrgb2ycrcb");
@@ -241,7 +256,6 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 		DRM_ERROR("failed to probe vrgb2yuv\n");
 		goto err_rgb2yuv;
 	}
-	zynq_rgb2yuv_enable(crtc->rgb2yuv);
 
 	/* probe a plane manager */
 	crtc->plane_manager = zynq_drm_plane_probe_manager(drm);
