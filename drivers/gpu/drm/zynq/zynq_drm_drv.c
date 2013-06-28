@@ -206,9 +206,9 @@ err_alloc:
 		if (!zynq_drm_defered) {
 			zynq_drm_defered = true;
 			DRM_INFO("load() is defered & will be called again\n");
-		}
-		else
+		} else {
 			DRM_ERROR("failed to load zynq_drm drivers\n");
+		}
 	}
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 	return err;
@@ -363,7 +363,16 @@ int zynq_kms_debug_enabled = ZYNQ_KMS_DEBUG_ALL;
 module_param_named(zynq_kms_debug, zynq_kms_debug_enabled, int, 0600);
 #endif
 
+#ifdef MODULE
 module_platform_driver(zynq_drm_private_driver);
+#else
+static int __init zynq_drm_init(void)
+{
+	return platform_driver_register(&zynq_drm_private_driver);
+}
+
+late_initcall(zynq_drm_init);
+#endif
 
 MODULE_AUTHOR("hyun woo kwon, Xilinx, Inc. <hyunk@xilinx.com>");
 MODULE_DESCRIPTION("Xilinx DRM KMS Driver");
