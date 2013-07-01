@@ -73,6 +73,7 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 				encoder_sfuncs->dpms(base_encoder, dpms);
 			break;
 		default:
+			/* TODO: reset_si570(&encoder->si570->dev, 1);*/
 			if (encoder_sfuncs->dpms)
 				encoder_sfuncs->dpms(base_encoder, dpms);
 			zynq_vtc_disable(encoder->vtc);
@@ -146,9 +147,6 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 		goto out;
 	}
 
-	/* set si570 pixel clock */
-	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
-
 	/* set vtc */
 	vtc_sig_config.htotal = mode->htotal;
 	vtc_sig_config.hfrontporch_start = mode->hdisplay;
@@ -163,6 +161,9 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	vtc_sig_config.vactive_start = 0;
 
 	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
+
+	/* set si570 pixel clock */
+	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
 
 	if (connector->display_info.raw_edid) {
 		edid = (struct edid *)connector->display_info.raw_edid;
