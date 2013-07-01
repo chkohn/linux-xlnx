@@ -13,6 +13,12 @@ config VIDEO_XILINX_REMAPPER
 	---help---
 	   Driver for the Xilinx Video Remapper
 
+config VIDEO_XILINX_SOBEL
+	tristate "Xilinx Video Sobel Filter"
+	depends on VIDEO_XILINX
+	---help---
+	   Driver for the Xilinx Video Sobel Filter
+
 config VIDEO_XILINX_TPG
 	tristate "Xilinx Video Test Pattern Generator"
 	depends on VIDEO_XILINX
