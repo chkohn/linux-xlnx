@@ -397,6 +397,38 @@
 			};
 		};
 
+		axi_vdma_2: axivdma@0x40070000 {
+			compatible = "xlnx,axi-vdma";
+			reg = <0x40070000 0x10000>;
+
+			xlnx,flush-fsync = <1>;
+			xlnx,num-fstores = <1>;
+			xlnx,family = "zynq-770";
+
+			#dma-cells = <1>;
+			dma-mm2schannel@0x40070000 {
+				compatible = "xlnx,axi-vdma-mm2s-channel";
+				interrupt-parent = <&gic>;
+				interrupts = <0 52 4>;
+				xlnx,datawidth = <0x40>;
+				xlnx,device-id = <0>;
+			};
+			dma-s2mmchannel@0x40070000 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupt-parent = <&gic>;
+				interrupts = <0 51 4>;
+				xlnx,datawidth = <0x40>;
+				xlnx,device-id = <1>;
+			};
+		};
+
+		axi_sobel_0: axi-sobel@0x40080000 {
+			compatible = "generic-uio";
+			reg = <0x40080000 0x10000>;
+			interrupts = <0 53 4>;
+			interrupt-parent = <&gic>;
+		};
+
 		vtc_0: vtc@40010000 {
 			compatible = "xlnx,vtc";
 			reg = <0x40010000 0x10000>;
