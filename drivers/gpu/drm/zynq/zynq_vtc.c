@@ -534,6 +534,8 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	u32 reg;
 	u32 htotal, vtotal, hactive, vactive;
 	struct zynq_vtc_hori_offset hori_offset;
+	struct zynq_vtc_polarity polarity;
+	struct zynq_vtc_src_config src;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
@@ -552,19 +554,29 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	reg = vtotal & 0x1fff;
 	zynq_vtc_writel(vtc, VTC_GVSIZE, reg);
 
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "ht: %d, vt: %d\n", htotal, vtotal);
+
 	reg = hactive & 0x1fff;
 	reg |= (vactive & 0x1fff) << 16;
 	zynq_vtc_writel(vtc, VTC_GASIZE, reg);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "ha: %d, va: %d\n", hactive, vactive);
 
 	reg = (sig_config->hsync_start) & VTC_GH1_SYNCSTART_MASK;
 	reg |= (sig_config->hbackporch_start) << VTC_GH1_BPSTART_SHIFT &
 		VTC_GH1_BPSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GHSYNC, reg);
 
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "hs: %d, hb: %d\n",
+			sig_config->hsync_start, sig_config->hbackporch_start);
+
 	reg = (sig_config->vsync_start) & VTC_GV1_SYNCSTART_MASK;
 	reg |= (sig_config->vbackporch_start) << VTC_GV1_BPSTART_SHIFT &
 		VTC_GV1_BPSTART_MASK;
 	zynq_vtc_writel(vtc, VTC_GVSYNC, reg);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "vs: %d, vb: %d\n",
+			sig_config->vsync_start, sig_config->vbackporch_start);
 
 	hori_offset.vblank_hori_start = hactive;
 	hori_offset.vblank_hori_end = hactive;
@@ -572,6 +584,32 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	hori_offset.vsync_hori_end = hactive;
 
 	zynq_vtc_config_hori_offset(vtc, &hori_offset);
+
+	/* set up polarity */
+	memset(&polarity, 0x0, sizeof(polarity));
+	polarity.hsync = 1;
+	polarity.vsync = 1;
+	polarity.hblank = 1;
+	polarity.vblank = 1;
+	polarity.active_video = 1;
+	polarity.active_chroma = 1;
+	polarity.field_id = 1;
+	zynq_vtc_config_polarity(vtc, &polarity);
+
+	/* set up src config */
+	memset(&src, 0x0, sizeof(src));
+	src.vchroma = 1;
+	src.vactive = 1;
+	src.vbackporch = 1;
+	src.vsync = 1;
+	src.vfrontporch = 1;
+	src.vtotal = 1;
+	src.hactive = 1;
+	src.hbackporch = 1;
+	src.hsync = 1;
+	src.hfrontporch = 1;
+	src.htotal = 1;
+	zynq_vtc_config_src(vtc, &src);
 
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
 	zynq_vtc_writel(vtc, VTC_CTL, reg | VTC_CTL_RU_MASK);
@@ -668,35 +706,10 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 					"zynq_vtc", vtc)) {
 			vtc->irq = 0;
 			pr_warn("failed to requet_irq() for zynq_vtc\n");
-		} else
+		} else {
 			zynq_vtc_intr_enable(vtc, VTC_IXR_ALLINTR_MASK);
+		}
 	}
-
-	/* set up polarity */
-	memset(&polarity, 0x0, sizeof(polarity));
-	polarity.hsync = 1;
-	polarity.vsync = 1;
-	polarity.hblank = 1;
-	polarity.vblank = 1;
-	polarity.active_video = 1;
-	polarity.active_chroma = 1;
-	polarity.field_id = 1;
-	zynq_vtc_config_polarity(vtc, &polarity);
-
-	/* set up src config */
-	memset(&src, 0x0, sizeof(src));
-	src.vchroma = 1;
-	src.vactive = 1;
-	src.vbackporch = 1;
-	src.vsync = 1;
-	src.vfrontporch = 1;
-	src.vtotal = 1;
-	src.hactive = 1;
-	src.hbackporch = 1;
-	src.hsync = 1;
-	src.hfrontporch = 1;
-	src.htotal = 1;
-	zynq_vtc_config_src(vtc, &src);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
