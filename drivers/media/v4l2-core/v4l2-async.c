@@ -200,8 +200,12 @@ void v4l2_async_notifier_unregister(struct v4l2_async_notifier *notifier)
 {
 	struct v4l2_async_subdev_list *asdl, *tmp;
 	int i = 0;
-	struct device **dev = kcalloc(notifier->subdev_num,
-				      sizeof(*dev), GFP_KERNEL);
+	struct device **dev;
+
+	if (notifier->v4l2_dev == NULL)
+		return;
+
+	dev = kcalloc(notifier->subdev_num, sizeof(*dev), GFP_KERNEL);
 	if (!dev)
 		dev_err(notifier->v4l2_dev->dev,
 			"Failed to allocate device cache!\n");
@@ -232,6 +236,9 @@ void v4l2_async_notifier_unregister(struct v4l2_async_notifier *notifier)
 		}
 		kfree(dev);
 	}
+
+	notifier->v4l2_dev = NULL;
+
 	/*
 	 * Don't care about the waiting list, it is initialised and populated
 	 * upon notifier registration.
