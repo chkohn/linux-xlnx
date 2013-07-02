@@ -28,7 +28,6 @@ struct xvip_video_format;
 
 struct xvip_dma {
 	struct video_device video;
-	enum v4l2_buf_type type;
 	struct media_pad pad;
 
 	struct xvip_pipeline *xvipp;
@@ -49,7 +48,8 @@ struct xvip_dma {
 
 #define to_xvip_dma(vdev)	container_of(vdev, struct xvip_dma, video)
 
-int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma);
+int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma,
+		  enum v4l2_buf_type type);
 void xvip_dma_cleanup(struct xvip_dma *dma);
 
 #endif /* __XILINX_VIP_DMA_H__ */

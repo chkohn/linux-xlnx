@@ -364,7 +364,7 @@ static int xvipp_pipeline_parse(struct xvip_pipeline *xvipp)
 	int ret;
 
 	/* Create an initial entity for the DMA channel. */
-	ret = xvip_dma_init(xvipp, &xvipp->dma);
+	ret = xvip_dma_init(xvipp, &xvipp->dma, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 	if (ret < 0) {
 		dev_err(xvipp->dev, "DMA initialization failed\n");
 		return ret;

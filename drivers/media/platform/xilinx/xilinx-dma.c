@@ -140,14 +140,24 @@ static int xvip_dma_buffer_prepare(struct vb2_buffer *vb)
 
 static void xvip_dma_buffer_queue(struct vb2_buffer *vb)
 {
-	const u32 flags = DMA_COMPL_SKIP_DEST_UNMAP | DMA_PREP_INTERRUPT
-			| DMA_CTRL_ACK;
 	struct xvip_dma *dma = vb2_get_drv_priv(vb->vb2_queue);
 	struct xvip_dma_buffer *buf = to_xvip_dma_buffer(vb);
 	struct dma_async_tx_descriptor *desc;
+	enum dma_transfer_direction dir;
+	u32 flags;
+
+	if (dma->queue.type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
+		flags = DMA_PREP_INTERRUPT | DMA_CTRL_ACK
+		      | DMA_COMPL_SKIP_DEST_UNMAP;
+		dir = DMA_DEV_TO_MEM;
+	} else {
+		flags = DMA_PREP_INTERRUPT | DMA_CTRL_ACK
+		      | DMA_COMPL_SKIP_SRC_UNMAP;
+		dir = DMA_MEM_TO_DEV;
+	}
 
 	desc = dmaengine_prep_slave_single(dma->dma, buf->addr, buf->length,
-					   DMA_DEV_TO_MEM, flags);
+					   dir, flags);
 	desc->callback = xvip_dma_complete;
 	desc->callback_param = buf;
 
@@ -249,7 +259,10 @@ xvip_dma_querycap(struct file *file, void *fh, struct v4l2_capability *cap)
 	struct v4l2_fh *vfh = file->private_data;
 	struct xvip_dma *dma = to_xvip_dma(vfh->vdev);
 
-	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+	if (dma->queue.type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+		cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+	else
+		cap->capabilities = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
 
 	strlcpy(cap->driver, "xilinx-vipp", sizeof(cap->driver));
 	strlcpy(cap->card, dma->video.name, sizeof(cap->card));
@@ -605,8 +618,10 @@ static struct v4l2_file_operations xvip_dma_fops = {
  * Xilinx Video DMA Core
  */
 
-int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma)
+int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma,
+		  enum v4l2_buf_type type)
 {
+	char name[10];
 	int ret;
 
 	dma->xvipp = xvipp;
@@ -624,7 +639,8 @@ int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma)
 	dma->format.sizeimage = dma->format.bytesperline * dma->format.height;
 
 	/* Initialize the media entity... */
-	dma->pad.flags = MEDIA_PAD_FL_SINK;
+	dma->pad.flags = type == V4L2_BUF_TYPE_VIDEO_CAPTURE
+		       ? MEDIA_PAD_FL_SINK : MEDIA_PAD_FL_SOURCE;
 
 	ret = media_entity_init(&dma->video.entity, 1, &dma->pad, 0);
 	if (ret < 0)
@@ -633,8 +649,9 @@ int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma)
 	/* ... and the video node... */
 	dma->video.v4l2_dev = &xvipp->v4l2_dev;
 	dma->video.fops = &xvip_dma_fops;
-	strlcpy(dma->video.name, xvipp->dev->of_node->full_name,
-		sizeof(dma->video.name));
+	snprintf(dma->video.name, sizeof(dma->video.name), "%s %s",
+		 xvipp->dev->of_node->full_name,
+		 type == V4L2_BUF_TYPE_VIDEO_CAPTURE ? "output" : "input");
 	dma->video.vfl_type = VFL_TYPE_GRABBER;
 	dma->video.release = video_device_release_empty;
 	dma->video.ioctl_ops = &xvip_dma_ioctl_ops;
@@ -646,7 +663,7 @@ int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma)
 	if (IS_ERR(dma->alloc_ctx))
 		goto error;
 
-	dma->queue.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	dma->queue.type = type;
 	dma->queue.io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	dma->queue.drv_priv = dma;
 	dma->queue.buf_struct_size = sizeof(struct xvip_dma_buffer);
@@ -660,7 +677,9 @@ int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma)
 	}
 
 	/* ... and the DMA channel. */
-	dma->dma = dma_request_slave_channel(dma->xvipp->dev, "vdma");
+	sprintf(name, "vdma-%s",
+		type == V4L2_BUF_TYPE_VIDEO_CAPTURE ? "s2mm" : "mm2s");
+	dma->dma = dma_request_slave_channel(dma->xvipp->dev, name);
 	if (dma->dma == NULL) {
 		dev_err(dma->xvipp->dev, "no VDMA channel found\n");
 		ret = -ENODEV;
