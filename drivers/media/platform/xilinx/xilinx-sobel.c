@@ -12,6 +12,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -75,6 +76,23 @@ static inline struct xsobel_device *to_sobel(struct v4l2_subdev *subdev)
 }
 
 /* -----------------------------------------------------------------------------
+ * Interrupt Handling
+ */
+
+static irqreturn_t xsobel_irq_handler(int irq, void *data)
+{
+	struct xsobel_device *xsobel = data;
+	u32 status;
+
+	status = xvip_read(&xsobel->xvip, XSOBEL_REG_ISR);
+	xvip_write(&xsobel->xvip, XSOBEL_REG_ISR, status);
+
+	dev_dbg(xsobel->xvip.dev, "%s: status 0x%08x\n", __func__, status);
+
+	return status ? IRQ_HANDLED : IRQ_NONE;
+}
+
+/* -----------------------------------------------------------------------------
  * V4L2 Subdevice Video Operations
  */
 
@@ -84,12 +102,16 @@ static int xsobel_s_stream(struct v4l2_subdev *subdev, int enable)
 	struct v4l2_mbus_framefmt *format = &xsobel->formats[XSOBEL_PAD_SINK];
 
 	if (!enable) {
+		xvip_write(&xsobel->xvip, XSOBEL_REG_GIE, 0);
 		xvip_write(&xsobel->xvip, XSOBEL_REG_CTRL, 0);
 		return 0;
 	}
 
 	xvip_write(&xsobel->xvip, XSOBEL_REG_COLS, format->width);
 	xvip_write(&xsobel->xvip, XSOBEL_REG_ROWS, format->height);
+
+	xvip_write(&xsobel->xvip, XSOBEL_REG_IER, XSOBEL_REG_IER_DONE);
+	xvip_write(&xsobel->xvip, XSOBEL_REG_GIE, XSOBEL_REG_GIE_GIE);
 
 	xvip_write(&xsobel->xvip, XSOBEL_REG_CTRL,
 		   XSOBEL_REG_CTRL_AUTO_RESTART | XSOBEL_REG_CTRL_START);
@@ -369,6 +391,7 @@ static int xsobel_probe(struct platform_device *pdev)
 	struct v4l2_subdev *subdev;
 	struct xsobel_device *xsobel;
 	struct resource *mem;
+	struct resource *irq;
 	int ret;
 
 	xsobel = devm_kzalloc(&pdev->dev, sizeof(*xsobel), GFP_KERNEL);
@@ -387,6 +410,15 @@ static int xsobel_probe(struct platform_device *pdev)
 
 	xsobel->xvip.iomem = devm_request_and_ioremap(&pdev->dev, mem);
 	if (xsobel->xvip.iomem == NULL)
+		return -ENODEV;
+
+	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (irq == NULL)
+		return -ENODEV;
+
+	ret = devm_request_irq(&pdev->dev, irq->start, xsobel_irq_handler,
+			       IRQF_SHARED, dev_name(&pdev->dev), xsobel);
+	if (ret < 0)
 		return -ENODEV;
 
 	/* Initialize V4L2 subdevice and media entity */
