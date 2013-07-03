@@ -51,7 +51,7 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct v4l2_async_notifier *
 						    struct v4l2_async_subdev_list *asdl)
 {
 	struct v4l2_subdev *sd = v4l2_async_to_subdev(asdl);
-	struct v4l2_async_subdev *asd = NULL;
+	struct v4l2_async_subdev *asd;
 	bool (*match)(struct device *,
 		      struct v4l2_async_hw_info *);
 
@@ -82,10 +82,10 @@ static struct v4l2_async_subdev *v4l2_async_belongs(struct v4l2_async_notifier *
 		}
 
 		if (match && match(sd->dev, hw))
-			break;
+			return asd;
 	}
 
-	return asd;
+	return NULL;
 }
 
 static int v4l2_async_test_notify(struct v4l2_async_notifier *notifier,
