@@ -88,9 +88,10 @@ static int xvip_dma_verify_format(struct xvip_dma *dma)
  */
 
 struct xvip_dma_buffer {
-	struct xvip_dma *dma;
 	struct vb2_buffer buf;
 	struct list_head queue;
+
+	struct xvip_dma *dma;
 
 	dma_addr_t addr;
 	unsigned int length;
