@@ -82,8 +82,8 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 		   (height << XVIP_TIMING_ACTIVE_VSIZE_SHIFT) |
 		   (width << XVIP_TIMING_ACTIVE_HSIZE_SHIFT));
 
-	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL, 0x000010ea);
-	xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, 11);
+	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL, 0x00001029);
+	xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, 1);
 	xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL, (74 * 1920) / width);
 	xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL, (3 * 1080) / height);
 	xvip_write(&xtpg->xvip, XTPG_BOX_SIZE, (112 * height) / 1080);
