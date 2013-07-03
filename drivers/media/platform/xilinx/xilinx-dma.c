@@ -277,9 +277,6 @@ xvip_dma_get_format(struct file *file, void *fh, struct v4l2_format *format)
 	struct v4l2_fh *vfh = file->private_data;
 	struct xvip_dma *dma = to_xvip_dma(vfh->vdev);
 
-	if (format->type != dma->queue.type)
-		return -EINVAL;
-
 	mutex_lock(&dma->lock);
 	format->fmt.pix = dma->format;
 	mutex_unlock(&dma->lock);
@@ -287,7 +284,7 @@ xvip_dma_get_format(struct file *file, void *fh, struct v4l2_format *format)
 	return 0;
 }
 
-static int
+static void
 __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 		      const struct xvip_video_format **fmtinfo)
 {
@@ -337,8 +334,6 @@ __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 
 	if (fmtinfo)
 		*fmtinfo = info;
-
-	return 0;
 }
 
 static int
@@ -347,10 +342,8 @@ xvip_dma_try_format(struct file *file, void *fh, struct v4l2_format *format)
 	struct v4l2_fh *vfh = file->private_data;
 	struct xvip_dma *dma = to_xvip_dma(vfh->vdev);
 
-	if (format->type != dma->queue.type)
-		return -EINVAL;
-
-	return __xvip_dma_try_format(dma, &format->fmt.pix, NULL);
+	__xvip_dma_try_format(dma, &format->fmt.pix, NULL);
+	return 0;
 }
 
 static int
@@ -362,12 +355,7 @@ xvip_dma_set_format(struct file *file, void *fh, struct v4l2_format *format)
         struct xilinx_vdma_config config;
 	int ret;
 
-	if (format->type != dma->queue.type)
-		return -EINVAL;
-
-	ret = __xvip_dma_try_format(dma, &format->fmt.pix, &info);
-	if (ret < 0)
-		return ret;
+	__xvip_dma_try_format(dma, &format->fmt.pix, &info);
 
 	mutex_lock(&dma->lock);
 
@@ -392,9 +380,11 @@ xvip_dma_set_format(struct file *file, void *fh, struct v4l2_format *format)
 	dmaengine_device_control(dma->dma, DMA_SLAVE_CONFIG,
 				 (unsigned long)&config);
 
+	ret = 0;
+
 done:
 	mutex_unlock(&dma->lock);
-	return 0;
+	return ret;
 }
 
 static int
@@ -523,8 +513,11 @@ done:
 static const struct v4l2_ioctl_ops xvip_dma_ioctl_ops = {
 	.vidioc_querycap		= xvip_dma_querycap,
 	.vidioc_g_fmt_vid_cap		= xvip_dma_get_format,
+	.vidioc_g_fmt_vid_out		= xvip_dma_get_format,
 	.vidioc_s_fmt_vid_cap		= xvip_dma_set_format,
+	.vidioc_s_fmt_vid_out		= xvip_dma_set_format,
 	.vidioc_try_fmt_vid_cap		= xvip_dma_try_format,
+	.vidioc_try_fmt_vid_out		= xvip_dma_try_format,
 	.vidioc_reqbufs			= xvip_dma_reqbufs,
 	.vidioc_querybuf		= xvip_dma_querybuf,
 	.vidioc_qbuf			= xvip_dma_qbuf,
@@ -653,6 +646,8 @@ int xvip_dma_init(struct xvip_pipeline *xvipp, struct xvip_dma *dma,
 		 xvipp->dev->of_node->full_name,
 		 type == V4L2_BUF_TYPE_VIDEO_CAPTURE ? "output" : "input");
 	dma->video.vfl_type = VFL_TYPE_GRABBER;
+	dma->video.vfl_dir = type == V4L2_BUF_TYPE_VIDEO_CAPTURE
+			   ? VFL_DIR_RX : VFL_DIR_TX;
 	dma->video.release = video_device_release_empty;
 	dma->video.ioctl_ops = &xvip_dma_ioctl_ops;
 
