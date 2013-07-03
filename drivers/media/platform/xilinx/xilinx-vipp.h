@@ -16,6 +16,7 @@
 #define __XILINX_VIPP_H__
 
 #include <linux/list.h>
+#include <linux/mutex.h>
 #include <media/media-device.h>
 #include <media/v4l2-async.h>
 #include <media/v4l2-device.h>
@@ -30,9 +31,11 @@
  * @dev: (OF) device
  * @notifier: V4L2 asynchronous subdevs notifier
  * @entities: entities in the pipeline as a list of xvip_pipeline_entity
- * @num_entities: number of entities in the pipeline
- * @dma: DMA channel at the pipeline output
- * @streaming: indicates if the pipeline is currently streaming video
+ * @num_subdevs: number of subdevs in the pipeline
+ * @num_dmas: number of DMA engines in the pipeline
+ * @dma: DMA channels at the pipeline output and input
+ * @lock: protects the pipeline stream count
+ * @stream_count: number of DMA engines currently streaming
  */
 struct xvip_pipeline {
 	struct v4l2_device v4l2_dev;
@@ -42,10 +45,13 @@ struct xvip_pipeline {
 
 	struct v4l2_async_notifier notifier;
 	struct list_head entities;
-	unsigned int num_entities;
+	unsigned int num_subdevs;
 
-	struct xvip_dma dma;
-	bool streaming;
+	struct xvip_dma dma[2];
+	unsigned int num_dmas;
+
+	struct mutex lock;
+	unsigned int stream_count;
 };
 
 int xvip_pipeline_set_stream(struct xvip_pipeline *xvipp, bool on);
