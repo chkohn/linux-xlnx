@@ -12,7 +12,7 @@
 		reg = <0x00000000 0x40000000>;
 	};
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw ip=:::::eth0:dhcp earlyprintk";
+		bootargs = "console=ttyPS0,115200 earlyprintk ip=dhcp root=/dev/ram rw";
 		linux,stdout-path = "/amba@0/uart@E0001000";
 	};
 
@@ -363,7 +363,7 @@
 			xlnx,family = "zynq-770";
 
 			#dma-cells = <1>;
-			dma-channel@40000000 {
+			dma-mm2schannel@40000000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupt-parent = <&gic>;
 				interrupts = <0 58 0x4>;
@@ -373,7 +373,7 @@
 
 		axi_vdma_1: axivdma@40060000 {
 			compatible = "xlnx,axi-vdma";
-			reg = <0x40060000 0x1000>;
+			reg = <0x40060000 0x10000>;
 
 			xlnx,flush-fsync = <1>;
 			xlnx,num-fstores = <1>;
@@ -414,7 +414,7 @@
 
 		vosd_0: vosd@40040000 {
 			compatible = "xlnx,vosd";
-			reg = <0x40040000 0x1000>;
+			reg = <0x40040000 0x10000>;
 			xlnx,num-layers = <2>;
 		};
 
@@ -469,14 +469,16 @@
 			};
 		};
 
-		axi_video {
+		axi_video_cap {
 			compatible = "xlnx,axi-video";
 			dmas = <&axi_vdma_1 1>;
-			dma-names = "vdma";
+			dma-names = "vdma-s2mm";
 
-			port {
-				vcap0_in: endpoint {
-					remote-endpoint = <&remap0_out>;
+			vdma-s2mm {
+				port {
+					vcap0_in: endpoint {
+						remote-endpoint = <&remap0_out>;
+					};
 				};
 			};
 		};
