@@ -157,8 +157,9 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
 			src_w, src_x, src_h, src_y,
 			(void *)obj->paddr);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "bpp: %d\n", bpp);
 
-	offset = src_x * fb->bits_per_pixel / 8 + src_y * fb->pitches[0];
+	offset = src_x * bpp + src_y * pitch;
 
 	/* configure vdma desc */
 	plane->vdma.dma_config.hsize = src_w * bpp;
@@ -182,7 +183,7 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	/* submit vdma desc */
 	dmaengine_submit(desc);
 
-	/* set OSD dimentions */
+	/* set OSD dimensions */
 	if (plane->manager->osd) {
 		/* if a plane is private, it's for crtc */
 		if (plane->priv) {
@@ -466,9 +467,8 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 
 	/* probe an OSD. proceed even if there's no OSD */
 	manager->osd = zynq_osd_probe("xlnx,vosd");
-	if (manager->osd) {
+	if (manager->osd)
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");
-	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 

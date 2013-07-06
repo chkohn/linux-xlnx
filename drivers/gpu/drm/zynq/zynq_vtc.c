@@ -676,8 +676,6 @@ static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
 struct zynq_vtc *zynq_vtc_probe(char *compatible)
 {
 	struct zynq_vtc *vtc;
-	struct zynq_vtc_polarity polarity;
-	struct zynq_vtc_src_config src;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
