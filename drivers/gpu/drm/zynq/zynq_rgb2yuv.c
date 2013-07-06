@@ -157,7 +157,8 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible)
 
 	rgb2yuv->node = of_find_compatible_node(NULL, NULL, compatible);
 	if (!rgb2yuv->node) {
-		pr_err("failed to find a compatible node(%s)\n", compatible);
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "no rgb2yuv(%s) in dst\n",
+				compatible);
 		goto err_node;
 	}
 

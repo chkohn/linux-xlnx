@@ -149,7 +149,8 @@ struct zynq_cresample *zynq_cresample_probe(char *compatible)
 
 	cresample->node = of_find_compatible_node(NULL, NULL, compatible);
 	if (!cresample->node) {
-		pr_err("failed to find a compatible node(%s)\n", compatible);
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "no cresample(%s) in dst\n",
+				compatible);
 		goto err_node;
 	}
 
