@@ -53,7 +53,11 @@ static char *zynq_kms_type[] = {"KMS DRV",
 
 #else /* ZYNQ_KMS_DEBUG */
 
-#define ZYNQ_DEBUG_KMS(type, fmt, args...)
+#define ZYNQ_DEBUG_KMS(type, fmt, args...)	\
+	do {					\
+	} while (0)
+
+
 
 #endif /* ZYNQ_KMS_DEBUG */
 
