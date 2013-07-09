@@ -482,6 +482,27 @@ done:
 }
 
 static int
+xvip_dma_expbuf(struct file *file, void *priv, struct v4l2_exportbuffer *eb)
+{
+	struct v4l2_fh *vfh = file->private_data;
+	struct xvip_dma *dma = to_xvip_dma(vfh->vdev);
+	int ret;
+
+	mutex_lock(&dma->lock);
+
+	if (dma->queue.owner && dma->queue.owner != vfh) {
+		ret = -EBUSY;
+		goto done;
+	}
+
+	ret = vb2_expbuf(&dma->queue, eb);
+
+done:
+	mutex_unlock(&dma->lock);
+	return ret;
+}
+
+static int
 xvip_dma_streamon(struct file *file, void *fh, enum v4l2_buf_type type)
 {
 	struct v4l2_fh *vfh = file->private_data;
@@ -535,6 +556,7 @@ static const struct v4l2_ioctl_ops xvip_dma_ioctl_ops = {
 	.vidioc_querybuf		= xvip_dma_querybuf,
 	.vidioc_qbuf			= xvip_dma_qbuf,
 	.vidioc_dqbuf			= xvip_dma_dqbuf,
+	.vidioc_expbuf			= xvip_dma_expbuf,
 	.vidioc_streamon		= xvip_dma_streamon,
 	.vidioc_streamoff		= xvip_dma_streamoff,
 };
