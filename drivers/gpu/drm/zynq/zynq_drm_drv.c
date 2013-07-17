@@ -44,8 +44,6 @@ struct zynq_drm_private {
 
 struct zynq_drm_format_info {
 	u32 fourcc;
-	unsigned int bpp;
-	bool yuv;
 };
 
 static const struct zynq_drm_format_info zynq_drm_format_infos[] = {
