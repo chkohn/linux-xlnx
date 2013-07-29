@@ -18,8 +18,8 @@
 #ifndef _ZYNQ_DRM_CONNECTOR_H_
 #define _ZYNQ_DRM_CONNECTOR_H_
 
-#include <drm/drmP.h>
-#include <drm/drm_crtc.h>
+struct drm_device;
+struct drm_connector;
 
 struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 		struct drm_encoder *base_encoder);

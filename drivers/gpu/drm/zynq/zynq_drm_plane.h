@@ -18,8 +18,8 @@
 #ifndef _ZYNQ_DRM_PLANE_H_
 #define _ZYNQ_DRM_PLANE_H_
 
-#include <drm/drmP.h>
-#include <drm/drm_crtc.h>
+struct drm_crtc;
+struct drm_plane;
 
 void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms);
 void zynq_drm_plane_commit(struct drm_plane *base_plane);
