@@ -1,14 +1,18 @@
 /*
  * Xilinx DRM crtc driver for Zynq
  *
- * Copyright (C) 2013 Xilinx, Inc. All rights reserved.
- * Author: hyun woo kwon <hyunk@xilinx.com>
+ *  Copyright (C) 2013 Xilinx
  *
- * This is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ *  Author: hyun woo kwon <hyunk@xilinx.com>
  *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/device.h>
@@ -182,7 +186,6 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 			break;
 		}
 	}
-
 
 	/* apply the new fb addr */
 	zynq_drm_crtc_commit(base_crtc);
