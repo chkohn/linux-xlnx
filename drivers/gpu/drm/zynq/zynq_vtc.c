@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/device.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/of_address.h>
@@ -384,6 +385,46 @@ struct zynq_vtc {
 	struct device_node *node;	/* device node */
 };
 
+struct zynq_vtc_polarity {
+	u8 active_chroma;
+	u8 active_video;
+	u8 field_id;
+	u8 vblank;
+	u8 vsync;
+	u8 hblank;
+	u8 hsync;
+};
+
+struct zynq_vtc_hori_offset {
+	u16 vblank_hori_start;
+	u16 vblank_hori_end;
+	u16 vsync_hori_start;
+	u16 vsync_hori_end;
+};
+
+struct zynq_vtc_src_config {
+	u8 field_id_pol;
+	u8 active_chroma_pol;
+	u8 active_video_pol;
+	u8 hsync_pol;
+	u8 vsync_pol;
+	u8 hblank_pol;
+	u8 vblank_pol;
+
+	u8 vchroma;
+	u8 vactive;
+	u8 vbackporch;
+	u8 vsync;
+	u8 vfrontporch;
+	u8 vtotal;
+
+	u8 hactive;
+	u8 hbackporch;
+	u8 hsync;
+	u8 hfrontporch;
+	u8 htotal;
+};
+
 /* io write operations */
 static inline void zynq_vtc_writel(struct zynq_vtc *vtc, int offset, u32 val)
 {
@@ -675,13 +716,13 @@ static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
 }
 
 /* probe vtc */
-struct zynq_vtc *zynq_vtc_probe(char *compatible)
+struct zynq_vtc *zynq_vtc_probe(struct device *dev, char *compatible)
 {
 	struct zynq_vtc *vtc;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
-	vtc = kzalloc(sizeof(*vtc), GFP_KERNEL);
+	vtc = devm_kzalloc(dev, sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
 		pr_err("failed to alloc vtc\n");
 		goto err_vtc;
@@ -718,7 +759,6 @@ struct zynq_vtc *zynq_vtc_probe(char *compatible)
 err_iomap:
 	of_node_put(vtc->node);
 err_node:
-	kfree(vtc);
 err_vtc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 	return NULL;
@@ -736,7 +776,6 @@ void zynq_vtc_remove(struct zynq_vtc *vtc)
 
 	iounmap(vtc->base);
 	of_node_put(vtc->node);
-	kfree(vtc);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }

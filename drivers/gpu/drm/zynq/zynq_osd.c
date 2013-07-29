@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/device.h>
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
@@ -326,6 +327,7 @@ struct zynq_osd_layer {
 
 struct zynq_osd {
 	void __iomem *base;		/* osd base addr */
+	struct device *dev;		/* (parent) device */
 	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
@@ -465,7 +467,7 @@ struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd)
 		goto err_out;
 	}
 
-	layer = kzalloc(sizeof(*layer), GFP_KERNEL);
+	layer = devm_kzalloc(osd->dev, sizeof(*layer), GFP_KERNEL);
 	if (!layer) {
 		pr_err("failed to allocate layer\n");
 		goto err_out;
@@ -490,7 +492,6 @@ void zynq_osd_layer_destroy(struct zynq_osd_layer *layer)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	layer->osd->layers[layer->id] = NULL;
-	kfree(layer);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return;
 }
@@ -578,14 +579,14 @@ static inline void zynq_osd_disable_rue(struct zynq_osd *osd)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
-struct zynq_osd *zynq_osd_probe(char *compatible)
+struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible)
 {
 	struct zynq_osd *osd;
 	u32 prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
-	osd = kzalloc(sizeof(*osd), GFP_KERNEL);
+	osd = devm_kzalloc(dev, sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
 		pr_err("failed to alloc osd\n");
 		goto err_osd;
@@ -610,6 +611,8 @@ struct zynq_osd *zynq_osd_probe(char *compatible)
 	}
 	osd->num_layers = prop;
 
+	osd->dev = dev;
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
 	return osd;
@@ -619,7 +622,6 @@ err_prop:
 err_iomap:
 	of_node_put(osd->node);
 err_node:
-	kfree(osd);
 err_osd:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return NULL;
@@ -639,7 +641,6 @@ void zynq_osd_remove(struct zynq_osd *osd)
 	}
 	iounmap(osd->base);
 	of_node_put(osd->node);
-	kfree(osd);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }

@@ -288,7 +288,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		unsigned int possible_crtcs, bool priv)
 {
 	struct zynq_drm_plane *plane;
-	struct platform_device *pdev = manager->drm->platformdev;
+	struct device *dev = manager->drm->dev;
 	char dma_name[16];
 	int i;
 
@@ -304,7 +304,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		goto err_plane;
 	}
 
-	plane = kzalloc(sizeof(*plane), GFP_KERNEL);
+	plane = devm_kzalloc(dev, sizeof(*plane), GFP_KERNEL);
 	if (!plane) {
 		DRM_ERROR("failed to allocate plane\n");
 		goto err_alloc;
@@ -317,7 +317,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	/* TODO: add to the manager's zorder list */
 
 	snprintf(dma_name, sizeof(dma_name), "vdma%d", i);
-	plane->vdma.chan = dma_request_slave_channel(&pdev->dev, dma_name);
+	plane->vdma.chan = dma_request_slave_channel(dev, dma_name);
 	if (!plane->vdma.chan) {
 		DRM_ERROR("failed to request dma channel\n");
 		goto err_dma_request;
@@ -450,7 +450,7 @@ struct zynq_drm_plane_manager *
 zynq_drm_plane_probe_manager(struct drm_device *drm)
 {
 	struct zynq_drm_plane_manager *manager;
-	struct platform_device *pdev = drm->platformdev;
+	struct device *dev = drm->dev;
 	u32 prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -462,14 +462,14 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	}
 	manager->drm = drm;
 	/* TODO: duplicate get_prop in osd, consider clean up */
-	if (of_property_read_u32(pdev->dev.of_node, "xlnx,num-planes", &prop)) {
+	if (of_property_read_u32(dev->of_node, "xlnx,num-planes", &prop)) {
 		pr_err("failed to get num of planes prop\n");
 		goto err_prop;
 	}
 	manager->num_planes = prop;
 
 	/* probe an OSD. proceed even if there's no OSD */
-	manager->osd = zynq_osd_probe("xlnx,vosd");
+	manager->osd = zynq_osd_probe(dev, "xlnx,vosd");
 	if (manager->osd)
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");
 
@@ -478,7 +478,6 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	return manager;
 
 err_prop:
-	kfree(manager);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 	return NULL;
@@ -502,7 +501,6 @@ void zynq_drm_plane_remove_manager(struct zynq_drm_plane_manager *manager)
 		zynq_osd_disable(manager->osd);
 		zynq_osd_remove(manager->osd);
 	}
-	kfree(manager);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }

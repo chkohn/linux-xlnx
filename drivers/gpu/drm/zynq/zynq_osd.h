@@ -44,7 +44,9 @@ void zynq_osd_fsync_reset(struct zynq_osd *osd);
 void zynq_osd_enable(struct zynq_osd *osd);
 void zynq_osd_disable(struct zynq_osd *osd);
 
-struct zynq_osd *zynq_osd_probe(char *compatible);
+struct device;
+
+struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible);
 void zynq_osd_remove(struct zynq_osd *osd);
 
 #endif

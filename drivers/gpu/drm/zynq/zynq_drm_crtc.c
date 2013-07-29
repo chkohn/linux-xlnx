@@ -256,12 +256,12 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	}
 
 	/* probe chroma resampler and enable */
-	crtc->cresample = zynq_cresample_probe("xlnx,vcresample");
+	crtc->cresample = zynq_cresample_probe(drm->dev, "xlnx,vcresample");
 	if (crtc->cresample)
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "cresample is probed\n");
 
 	/* probe color space converter and enable */
-	crtc->rgb2yuv = zynq_rgb2yuv_probe("xlnx,vrgb2ycrcb");
+	crtc->rgb2yuv = zynq_rgb2yuv_probe(drm->dev, "xlnx,vrgb2ycrcb");
 	if (crtc->rgb2yuv)
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "rgb2yuv is probed\n");
 

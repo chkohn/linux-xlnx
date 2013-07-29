@@ -27,7 +27,9 @@ void zynq_rgb2yuv_fsync_reset(struct zynq_rgb2yuv *rgb2yuv);
 void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv);
 void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv);
 
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible);
+struct device;
+
+struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev, char *compatible);
 void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv);
 
 #endif

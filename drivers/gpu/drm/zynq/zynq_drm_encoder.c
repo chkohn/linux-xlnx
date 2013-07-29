@@ -290,7 +290,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 		goto err_si570;
 	}
 
-	encoder->vtc = zynq_vtc_probe("xlnx,vtc");
+	encoder->vtc = zynq_vtc_probe(drm->dev, "xlnx,vtc");
 	if (!encoder->vtc) {
 		DRM_ERROR("failed to probe video timing controller\n");
 		goto err_vtc;

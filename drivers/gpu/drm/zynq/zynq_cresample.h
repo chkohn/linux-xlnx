@@ -27,7 +27,10 @@ void zynq_cresample_fsync_reset(struct zynq_cresample *cresample);
 void zynq_cresample_enable(struct zynq_cresample *cresample);
 void zynq_cresample_disable(struct zynq_cresample *cresample);
 
-struct zynq_cresample *zynq_cresample_probe(char *compatible);
+struct platform_device;
+
+struct zynq_cresample *zynq_cresample_probe(struct device *dev,
+		char *compatible);
 void zynq_cresample_remove(struct zynq_cresample *cresample);
 
 #endif

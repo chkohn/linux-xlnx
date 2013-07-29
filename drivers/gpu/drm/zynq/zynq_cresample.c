@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/device.h>
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -137,13 +138,14 @@ void zynq_cresample_fsync_reset(struct zynq_cresample *cresample)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 }
 
-struct zynq_cresample *zynq_cresample_probe(char *compatible)
+struct zynq_cresample *zynq_cresample_probe(struct device *dev,
+		char *compatible)
 {
 	struct zynq_cresample *cresample;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
-	cresample = kzalloc(sizeof(*cresample), GFP_KERNEL);
+	cresample = devm_kzalloc(dev, sizeof(*cresample), GFP_KERNEL);
 	if (!cresample) {
 		pr_err("failed to alloc cresample\n");
 		goto err_cresample;
@@ -169,7 +171,6 @@ struct zynq_cresample *zynq_cresample_probe(char *compatible)
 err_iomap:
 	of_node_put(cresample->node);
 err_node:
-	kfree(cresample);
 err_cresample:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 	return NULL;
@@ -181,6 +182,5 @@ void zynq_cresample_remove(struct zynq_cresample *cresample)
 	zynq_cresample_reset(cresample);
 	iounmap(cresample->base);
 	of_node_put(cresample->node);
-	kfree(cresample);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 }

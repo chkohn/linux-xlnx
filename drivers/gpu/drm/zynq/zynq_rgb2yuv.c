@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/device.h>
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -145,13 +146,13 @@ void zynq_rgb2yuv_fsync_reset(struct zynq_rgb2yuv *rgb2yuv)
 }
 
 /* probe rgb2yuv */
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible)
+struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev, char *compatible)
 {
 	struct zynq_rgb2yuv *rgb2yuv;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
-	rgb2yuv = kzalloc(sizeof(*rgb2yuv), GFP_KERNEL);
+	rgb2yuv = devm_kzalloc(dev, sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
 		pr_err("failed to alloc rgb2yuv\n");
 		goto err_rgb2yuv;
@@ -177,7 +178,6 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(char *compatible)
 err_iomap:
 	of_node_put(rgb2yuv->node);
 err_node:
-	kfree(rgb2yuv);
 err_rgb2yuv:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 	return NULL;
@@ -190,6 +190,5 @@ void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv)
 	zynq_rgb2yuv_reset(rgb2yuv);
 	iounmap(rgb2yuv->base);
 	of_node_put(rgb2yuv->node);
-	kfree(rgb2yuv);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 }
