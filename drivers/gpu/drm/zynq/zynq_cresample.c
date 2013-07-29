@@ -129,15 +129,6 @@ void zynq_cresample_reset(struct zynq_cresample *cresample)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 }
 
-/* frame synced reset cresample */
-void zynq_cresample_fsync_reset(struct zynq_cresample *cresample)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL,
-			CRESAMPLE_CTL_AUTORESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
-}
-
 struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 		char *compatible)
 {

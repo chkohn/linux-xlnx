@@ -668,14 +668,6 @@ void zynq_vtc_reset(struct zynq_vtc *vtc)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
 
-/* frame synced reset vtc */
-void zynq_vtc_fsync_reset(struct zynq_vtc *vtc)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_RESET, VTC_SYNC_RESET_MASK);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-}
-
 /* enable interrupt */
 static inline void zynq_vtc_intr_enable(struct zynq_vtc *vtc, u32 intr)
 {

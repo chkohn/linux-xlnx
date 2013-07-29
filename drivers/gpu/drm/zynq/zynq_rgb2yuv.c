@@ -137,14 +137,6 @@ void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 }
 
-/* frame synced reset rgb2yuv */
-void zynq_rgb2yuv_fsync_reset(struct zynq_rgb2yuv *rgb2yuv)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, RGB_RST_AUTORESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-}
-
 /* probe rgb2yuv */
 struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev, char *compatible)
 {

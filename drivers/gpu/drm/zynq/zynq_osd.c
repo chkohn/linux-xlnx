@@ -535,14 +535,6 @@ void zynq_osd_reset(struct zynq_osd *osd)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
-/* frame synced reset osd */
-void zynq_osd_fsync_reset(struct zynq_osd *osd)
-{
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_RST, OSD_SYNC_RESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-}
-
 /* enable osd */
 void zynq_osd_enable(struct zynq_osd *osd)
 {
