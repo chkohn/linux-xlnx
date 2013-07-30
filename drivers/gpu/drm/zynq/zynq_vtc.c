@@ -32,8 +32,6 @@
 #define VTC_ERROR	0x008	/* error */
 
 #define VTC_GASIZE	0x060	/* generator active size */
-#define VTC_GTSTAT	0x064	/* generator timing status */
-#define VTC_GFENC	0x068	/* generator encoding */
 #define VTC_GPOL	0x06c	/* generator polarity */
 #define VTC_GHSIZE	0x070	/* generator frame horizontal size */
 #define VTC_GVSIZE	0x074	/* generator frame vertical size */
@@ -42,97 +40,51 @@
 #define VTC_GVSYNC	0x080	/* generator vertical sync */
 #define VTC_GVSHOFF	0x084	/* generator vsync horizontal offset */
 
-#define VTC_DVBHO0	0x0b0	/* detector vblank hori offset 0 register */
-#define VTC_DVSHO0	0x0b4	/* detector vsync  hori offset 0 register */
-#define VTC_DVBHO1	0x0b8	/* detector vblank hori offset 1 register */
-#define VTC_DVSHO1	0x0bc	/* detector vsync  hori offset 1 register */
-
-#define VTC_VER		0x010	/* version register */
 #define VTC_RESET	0x000	/* reset register */
 #define VTC_ISR		0x004	/* interrupt status register */
 #define VTC_IER		0x00c	/* interrupt enable register */
 
 /* control register bit */
-#define VTC_CTL_FIP_MASK	0x00000040	/* field id output polarity */
-#define VTC_CTL_ACP_MASK	0x00000020	/* active chroma output
-						   polarity */
-#define VTC_CTL_AVP_MASK	0x00000010	/* active video output
-						   polarity */
-#define VTC_CTL_HSP_MASK	0x00000008	/* horizontal sync output
-						   polarity */
-#define VTC_CTL_VSP_MASK	0x00000004	/* vertical sync output
-						   polarity */
-#define VTC_CTL_HBP_MASK	0x00000002	/* horizontal blank output
-						   polarity */
-#define VTC_CTL_VBP_MASK	0x00000001	/* vertical blank output
-						   polarity */
-#define VTC_CTL_ALLP_MASK	0x0000007f	/* bit mask for all polarity
-						   bits */
+#define VTC_CTL_FIP	(1 << 6)	/* field id output polarity */
+#define VTC_CTL_ACP	(1 << 5)	/* active chroma output polarity */
+#define VTC_CTL_AVP	(1 << 4)	/* active video output polarity */
+#define VTC_CTL_HSP	(1 << 3)	/* hori sync output polarity */
+#define VTC_CTL_VSP	(1 << 2)	/* vert sync output polarity */
+#define VTC_CTL_HBP	(1 << 1)	/* hori blank output polarity */
+#define VTC_CTL_VBP	(1 << 0)	/* vert blank output polarity */
 
+#define VTC_CTL_FIPSS	(1 << 26)	/* field id output polarity source */
+#define VTC_CTL_ACPSS	(1 << 25)	/* active chroma out polarity source */
+#define VTC_CTL_AVPSS	(1 << 24)	/* active video out polarity source */
+#define VTC_CTL_HSPSS	(1 << 23)	/* hori sync out polarity source */
+#define VTC_CTL_VSPSS	(1 << 22)	/* vert sync out polarity source */
+#define VTC_CTL_HBPSS	(1 << 21)	/* hori blank out polarity source */
+#define VTC_CTL_VBPSS	(1 << 20)	/* vert blank out polarity source */
 
-#define VTC_CTL_FIPSS_MASK	0x04000000	/* field id output polarity
-						   source */
-#define VTC_CTL_ACPSS_MASK	0x02000000	/* active chroma output
-						   polarity source */
-#define VTC_CTL_AVPSS_MASK	0x01000000	/* active video output
-						   polarity source */
-#define VTC_CTL_HSPSS_MASK	0x00800000	/* horizontal sync output
-						   polarity source */
-#define VTC_CTL_VSPSS_MASK	0x00400000	/* vertical sync output
-						   polarity source */
-#define VTC_CTL_HBPSS_MASK	0x00200000	/* horizontal blank output
-						   polarity source */
-#define VTC_CTL_VBPSS_MASK	0x00100000	/* vertical blank output
-						   polarity source */
+#define VTC_CTL_VCSS	(1 << 18)	/* start of active chroma register
+					   source select */
+#define VTC_CTL_VASS	(1 << 17)	/* vertical active video start register
+					   source select */
+#define VTC_CTL_VBSS	(1 << 16)	/* vertical back porch start register
+					   source select (sync end) */
+#define VTC_CTL_VSSS	(1 << 15)	/* vertical sync start register source
+					   select */
+#define VTC_CTL_VFSS	(1 << 14)	/* vertical front porch start register
+					   source select (active size) */
+#define VTC_CTL_VTSS	(1 << 13)	/* vertical total register
+					   source select (frame size) */
 
+#define VTC_CTL_HBSS	(1 << 11)	/* horizontal back porch start register
+					   source select (sync end) */
+#define VTC_CTL_HSSS	(1 << 10)	/* horizontal sync start register
+					   source select */
+#define VTC_CTL_HFSS	(1 << 9)	/* horizontal front porch start register
+					   source select (active size) */
+#define VTC_CTL_HTSS	(1 << 8)	/* horizontal total register source
+					   select (frame size) */
 
-
-#define VTC_CTL_VCSS_MASK	0x00040000	/* start of active chroma
-						   register source select */
-#define VTC_CTL_VASS_MASK	0x00020000	/* vertical active video start
-						   register source select */
-#define VTC_CTL_VBSS_MASK	0x00010000	/* vertical back porch start
-						   register source select
-						   (sync end) */
-#define VTC_CTL_VSSS_MASK	0x00008000	/* vertical sync start register
-						   source select */
-#define VTC_CTL_VFSS_MASK	0x00004000	/* vertical front porch start
-						   register source select
-						   (active size) */
-#define VTC_CTL_VTSS_MASK	0x00002000	/* vertical total register
-						   source select (frame size) */
-
-
-#define VTC_CTL_HBSS_MASK	0x00000800	/* horizontal back porch start
-						   register source select
-						   (sync end) */
-#define VTC_CTL_HSSS_MASK	0x00000400	/* horizontal sync start
-						   register source select */
-#define VTC_CTL_HFSS_MASK	0x00000200	/* horizontal front porch start
-						   register source select
-						   (active size) */
-#define VTC_CTL_HTSS_MASK	0x00000100	/* horizontal total register
-						   source select (frame size) */
-
-
-#define VTC_CTL_ALLSS_MASK	0x03f7ef00	/* bit mask for all source
-						   select */
-#define VTC_CTL_GACPS_MASK	0x00000200	/* generator active chroma
-						   pixel skip */
-#define VTC_CTL_GACLS_MASK	0x00000001	/* generator active chroma
-						   line skip */
-#define VTC_CTL_GE_MASK	0x00000004	/* vtc generator enable */
-#define VTC_CTL_RU_MASK	0x00000002	/* vtc register update */
-#define VTC_CTL_SW_MASK	0x00000001	/* vtc core enable */
-
-/* vtc generator horizontal 0 */
-#define VTC_GH0_FPSTART_MASK	0x1fff0000	/* horizontal front porch start
-						   cycle count */
-#define VTC_GH0_FPSTART_SHIFT	16		/* bit shift for horizontal
-						   front porch start cycle
-						   count */
-#define VTC_GH0_TOTAL_MASK	0x00001fff	/* total clock cycles per
-						   line */
+#define VTC_CTL_GE	(1 << 2)	/* vtc generator enable */
+#define VTC_CTL_RU	(1 << 1)	/* vtc register update */
 
 /* vtc generator horizontal 1 */
 #define VTC_GH1_BPSTART_MASK   0x1fff0000	/* horizontal back porch start
@@ -142,18 +94,6 @@
 #define VTC_GH1_SYNCSTART_MASK 0x00001fff	/* horizontal sync start cycle
 						   count */
 
-/* vtc generator horizontal 2 */
-#define VTC_GH2_ACTIVESTART_MASK	0x00001fff	/* Horizontal Active
-							   Video Start Cycle
-							   Count */
-
-/* vtc generator vertical 0 (filed 0)*/
-#define VTC_GV0_FPSTART_MASK   0x1fff0000	/* vertical front porch start
-						   cycle count */
-#define VTC_GV0_FPSTART_SHIFT  16		/* bit shift for vertical front
-						   porch start cycle count */
-#define VTC_GV0_TOTAL_MASK	0x00001fff	/* total lines per frame */
-
 /* vtc generator vertical 1 (filed 0) */
 #define VTC_GV1_BPSTART_MASK   0x1fff0000	/* vertical back porch start
 						   cycle count */
@@ -162,159 +102,6 @@
 #define VTC_GV1_SYNCSTART_MASK 0x00001fff	/* vertical sync start cycle
 						   count */
 
-/* vtc generator vertical 2 (filed 0) */
-#define VTC_GV2_CHROMASTART_MASK	0x00000100	/* active chroma start
-							   line count */
-#define VTC_GV2_CHROMASTART_SHIFT	8		/* bit shift for active
-							   chroma start line
-							   count */
-#define VTC_GV2_ACTIVESTART_MASK	0x00001fff	/* vertical active
-							   video start
-							   cycle count */
-
-/* vtc generator vertical 3 (filed 1) */
-#define VTC_GV3_FPSTART_MASK	0x1fff0000	/* vertical front porch start
-						   cycle count */
-#define VTC_GV3_FPSTART_SHIFT	16		/* bit shift for vertical front
-						   porch start cycle count */
-#define VTC_GV3_TOTAL_MASK	0x00001fff	/* total lines per frame */
-
-/* vtc generator vertical 4 (filed 1) */
-#define VTC_GV4_BPSTART_MASK	0x1fff0000	/* vertical back porch start
-						   cycle count */
-#define VTC_GV4_BPSTART_SHIFT	16		/* bit shift for vertical back
-						   porch start cycle count */
-#define VTC_GV4_SYNCSTART_MASK	0x00001fff	/* vertical sync start cycle
-						   count */
-
-/* vtc generator vertical 5 (filed 1) */
-#define VTC_GV5_CHROMASTART_MASK	0x1fff0000	/* active chroma start
-							   line count */
-#define VTC_GV5_CHROMASTART_SHIFT	16		/* bit shift for active
-							   chroma start line
-							   count */
-#define VTC_GV5_ACTIVESTART_MASK	0x00001fff	/* vertical active
-							   video start
-							   cycle count */
-
-/* vtc detector status */
-#define VTC_DS_AC_POL_MASK	0x04000000	/* active chroma output
-						   polarity */
-#define VTC_DS_AV_POL_MASK	0x02000000	/* active video output
-						   polarity */
-#define VTC_DS_FID_POL_MASK	0x01000000	/* field id output polarity */
-#define VTC_DS_VBLANK_POL_MASK	0x00800000	/* vertical blank output
-						   polarity */
-#define VTC_DS_VSYNC_POL_MASK	0x00400000	/* vertical sync output
-						   polarity */
-#define VTC_DS_HBLANK_POL_MASK	0x00200000	/* horizontal blank output
-						   polarity */
-#define VTC_DS_HSYNC_POL_MASK	0x00100000	/* horizontal sync output
-						   polarity */
-#define VTC_DS_ACSKIP_MASK	0x00000010	/* detector active chroma
-						   skip */
-
-/* vtc detector horizontal 0 */
-#define VTC_DH0_FPSTART_MASK	0x1fff0000	/* detected horizontal front
-						   porch start cycle count */
-#define VTC_DH0_FPSTART_SHIFT	16		/* bit shift for detected
-						   horizontal front porch start
-						   cycle count */
-#define VTC_DH0_TOTAL_MASK	0x00001fff	/* detected total clock cycles
-						   per line */
-
-/* vtc detector horizontal 1 */
-#define VTC_DH1_BPSTART_MASK	0x1fff0000	/* detected horizontal back
-						   porch start cycle count */
-#define VTC_DH1_BPSTART_SHIFT	16		/* bit shift for detected
-						   horizontal back porch start
-						   cycle count */
-#define VTC_DH1_SYNCSTART_MASK	0x00001fff	/* detected horizontal sync
-						   start cycle count */
-
-/* vtc detector horizontal 0 */
-#define VTC_DH2_ACTIVESTART_MASK	0x00001fff	/* detected horizontal
-							   active video start
-							   cycle count */
-
-/* vtc detector vertical 0 (field 0) */
-#define VTC_DV0_FPSTART_MASK	0x1fff0000	/* detected vertical front
-						   porch start cycle count */
-#define VTC_DV0_FPSTART_SHIFT	16		/* bit shift for detected
-						   vertical front porch start
-						   cycle count */
-#define VTC_DV0_TOTAL_MASK	0x00001fff	/* detected total lines per
-						   frame */
-
-/* vtc detector vertical 1 (field 0) */
-#define VTC_DV1_BPSTART_MASK	0x1fff0000	/* detected vertical back porch
-						   start cycle count */
-#define VTC_DV1_BPSTART_SHIFT	16		/* bit shift for detected
-						   vertical back porch start
-						   cycle count */
-#define VTC_DV1_SYNCSTART_MASK	0x00001fff	/* detected vertical sync start
-						   cycle count */
-
-/* vtc detector vertical 2 (field 0) */
-#define VTC_DV2_CHROMASTART_MASK	0x1fff0000	/* detected active
-							   chroma start
-							   line count */
-#define VTC_DV2_CHROMASTART_SHIFT	16		/* bit shift for
-							   detected active
-							   chroma start line
-							   count */
-#define VTC_DV2_ACTIVESTART_MASK	0x00001fff	/* detected vertical
-							   active video start
-							   cycle count */
-
-/* vtc detector vertical 3 (field 1) */
-#define VTC_DV3_FPSTART_MASK	0x1fff0000	/* detected vertical front
-						   porch start cycle count */
-#define VTC_DV3_FPSTART_SHIFT	16		/* bit shift for detected
-						   vertical front porch start
-						   cycle count */
-#define VTC_DV3_TOTAL_MASK	0x00001fff	/* detected total lines per
-						   frame */
-
-/* vtc detector vertical 4 (field 1) */
-#define VTC_DV4_BPSTART_MASK	0x1fff0000	/* detected vertical back porch
-						   start cycle count */
-#define VTC_DV4_BPSTART_SHIFT	16		/* bit shift for detected
-						   vertical back porch start
-						   cycle count */
-#define VTC_DV4_SYNCSTART_MASK	0x00001fff	/* detected vertical sync start
-						   cycle count */
-
-/* vtc detector vertical 5 (field 1) */
-#define VTC_DV5_CHROMASTART_MASK	0x1fff0000	/* detected active
-							   chroma start
-							   line count */
-#define VTC_DV5_CHROMASTART_SHIFT	16		/* bit shift for
-							   detected active
-							   chroma start line
-							   count */
-#define VTC_DV5_ACTIVESTART_MASK	0x00001fff	/* detected vertical
-							   active video start
-							   cycle count */
-
-/* vtc frame sync 00 --- 15 */
-#define VTC_FSXX_VSTART_MASK	0x1fff0000	/* vertical line count during
-						   which current frame sync is
-						   active */
-#define VTC_FSXX_VSTART_SHIFT	16		/* bit shift for the vertical
-						   line count */
-#define VTC_FSXX_HSTART_MASK	0x00001fff	/* horizontal cycle count
-						   during which current frame
-						   sync is active */
-
-/* vtc generator global delay */
-#define VTC_GGD_VDELAY_MASK	0x1fff0000	/* total lines per frame to
-						   delay generator output */
-#define VTC_GGD_VDELAY_SHIFT	16		/* bit shift for the total
-						   lines */
-#define VTC_GGD_HDELAY_MASK	0x00001fff	/* total clock cycles per line
-						   to delay generator output */
-
 /* vtc generator/detector vblank/vsync horizontal offset registers */
 #define VTC_XVXHOX_HEND_MASK	0x1fff0000	/* horizontal offset end */
 #define VTC_XVXHOX_HEND_SHIFT	16		/* horizontal offset end
@@ -322,57 +109,65 @@
 #define VTC_XVXHOX_HSTART_MASK	0x00001fff	/* horizontal offset start */
 
 /* reset register bit definition */
-#define VTC_RESET_RESET_MASK	0x80000000	/* Software Reset */
-#define VTC_SYNC_RESET_MASK	0x40000000	/* Frame Sync'ed Software
-						   Reset */
-
-/* version register bit definition */
-#define VTC_VER_MAJOR_MASK	0xff000000	/* major version*/
-#define VTC_VER_MAJOR_SHIFT	24		/* major version bit shift*/
-#define VTC_VER_MINOR_MASK	0x00ff0000	/* minor version */
-#define VTC_VER_MINOR_SHIFT	16		/* minor version bit shift*/
-#define VTC_VER_REV_MASK	0x0000f000	/* revision version */
-#define VTC_VER_REV_SHIFT	12		/* revision bit shift*/
+#define VTC_RESET_RESET		(1 << 31)	/* Software Reset */
 
 /* interrupt status/enable register bit definition */
-#define VTC_IXR_FSYNC15_MASK	0x80000000	/* frame sync interrupt 15 */
-#define VTC_IXR_FSYNC14_MASK	0x40000000	/* frame sync interrupt 14 */
-#define VTC_IXR_FSYNC13_MASK	0x20000000	/* frame sync interrupt 13 */
-#define VTC_IXR_FSYNC12_MASK	0x10000000	/* frame sync interrupt 12 */
-#define VTC_IXR_FSYNC11_MASK	0x08000000	/* frame sync interrupt 11 */
-#define VTC_IXR_FSYNC10_MASK	0x04000000	/* frame sync interrupt 10 */
-#define VTC_IXR_FSYNC09_MASK	0x02000000	/* frame sync interrupt 09 */
-#define VTC_IXR_FSYNC08_MASK	0x01000000	/* frame sync interrupt 08 */
-#define VTC_IXR_FSYNC07_MASK	0x00800000	/* frame sync interrupt 07 */
-#define VTC_IXR_FSYNC06_MASK	0x00400000	/* frame sync interrupt 06 */
-#define VTC_IXR_FSYNC05_MASK	0x00200000	/* frame sync interrupt 05 */
-#define VTC_IXR_FSYNC04_MASK	0x00100000	/* frame sync interrupt 04 */
-#define VTC_IXR_FSYNC03_MASK	0x00080000	/* frame sync interrupt 03 */
-#define VTC_IXR_FSYNC02_MASK	0x00040000	/* frame sync interrupt 02 */
-#define VTC_IXR_FSYNC01_MASK	0x00020000	/* frame sync interrupt 01 */
-#define VTC_IXR_FSYNC00_MASK	0x00010000	/* frame sync interrupt 00 */
-#define VTC_IXR_FSYNCALL_MASK	0xffff0000	/* all frame sync interrupts */
+#define VTC_IXR_FSYNC15		(1 << 31)	/* frame sync interrupt 15 */
+#define VTC_IXR_FSYNC14		(1 << 30)	/* frame sync interrupt 14 */
+#define VTC_IXR_FSYNC13		(1 << 29)	/* frame sync interrupt 13 */
+#define VTC_IXR_FSYNC12		(1 << 28)	/* frame sync interrupt 12 */
+#define VTC_IXR_FSYNC11		(1 << 27)	/* frame sync interrupt 11 */
+#define VTC_IXR_FSYNC10		(1 << 26)	/* frame sync interrupt 10 */
+#define VTC_IXR_FSYNC09		(1 << 25)	/* frame sync interrupt 09 */
+#define VTC_IXR_FSYNC08		(1 << 24)	/* frame sync interrupt 08 */
+#define VTC_IXR_FSYNC07		(1 << 23)	/* frame sync interrupt 07 */
+#define VTC_IXR_FSYNC06		(1 << 22)	/* frame sync interrupt 06 */
+#define VTC_IXR_FSYNC05		(1 << 21)	/* frame sync interrupt 05 */
+#define VTC_IXR_FSYNC04		(1 << 20)	/* frame sync interrupt 04 */
+#define VTC_IXR_FSYNC03		(1 << 19)	/* frame sync interrupt 03 */
+#define VTC_IXR_FSYNC02		(1 << 18)	/* frame sync interrupt 02 */
+#define VTC_IXR_FSYNC01		(1 << 17)	/* frame sync interrupt 01 */
+#define VTC_IXR_FSYNC00		(1 << 16)	/* frame sync interrupt 00 */
+#define VTC_IXR_FSYNCALL_MASK	(VTC_IXR_FSYNC00 |	\
+		VTC_IXR_FSYNC01 | \
+		VTC_IXR_FSYNC02 | \
+		VTC_IXR_FSYNC03 | \
+		VTC_IXR_FSYNC04 | \
+		VTC_IXR_FSYNC05 | \
+		VTC_IXR_FSYNC06 | \
+		VTC_IXR_FSYNC07 | \
+		VTC_IXR_FSYNC08 | \
+		VTC_IXR_FSYNC09 | \
+		VTC_IXR_FSYNC10 | \
+		VTC_IXR_FSYNC11 | \
+		VTC_IXR_FSYNC12 | \
+		VTC_IXR_FSYNC13 | \
+		VTC_IXR_FSYNC14 | \
+		VTC_IXR_FSYNC15)	/* all frame sync intr */
 
-#define VTC_IXR_G_AV_MASK	0x00002000	/* generator actv video intr */
-#define VTC_IXR_G_VBLANK_MASK	0x00001000	/* generator vblank interrupt */
-#define VTC_IXR_G_ALL_MASK	0x00003000	/* all generator interrupts */
+#define VTC_IXR_G_AV		(1 << 13)	/* generator actv video intr */
+#define VTC_IXR_G_VBLANK	(1 << 12)	/* generator vblank interrupt */
+#define VTC_IXR_G_ALL_MASK	(VTC_IXR_G_AV | \
+				VTC_IXR_G_VBLANK)	/* all generator intr */
 
-#define VTC_IXR_D_AV_MASK	0x00000800	/* detector active video intr */
-#define VTC_IXR_D_VBLANK_MASK	0x00000400	/* detector vblank interrupt */
-#define VTC_IXR_D_ALL_MASK	0x00000c00	/* all detector interrupts */
+#define VTC_IXR_D_AV		(1 << 11)	/* detector active video intr */
+#define VTC_IXR_D_VBLANK	(1 << 10)	/* detector vblank interrupt */
+#define VTC_IXR_D_ALL_MASK	(VTC_IXR_D_AV | \
+				VTC_IXR_D_VBLANK)	/* all detector intr */
 
-#define VTC_IXR_LOL_MASK	0x00000200	/* lock loss */
-#define VTC_IXR_LO_MAS		0x00000100	/* lock  */
-#define VTC_IXR_LOCKALL_MASK	0x00000300	/* all signal lock interrupt */
+#define VTC_IXR_LOL		(1 << 9)	/* lock loss */
+#define VTC_IXR_LO		(1 << 8)	/* lock  */
+#define VTC_IXR_LOCKALL_MASK	(VTC_IXR_LOL | \
+				VTC_IXR_LO)	/* all signal lock intr */
 
-#define VTC_IXR_ACL_MASK	0x00200000	/* active chroma signal lock */
-#define VTC_IXR_AVL_MASK	0x00100000	/* active video signal lock */
-#define VTC_IXR_HSL_MASK	0x00080000	/* horizontal sync signal
+#define VTC_IXR_ACL	(1 << 21)	/* active chroma signal lock */
+#define VTC_IXR_AVL	(1 << 20)	/* active video signal lock */
+#define VTC_IXR_HSL	(1 << 19)	/* horizontal sync signal
 						   lock */
-#define VTC_IXR_VSL_MASK	0x00040000	/* vertical sync signal lock */
-#define VTC_IXR_HBL_MASK	0x00020000	/* horizontal blank signal
+#define VTC_IXR_VSL	(1 << 18)	/* vertical sync signal lock */
+#define VTC_IXR_HBL	(1 << 17)	/* horizontal blank signal
 						   lock */
-#define VTC_IXR_VBL_MASK	0x00010000	/* vertical blank signal lock */
+#define VTC_IXR_VBL	(1 << 16)	/* vertical blank signal lock */
 
 #define VTC_IXR_ALLINTR_MASK	(VTC_IXR_FSYNCALL_MASK | \
 		VTC_IXR_G_ALL_MASK | \
@@ -448,19 +243,19 @@ static void zynq_vtc_config_polarity(struct zynq_vtc *vtc,
 	reg = zynq_vtc_readl(vtc, VTC_GPOL);
 
 	if (polarity->active_chroma)
-		reg |= VTC_CTL_ACP_MASK;
+		reg |= VTC_CTL_ACP;
 	if (polarity->active_video)
-		reg |= VTC_CTL_AVP_MASK;
+		reg |= VTC_CTL_AVP;
 	if (polarity->field_id)
-		reg |= VTC_CTL_FIP_MASK;
+		reg |= VTC_CTL_FIP;
 	if (polarity->vblank)
-		reg |= VTC_CTL_VBP_MASK;
+		reg |= VTC_CTL_VBP;
 	if (polarity->vsync)
-		reg |= VTC_CTL_VSP_MASK;
+		reg |= VTC_CTL_VSP;
 	if (polarity->hblank)
-		reg |= VTC_CTL_HBP_MASK;
+		reg |= VTC_CTL_HBP;
 	if (polarity->hsync)
-		reg |= VTC_CTL_HSP_MASK;
+		reg |= VTC_CTL_HSP;
 
 	zynq_vtc_writel(vtc, VTC_GPOL, reg);
 
@@ -477,12 +272,12 @@ static void zynq_vtc_config_hori_offset(struct zynq_vtc *vtc,
 
 	reg = (hori_offset->vblank_hori_start) & VTC_XVXHOX_HSTART_MASK;
 	reg |= (hori_offset->vblank_hori_end << VTC_XVXHOX_HEND_SHIFT) &
-		VTC_XVXHOX_HSTART_MASK;
+		VTC_XVXHOX_HEND_MASK;
 	zynq_vtc_writel(vtc, VTC_GVBHOFF, reg);
 
 	reg = (hori_offset->vsync_hori_start) & VTC_XVXHOX_HSTART_MASK;
 	reg |= (hori_offset->vsync_hori_end << VTC_XVXHOX_HEND_SHIFT) &
-		VTC_XVXHOX_HSTART_MASK;
+		VTC_XVXHOX_HEND_MASK;
 	zynq_vtc_writel(vtc, VTC_GVSHOFF, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
@@ -499,41 +294,41 @@ static void zynq_vtc_config_src(struct zynq_vtc *vtc,
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
 
 	if (src_config->field_id_pol)
-		reg |= VTC_CTL_FIPSS_MASK;
+		reg |= VTC_CTL_FIPSS;
 	if (src_config->active_chroma_pol)
-		reg |= VTC_CTL_ACPSS_MASK;
+		reg |= VTC_CTL_ACPSS;
 	if (src_config->active_video_pol)
-		reg |= VTC_CTL_AVPSS_MASK;
+		reg |= VTC_CTL_AVPSS;
 	if (src_config->hsync_pol)
-		reg |= VTC_CTL_HSPSS_MASK;
+		reg |= VTC_CTL_HSPSS;
 	if (src_config->vsync_pol)
-		reg |= VTC_CTL_VSPSS_MASK;
+		reg |= VTC_CTL_VSPSS;
 	if (src_config->hblank_pol)
-		reg |= VTC_CTL_HBPSS_MASK;
+		reg |= VTC_CTL_HBPSS;
 	if (src_config->vblank_pol)
-		reg |= VTC_CTL_VBPSS_MASK;
+		reg |= VTC_CTL_VBPSS;
 
 	if (src_config->vchroma)
-		reg |= VTC_CTL_VCSS_MASK;
+		reg |= VTC_CTL_VCSS;
 	if (src_config->vactive)
-		reg |= VTC_CTL_VASS_MASK;
+		reg |= VTC_CTL_VASS;
 	if (src_config->vbackporch)
-		reg |= VTC_CTL_VBSS_MASK;
+		reg |= VTC_CTL_VBSS;
 	if (src_config->vsync)
-		reg |= VTC_CTL_VSSS_MASK;
+		reg |= VTC_CTL_VSSS;
 	if (src_config->vfrontporch)
-		reg |= VTC_CTL_VFSS_MASK;
+		reg |= VTC_CTL_VFSS;
 	if (src_config->vtotal)
-		reg |= VTC_CTL_VTSS_MASK;
+		reg |= VTC_CTL_VTSS;
 
 	if (src_config->hbackporch)
-		reg |= VTC_CTL_HBSS_MASK;
+		reg |= VTC_CTL_HBSS;
 	if (src_config->hsync)
-		reg |= VTC_CTL_HSSS_MASK;
+		reg |= VTC_CTL_HSSS;
 	if (src_config->hfrontporch)
-		reg |= VTC_CTL_HFSS_MASK;
+		reg |= VTC_CTL_HFSS;
 	if (src_config->htotal)
-		reg |= VTC_CTL_HTSS_MASK;
+		reg |= VTC_CTL_HTSS;
 
 	zynq_vtc_writel(vtc, VTC_CTL, reg);
 
@@ -549,7 +344,7 @@ void zynq_vtc_enable(struct zynq_vtc *vtc)
 
 	/* enable a generator only for now */
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	reg |= VTC_CTL_GE_MASK;
+	reg |= VTC_CTL_GE;
 	zynq_vtc_writel(vtc, VTC_CTL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
@@ -564,7 +359,7 @@ void zynq_vtc_disable(struct zynq_vtc *vtc)
 
 	/* disable a generator only for now */
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	reg &= ~VTC_CTL_GE_MASK;
+	reg &= ~VTC_CTL_GE;
 	zynq_vtc_writel(vtc, VTC_CTL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
@@ -583,7 +378,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	zynq_vtc_writel(vtc, VTC_CTL, reg & ~VTC_CTL_RU_MASK);
+	zynq_vtc_writel(vtc, VTC_CTL, reg & ~VTC_CTL_RU);
 
 	htotal = sig_config->htotal;
 	vtotal = sig_config->vtotal;
@@ -655,7 +450,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	zynq_vtc_config_src(vtc, &src);
 
 	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	zynq_vtc_writel(vtc, VTC_CTL, reg | VTC_CTL_RU_MASK);
+	zynq_vtc_writel(vtc, VTC_CTL, reg | VTC_CTL_RU);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
@@ -664,7 +459,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 void zynq_vtc_reset(struct zynq_vtc *vtc)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_RESET, VTC_RESET_RESET_MASK);
+	zynq_vtc_writel(vtc, VTC_RESET, VTC_RESET_RESET);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
 
