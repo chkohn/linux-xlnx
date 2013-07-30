@@ -25,41 +25,16 @@
 
 /* registers */
 /* general control registers */
-#define RGB_CONTROL        0x000    /* control        */
-#define RGB_STATUS         0x004    /* status         */
-#define RGB_ERROR          0x008    /* error          */
-#define RGB_IRQ_EN         0x00C    /* irq enable     */
-#define RGB_VERSION        0x010    /* version        */
-#define RGB_SYSDEBUG0      0x014    /* system debug 0 */
-#define RGB_SYSDEBUG1      0x018    /* system debug 1 */
-#define RGB_SYSDEBUG2      0x01C    /* system debug 2 */
+#define RGB_CONTROL	0x000	/* control        */
 /* timing control registers */
-#define RGB_ACTIVE_SIZE    0x020    /* active size (v x h)       */
-#define RGB_TIMING_STATUS  0x024    /* timing measurement status */
-/* core specific registers */
-#define RGB_YMAX           0x100    /* luma clipping */
-#define RGB_YMIN           0x104    /* luma clamping */
-#define RGB_CBMAX          0x108    /* cb clipping   */
-#define RGB_CBMIN          0x10c    /* cb clamping   */
-#define RGB_CRMAX          0x110    /* cr clipping   */
-#define RGB_CRMIN          0x114    /* cr clamping   */
-#define RGB_YOFFSET        0x118    /* lumma offset  */
-#define RGB_CBOFFSET       0x11c    /* cb offset     */
-#define RGB_CROFFSET       0x120    /* cr offset     */
-#define RGB_ACOEF          0x124    /* matrix coversion coefficient */
-#define RGB_BCOEF          0x128    /* matrix coversion coefficient */
-#define RGB_CCOEF          0x12c    /* matrix coversion coefficient */
-#define RGB_DCOEF          0x130    /* matrix coversion coefficient */
+#define RGB_ACTIVE_SIZE	0x020	/* active size (v x h)       */
 
 /* ccm control register bit definition */
-#define RGB_CTL_EN_MASK     0x00000001 /* ccm enable */
-#define RGB_CTL_RUE_MASK    0x00000002 /* ccm register update enable */
+#define RGB_CTL_EN	(1 << 0)	/* ccm enable */
+#define RGB_CTL_RUE	(1 << 1)	/* ccm register update enable */
 
 /* ccm reset register bit definition */
-#define RGB_RST_RESET      0x80000000 /* software reset -
-					 instantaneous */
-#define RGB_RST_AUTORESET  0x40000000 /* software reset -
-					 auto-synchronize to sof */
+#define RGB_RST_RESET	(1 << 31)	/* software reset - instantaneous */
 
 struct zynq_rgb2yuv {
 	void __iomem *base;		/* rgb2yuv base addr */
@@ -87,7 +62,7 @@ void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
 	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
-	reg |= RGB_CTL_EN_MASK;
+	reg |= RGB_CTL_EN;
 	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
@@ -101,7 +76,7 @@ void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
 	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
-	reg &= ~RGB_CTL_EN_MASK;
+	reg &= ~RGB_CTL_EN;
 	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
@@ -116,14 +91,14 @@ void zynq_rgb2yuv_configure(struct zynq_rgb2yuv *rgb2yuv,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
 	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
-	reg &= ~RGB_CTL_RUE_MASK;
+	reg &= ~RGB_CTL_RUE;
 	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
 	zynq_rgb2yuv_writel(rgb2yuv, RGB_ACTIVE_SIZE,
 			(vactive << 16) | hactive);
 
 	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
-	reg |= RGB_CTL_RUE_MASK;
+	reg |= RGB_CTL_RUE;
 	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
