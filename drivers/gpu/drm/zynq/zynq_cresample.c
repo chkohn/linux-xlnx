@@ -26,26 +26,15 @@
 /* registers */
 /* general control registers */
 #define CRESAMPLE_CONTROL		0x0000	/* control */
-#define CRESAMPLE_STATUS		0x0004	/* status */
-#define CRESAMPLE_ERROR			0x0008	/* error */
-#define CRESAMPLE_IRQ_ENABLE		0x000c	/* irq enable */
-#define CRESAMPLE_VERSION		0x0010	/* version */
-#define CRESAMPLE_SYSDEBUG0		0x0014	/* system debug 0 */
-#define CRESAMPLE_SYSDEBUG1		0x0018	/* system debug 1 */
-#define CRESAMPLE_SYSDEBUG2		0x001c	/* system debug 2 */
 
 /* timing control registers */
 #define CRESAMPLE_ACTIVE_SIZE		0x0020	/* horizontal and vertical
 						   active frame size */
-#define CRESAMPLE_ENCODING		0x0028	/* frame encoding */
 
 /* control register bit definition */
-#define CRESAMPLE_CTL_EN_MASK		0x00000001	/* enable */
-#define CRESAMPLE_CTL_RU_MASK		0x00000002	/* register update */
-#define CRESAMPLE_CTL_AUTORESET		0x40000000	/* software reset -
-							   auto-synchronize to
-							   SOF */
-#define CRESAMPLE_CTL_RESET		0x80000000	/* software reset -
+#define CRESAMPLE_CTL_EN		(1 << 0)	/* enable */
+#define CRESAMPLE_CTL_RU		(1 << 1)	/* register update */
+#define CRESAMPLE_CTL_RESET		(1 << 31)	/* software reset -
 							   instantaneous */
 
 struct zynq_cresample {
@@ -75,7 +64,7 @@ void zynq_cresample_enable(struct zynq_cresample *cresample)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
 	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
-	reg |= CRESAMPLE_CTL_EN_MASK;
+	reg |= CRESAMPLE_CTL_EN;
 	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
@@ -89,7 +78,7 @@ void zynq_cresample_disable(struct zynq_cresample *cresample)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
 	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
-	reg &= ~CRESAMPLE_CTL_EN_MASK;
+	reg &= ~CRESAMPLE_CTL_EN;
 	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
@@ -105,7 +94,7 @@ void zynq_cresample_configure(struct zynq_cresample *cresample,
 
 	/* disable register update */
 	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
-	reg &= ~CRESAMPLE_CTL_RU_MASK;
+	reg &= ~CRESAMPLE_CTL_RU;
 	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
 	/* configure hsize and vsize */
@@ -114,7 +103,7 @@ void zynq_cresample_configure(struct zynq_cresample *cresample,
 
 	/* enable register update */
 	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
-	reg |= CRESAMPLE_CTL_RU_MASK;
+	reg |= CRESAMPLE_CTL_RU;
 	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
