@@ -141,7 +141,7 @@ static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-	ret = _zynq_drm_crtc_mode_set(crtc, &base_crtc->mode, x, y);
+	ret = _zynq_drm_crtc_mode_set(crtc, adjusted_mode, x, y);
 	if (ret) {
 		DRM_ERROR("failed to set mode\n");
 		goto err_out;
@@ -160,10 +160,6 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 		int y, struct drm_framebuffer *old_fb)
 {
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
-	struct drm_device *dev = base_crtc->dev;
-	struct drm_connector *iter;
-	struct drm_encoder *encoder = NULL;
-	struct drm_encoder_helper_funcs *encoder_funcs = NULL;
 	int ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
@@ -172,19 +168,6 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 	if (ret) {
 		DRM_ERROR("failed to set mode\n");
 		goto err_out;
-	}
-
-	/* search for an encoder for this crtc */
-	/* assume there's only one encoder/connector for this crtc */
-	list_for_each_entry(iter, &dev->mode_config.connector_list, head) {
-		if (iter->encoder && (iter->encoder->crtc == base_crtc)) {
-			encoder = iter->encoder;
-			encoder_funcs = encoder->helper_private;
-			/* make sure encoder is on.
-			   sometimes it's suspended and off. */
-			encoder_funcs->dpms(encoder, DRM_MODE_DPMS_ON);
-			break;
-		}
 	}
 
 	/* apply the new fb addr */
