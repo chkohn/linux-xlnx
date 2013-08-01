@@ -121,7 +121,8 @@ struct zynq_osd {
 	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
-	u32 width, height;		/* width / height */
+	u32 width;			/* width */
+	u32 height;			/* height */
 };
 
 
@@ -303,11 +304,11 @@ void zynq_osd_set_color(struct zynq_osd *osd, u8 r, u8 g, u8 b)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	zynq_osd_disable_rue(osd);
-	value = g & OSD_BC0_YG_MASK;
+	value = g;
 	zynq_osd_writel(osd, OSD_BC0, value);
-	value = b & OSD_BC1_UCBB_MASK;
+	value = b;
 	zynq_osd_writel(osd, OSD_BC1, value);
-	value = r & OSD_BC2_VCRR_MASK;
+	value = r;
 	zynq_osd_writel(osd, OSD_BC2, value);
 	zynq_osd_enable_rue(osd);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
@@ -320,8 +321,7 @@ void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "w: %d, h: %d\n", width, height);
 	zynq_osd_disable_rue(osd);
-	value = width;
-	value |= (height << OSD_SS_YSIZE_SHIFT) & OSD_SS_YSIZE_MASK;
+	value = width | ((height << OSD_SS_YSIZE_SHIFT) & OSD_SS_YSIZE_MASK);
 	zynq_osd_writel(osd, OSD_SS, value);
 	zynq_osd_enable_rue(osd);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");

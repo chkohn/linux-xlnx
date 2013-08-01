@@ -530,8 +530,8 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, char *compatible)
 	zynq_vtc_intr_disable(vtc, VTC_IXR_ALLINTR_MASK);
 	vtc->irq = irq_of_parse_and_map(vtc->node, 0);
 	if (vtc->irq > 0) {
-		if (request_irq(vtc->irq, zynq_vtc_intr_handler, IRQF_SHARED,
-					"zynq_vtc", vtc)) {
+		if (devm_request_irq(dev, vtc->irq, zynq_vtc_intr_handler,
+					IRQF_SHARED, "zynq_vtc", vtc)) {
 			vtc->irq = 0;
 			pr_warn("failed to requet_irq() for zynq_vtc\n");
 		} else {
@@ -555,9 +555,6 @@ err_vtc:
 void zynq_vtc_remove(struct zynq_vtc *vtc)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-
-	if (vtc->irq > 0)
-		free_irq(vtc->irq, vtc);
 
 	zynq_vtc_reset(vtc);
 

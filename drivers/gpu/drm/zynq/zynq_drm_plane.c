@@ -158,8 +158,7 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
-			src_w, src_x, src_h, src_y,
-			(void *)obj->paddr);
+			src_w, src_x, src_h, src_y, (void *)obj->paddr);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "bpp: %d\n", bpp);
 
 	offset = src_x * bpp + src_y * pitch;
@@ -206,8 +205,9 @@ err_out:
 }
 
 /* update a plane. just call mode_set() with bit-shifted values */
-int zynq_drm_plane_update(struct drm_plane *base_plane, struct drm_crtc *crtc,
-		struct drm_framebuffer *fb, int crtc_x, int crtc_y,
+static int zynq_drm_plane_update(struct drm_plane *base_plane,
+		struct drm_crtc *crtc, struct drm_framebuffer *fb,
+		int crtc_x, int crtc_y,
 		unsigned int crtc_w, unsigned int crtc_h,
 		uint32_t src_x, uint32_t src_y,
 		uint32_t src_w, uint32_t src_h)
