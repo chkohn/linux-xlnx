@@ -99,12 +99,6 @@ static bool zynq_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 
 	encoder_slave = to_encoder_slave(base_encoder);
-	if (!encoder_slave) {
-		ret = false;
-		DRM_ERROR("failed to get encoder slave\n");
-		goto out;
-	}
-
 	encoder_sfuncs = encoder_slave->slave_funcs;
 	if (encoder_sfuncs->mode_fixup)
 		ret = encoder_sfuncs->mode_fixup(base_encoder, mode,
@@ -131,7 +125,8 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct edid *edid;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "h: %d, v: %d, p clock: %d khz\n",
-			mode->hdisplay, mode->vdisplay, mode->clock);
+			adjusted_mode->hdisplay, adjusted_mode->vdisplay,
+			adjusted_mode->clock);
 
 	encoder_slave = to_encoder_slave(base_encoder);
 	encoder = to_zynq_encoder(encoder_slave);
@@ -150,22 +145,22 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	}
 
 	/* set vtc */
-	vtc_sig_config.htotal = mode->htotal;
-	vtc_sig_config.hfrontporch_start = mode->hdisplay;
-	vtc_sig_config.hsync_start = mode->hsync_start;
-	vtc_sig_config.hbackporch_start = mode->hsync_end;
+	vtc_sig_config.htotal = adjusted_mode->htotal;
+	vtc_sig_config.hfrontporch_start = adjusted_mode->hdisplay;
+	vtc_sig_config.hsync_start = adjusted_mode->hsync_start;
+	vtc_sig_config.hbackporch_start = adjusted_mode->hsync_end;
 	vtc_sig_config.hactive_start = 0;
 
-	vtc_sig_config.vtotal = mode->vtotal;
-	vtc_sig_config.vfrontporch_start = mode->vdisplay;
-	vtc_sig_config.vsync_start = mode->vsync_start;
-	vtc_sig_config.vbackporch_start = mode->vsync_end;
+	vtc_sig_config.vtotal = adjusted_mode->vtotal;
+	vtc_sig_config.vfrontporch_start = adjusted_mode->vdisplay;
+	vtc_sig_config.vsync_start = adjusted_mode->vsync_start;
+	vtc_sig_config.vbackporch_start = adjusted_mode->vsync_end;
 	vtc_sig_config.vactive_start = 0;
 
 	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
 
 	/* set si570 pixel clock */
-	set_frequency_si570(&encoder->si570->dev, mode->clock * 1000);
+	set_frequency_si570(&encoder->si570->dev, adjusted_mode->clock * 1000);
 
 	if (connector->display_info.raw_edid) {
 		edid = (struct edid *)connector->display_info.raw_edid;
@@ -325,7 +320,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 
 	encoder->rgb = of_property_read_bool(pdev->dev.of_node, "adi,is-rgb");
 
-	/* intiialize encoder */
+	/* initialize encoder */
 	encoder->slave.base.possible_crtcs = 1;
 	if (drm_encoder_init(drm, &encoder->slave.base, &zynq_drm_encoder_funcs,
 			DRM_MODE_ENCODER_TMDS)) {
