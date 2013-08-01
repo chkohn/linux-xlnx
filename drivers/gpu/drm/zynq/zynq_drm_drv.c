@@ -213,11 +213,9 @@ err_alloc:
 /* unload zynq drm */
 static int zynq_drm_unload(struct drm_device *drm)
 {
-	struct zynq_drm_private *private;
+	struct zynq_drm_private *private = drm->dev_private;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-
-	private = drm->dev_private;
 
 	drm_kms_helper_poll_fini(drm);
 
