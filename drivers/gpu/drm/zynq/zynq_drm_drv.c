@@ -95,8 +95,7 @@ static void zynq_drm_output_poll_changed(struct drm_device *drm)
 {
 	struct zynq_drm_private *private = drm->dev_private;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
-	if (private && private->fbdev)
-		drm_fbdev_cma_hotplug_event(private->fbdev);
+	drm_fbdev_cma_hotplug_event(private->fbdev);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 }
 
@@ -169,9 +168,6 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		goto err_connector;
 	}
 
-	drm_kms_helper_poll_init(drm);
-
-	/* initialize zynq cma framebuffer */
 	private->fbdev = drm_fbdev_cma_init(drm, 32, 1, 1);
 	if (IS_ERR(private->fbdev)) {
 		DRM_ERROR("failed to initialize drm cma fbdev\n");
@@ -182,6 +178,9 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 	drm->dev_private = private;
 	private->drm = drm;
 
+	drm_kms_helper_poll_init(drm);
+
+	/* initialize zynq cma framebuffer */
 	drm_helper_disable_unused_functions(drm);
 
 	platform_set_drvdata(pdev, private);
