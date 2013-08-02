@@ -259,7 +259,7 @@ static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
 	dma_release_channel(plane->vdma.chan);
 	if (plane->manager->osd) {
 		zynq_osd_layer_disable(plane->osd_layer);
-		zynq_osd_layer_destroy(plane->osd_layer);
+		zynq_osd_layer_put(plane->osd_layer);
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
@@ -288,9 +288,11 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 		unsigned int possible_crtcs, bool priv)
 {
 	struct zynq_drm_plane *plane;
+	struct zynq_drm_plane *err_ret;
 	struct device *dev = manager->drm->dev;
 	char dma_name[16];
 	int i;
+	int res;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
@@ -301,12 +303,14 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	}
 	if (i >= manager->num_planes) {
 		DRM_ERROR("failed to allocate plane\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_plane;
 	}
 
 	plane = devm_kzalloc(dev, sizeof(*plane), GFP_KERNEL);
 	if (!plane) {
 		DRM_ERROR("failed to allocate plane\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_alloc;
 	}
 
@@ -320,15 +324,18 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	plane->vdma.chan = dma_request_slave_channel(dev, dma_name);
 	if (!plane->vdma.chan) {
 		DRM_ERROR("failed to request dma channel\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_dma_request;
 	}
 
 	/* create an OSD layer when OSD is available */
 	if (manager->osd) {
 		/* create an osd layer */
-		plane->osd_layer = zynq_osd_layer_create(manager->osd);
-		if (!plane->osd_layer) {
+		plane->osd_layer = zynq_osd_layer_get(manager->osd);
+		if (IS_ERR(plane->osd_layer)) {
 			DRM_ERROR("failed to create a osd layer\n");
+			err_ret = ERR_PTR(-ENODEV);
+			plane->osd_layer = NULL;
 			goto err_osd_layer;
 		}
 
@@ -336,10 +343,12 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	}
 
 	/* initialize drm plane */
-	if (drm_plane_init(manager->drm, &plane->base, possible_crtcs,
-				&zynq_drm_plane_funcs, zynq_drm_plane_formats,
-				ARRAY_SIZE(zynq_drm_plane_formats), priv)) {
+	res = drm_plane_init(manager->drm, &plane->base, possible_crtcs,
+			&zynq_drm_plane_funcs, zynq_drm_plane_formats,
+			ARRAY_SIZE(zynq_drm_plane_formats), priv);
+	if (res) {
 		DRM_ERROR("failed to initialize plane\n");
+		err_ret = ERR_PTR(res);
 		goto err_init;
 	}
 	plane->manager = manager;
@@ -352,7 +361,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 err_init:
 	if (plane->manager->osd) {
 		zynq_osd_layer_disable(plane->osd_layer);
-		zynq_osd_layer_destroy(plane->osd_layer);
+		zynq_osd_layer_put(plane->osd_layer);
 	}
 err_osd_layer:
 	dma_release_channel(plane->vdma.chan);
@@ -360,7 +369,7 @@ err_dma_request:
 err_alloc:
 err_plane:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	return NULL;
+	return err_ret;
 }
 
 /* create a private plane */
@@ -374,9 +383,9 @@ struct drm_plane *zynq_drm_plane_create_private(
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
 	plane = _zynq_drm_plane_create(manager, possible_crtcs, true);
-	if (!plane) {
+	if (IS_ERR(plane)) {
 		DRM_ERROR("failed to allocate a private plane\n");
-		err_ret = ERR_PTR(-ENODEV);
+		err_ret = ERR_PTR(-ENODEV);;
 		goto err_out;
 	}
 
@@ -433,7 +442,8 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 				possible_crtcs, false);
 		if (!manager->planes[i]) {
 			DRM_ERROR("failed to allocate a plane\n");
-			err_ret = -ENOMEM;
+			err_ret = PTR_ERR(manager->planes[i]);
+			manager->planes[i] = NULL;
 			goto err_out;
 		}
 	}

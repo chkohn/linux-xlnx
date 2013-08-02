@@ -16,6 +16,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/io.h>
 #include <linux/module.h>
 #include <linux/of_address.h>
@@ -112,12 +113,12 @@
 struct zynq_osd_layer {
 	void __iomem *base;		/* layer base addr */
 	int id;				/* layer id */
+	bool avail;			/* avail flag */
 	struct zynq_osd *osd;		/* osd */
 };
 
 struct zynq_osd {
 	void __iomem *base;		/* osd base addr */
-	struct device *dev;		/* (parent) device */
 	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
@@ -236,33 +237,27 @@ void zynq_osd_layer_disable(struct zynq_osd_layer *layer)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
-/* create layer */
-struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd)
+/* get an available layer */
+struct zynq_osd_layer *zynq_osd_layer_get(struct zynq_osd *osd)
 {
-	struct zynq_osd_layer *layer;
+	struct zynq_osd_layer *layer = NULL;
+	struct zynq_osd_layer *err_ret;
 	int i;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
 	for (i = 0; i < osd->num_layers; i++) {
-		if (!osd->layers[i])
+		if (osd->layers[i]->avail) {
+			layer = osd->layers[i];
+			layer->avail = false;
 			break;
+		}
 	}
-	if (i >= osd->num_layers) {
-		pr_err("no available osd layer\n");
-		goto err_out;
-	}
-
-	layer = devm_kzalloc(osd->dev, sizeof(*layer), GFP_KERNEL);
 	if (!layer) {
-		pr_err("failed to allocate layer\n");
+		pr_err("no available osd layer\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_out;
 	}
-
-	layer->base = osd->base + OSD_L0C + OSD_LAYER_SIZE * i;
-	layer->id = i;
-	layer->osd = osd;
-	osd->layers[i] = layer;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer id: %d\n", i);
 
@@ -270,14 +265,14 @@ struct zynq_osd_layer *zynq_osd_layer_create(struct zynq_osd *osd)
 
 err_out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	return NULL;
+	return err_ret;
 }
 
-/* destroy layer */
-void zynq_osd_layer_destroy(struct zynq_osd_layer *layer)
+/* put a layer */
+void zynq_osd_layer_put(struct zynq_osd_layer *layer)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	layer->osd->layers[layer->id] = NULL;
+	layer->avail = true;
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return;
 }
@@ -374,7 +369,10 @@ static inline void zynq_osd_disable_rue(struct zynq_osd *osd)
 struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible)
 {
 	struct zynq_osd *osd;
+	struct zynq_osd *err_ret;
+	struct zynq_osd_layer *layer;
 	u32 prop;
+	int i;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
@@ -403,12 +401,25 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible)
 	}
 	osd->num_layers = prop;
 
-	osd->dev = dev;
+	for (i = 0; i < osd->num_layers; i++) {
+		layer = devm_kzalloc(dev, sizeof(*layer), GFP_KERNEL);
+		if (!layer) {
+			pr_err("failed to allocate layer\n");
+			err_ret = ERR_PTR(-ENOMEM);
+			goto err_layers;
+		}
+		layer->base = osd->base + OSD_L0C + OSD_LAYER_SIZE * i;
+		layer->id = i;
+		layer->osd = osd;
+		layer->avail = true;
+		osd->layers[i] = layer;
+	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
 	return osd;
 
+err_layers:
 err_prop:
 	iounmap(osd->base);
 err_iomap:
@@ -416,21 +427,14 @@ err_iomap:
 err_node:
 err_osd:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	return NULL;
+	return err_ret;
 }
 
 void zynq_osd_remove(struct zynq_osd *osd)
 {
-	int i;
-
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
 	zynq_osd_reset(osd);
-	for (i = 0; i < osd->num_layers; i++) {
-		if (!osd->layers[i])
-			continue;
-		zynq_osd_layer_destroy(osd->layers[i]);
-	}
 	iounmap(osd->base);
 	of_node_put(osd->node);
 

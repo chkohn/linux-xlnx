@@ -255,7 +255,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	crtc->plane_manager = zynq_drm_plane_probe_manager(drm);
 	if (IS_ERR(crtc->plane_manager)) {
 		DRM_ERROR("failed to probe a plane manager\n");
-		err_ret = crtc->plane_manager;
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_plane_manager;
 	}
 
@@ -265,7 +265,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 			possible_crtcs);
 	if (IS_ERR(crtc->priv_plane)) {
 		DRM_ERROR("failed to create a private plane for crtc\n");
-		err_ret = crtc->priv_plane;
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_plane;
 	}
 
