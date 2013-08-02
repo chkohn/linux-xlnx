@@ -228,13 +228,16 @@ static struct drm_crtc_funcs zynq_drm_crtc_funcs = {
 struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 {
 	struct zynq_drm_crtc *crtc;
+	struct drm_crtc *err_ret;
 	int possible_crtcs = 1;
+	int res;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
 	crtc = devm_kzalloc(drm->dev, sizeof(*crtc), GFP_KERNEL);
 	if (!crtc) {
 		DRM_ERROR("failed to allocate crtc\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_alloc;
 	}
 
@@ -250,8 +253,9 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 
 	/* probe a plane manager */
 	crtc->plane_manager = zynq_drm_plane_probe_manager(drm);
-	if (!crtc->plane_manager) {
+	if (IS_ERR(crtc->plane_manager)) {
 		DRM_ERROR("failed to probe a plane manager\n");
+		err_ret = crtc->plane_manager;
 		goto err_plane_manager;
 	}
 
@@ -259,8 +263,9 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	/* there's only one crtc now */
 	crtc->priv_plane = zynq_drm_plane_create_private(crtc->plane_manager,
 			possible_crtcs);
-	if (!crtc->priv_plane) {
+	if (IS_ERR(crtc->priv_plane)) {
 		DRM_ERROR("failed to create a private plane for crtc\n");
+		err_ret = crtc->priv_plane;
 		goto err_plane;
 	}
 
@@ -268,8 +273,10 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	zynq_drm_plane_create_planes(crtc->plane_manager, possible_crtcs);
 
 	/* initialize drm crtc */
-	if (drm_crtc_init(drm, &crtc->base, &zynq_drm_crtc_funcs)) {
+	res = drm_crtc_init(drm, &crtc->base, &zynq_drm_crtc_funcs);
+	if (res) {
 		DRM_ERROR("failed to initialize crtc\n");
+		err_ret = ERR_PTR(res);
 		goto err_init;
 	}
 	drm_crtc_helper_add(&crtc->base, &zynq_drm_crtc_helper_funcs);
@@ -290,5 +297,5 @@ err_plane_manager:
 		zynq_cresample_remove(crtc->cresample);
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
-	return NULL;
+	return err_ret;
 }

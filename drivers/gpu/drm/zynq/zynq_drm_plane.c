@@ -146,14 +146,14 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	int bpp = fb->bits_per_pixel / 8;
 	int pitch = fb->pitches[0];
 	size_t offset;
-	int ret;
+	int err_ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 
 	obj = drm_fb_cma_get_gem_obj(fb, 0);
 	if (!obj) {
 		DRM_ERROR("failed to get a gem obj for fb\n");
-		ret = -EINVAL;
+		err_ret = -EINVAL;
 		goto err_out;
 	}
 
@@ -178,7 +178,7 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 			DMA_MEM_TO_DEV, 0);
 	if (!desc) {
 		DRM_ERROR("failed to prepare DMA descriptor\n");
-		ret = -EINVAL;
+		err_ret = -EINVAL;
 		goto err_out;
 	}
 
@@ -201,7 +201,7 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	return 0;
 
 err_out:
-	return ret;
+	return err_ret;
 }
 
 /* update a plane. just call mode_set() with bit-shifted values */
@@ -212,14 +212,14 @@ static int zynq_drm_plane_update(struct drm_plane *base_plane,
 		uint32_t src_x, uint32_t src_y,
 		uint32_t src_w, uint32_t src_h)
 {
-	int ret;
+	int err_ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
-	ret = zynq_drm_plane_mode_set(base_plane, crtc, fb, crtc_x, crtc_y,
+	err_ret = zynq_drm_plane_mode_set(base_plane, crtc, fb, crtc_x, crtc_y,
 			crtc_w, crtc_h, src_x >> 16, src_y >> 16,
 			src_w >> 16, src_h >> 16);
-	if (ret) {
+	if (err_ret) {
 		DRM_ERROR("failed to mode-set a plane\n");
 		goto err_out;
 	}
@@ -233,7 +233,7 @@ static int zynq_drm_plane_update(struct drm_plane *base_plane,
 	return 0;
 
 err_out:
-	return ret;
+	return err_ret;
 }
 
 /* disable a plane */
@@ -369,12 +369,14 @@ struct drm_plane *zynq_drm_plane_create_private(
 		unsigned int possible_crtcs)
 {
 	struct zynq_drm_plane *plane;
+	struct drm_plane *err_ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
 	plane = _zynq_drm_plane_create(manager, possible_crtcs, true);
 	if (!plane) {
 		DRM_ERROR("failed to allocate a private plane\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_out;
 	}
 
@@ -384,7 +386,7 @@ struct drm_plane *zynq_drm_plane_create_private(
 
 err_out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	return NULL;
+	return err_ret;
 }
 
 void zynq_drm_plane_destroy_private(struct zynq_drm_plane_manager *manager,
@@ -419,7 +421,7 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 		unsigned int possible_crtcs)
 {
 	int i;
-	int ret;
+	int err_ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
@@ -431,7 +433,7 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 				possible_crtcs, false);
 		if (!manager->planes[i]) {
 			DRM_ERROR("failed to allocate a plane\n");
-			ret = -ENOMEM;
+			err_ret = -ENOMEM;
 			goto err_out;
 		}
 	}
@@ -443,13 +445,14 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 err_out:
 	zynq_drm_plane_destroy_planes(manager);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	return ret;
+	return err_ret;
 }
 
 struct zynq_drm_plane_manager *
 zynq_drm_plane_probe_manager(struct drm_device *drm)
 {
 	struct zynq_drm_plane_manager *manager;
+	struct zynq_drm_plane_manager *err_ret;
 	struct device *dev = drm->dev;
 	u32 prop;
 
@@ -458,13 +461,14 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	manager = devm_kzalloc(drm->dev, sizeof(*manager), GFP_KERNEL);
 	if (!manager) {
 		DRM_ERROR("failed to allocate a plane manager\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_alloc;
 	}
 	manager->drm = drm;
 	/* TODO: duplicate get_prop in osd, consider clean up */
 	if (of_property_read_u32(dev->of_node, "xlnx,num-planes", &prop)) {
-		pr_err("failed to get num of planes prop\n");
-		goto err_prop;
+		DRM_ERROR("failed to get num of planes prop, set to 1\n");
+		prop = 1;
 	}
 	manager->num_planes = prop;
 
@@ -477,10 +481,9 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 
 	return manager;
 
-err_prop:
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	return NULL;
+	return err_ret;
 }
 
 void zynq_drm_plane_remove_manager(struct zynq_drm_plane_manager *manager)

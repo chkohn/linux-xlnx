@@ -139,21 +139,26 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 		struct drm_encoder *base_encoder)
 {
 	struct zynq_drm_connector *connector;
+	struct drm_connector *err_ret;
+	int res;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
 
 	connector = devm_kzalloc(drm->dev, sizeof(*connector), GFP_KERNEL);
 	if (!connector) {
 		DRM_ERROR("failed to allocate connector\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_alloc;
 	}
 
 	connector->base.polled = DRM_CONNECTOR_POLL_CONNECT |
 				DRM_CONNECTOR_POLL_DISCONNECT;
 
-	if (drm_connector_init(drm, &connector->base, &zynq_drm_connector_funcs,
-			DRM_MODE_CONNECTOR_HDMIA)) {
+	res = drm_connector_init(drm, &connector->base,
+			&zynq_drm_connector_funcs, DRM_MODE_CONNECTOR_HDMIA);
+	if (res) {
 		DRM_ERROR("failed to initialize connector\n");
+		err_ret = ERR_PTR(res);
 		goto err_init;
 	}
 
@@ -161,15 +166,19 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 			&zynq_drm_connector_helper_funcs);
 
 	/* add sysfs entry for connector */
-	if (drm_sysfs_connector_add(&connector->base)) {
+	(res = drm_sysfs_connector_add(&connector->base));
+	if (res) {
 		DRM_ERROR("failed to add to sysfs\n");
+		err_ret = ERR_PTR(res);
 		goto err_sysfs;
 	}
 
 	/* connect connector and encoder */
 	connector->base.encoder = base_encoder;
-	if (drm_mode_connector_attach_encoder(&connector->base, base_encoder)) {
+	res = drm_mode_connector_attach_encoder(&connector->base, base_encoder);
+	if (res) {
 		DRM_ERROR("failed to attach connector to encoder\n");
+		err_ret = ERR_PTR(res);
 		goto err_attach;
 	}
 	connector->encoder = base_encoder;
@@ -185,5 +194,5 @@ err_sysfs:
 err_init:
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
-	return NULL;
+	return err_ret;
 }

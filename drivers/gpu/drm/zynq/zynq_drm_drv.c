@@ -120,8 +120,6 @@ static void zynq_drm_mode_config_init(struct drm_device *drm)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 }
 
-static bool zynq_drm_defered = false;
-
 /* load zynq drm */
 static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 {
@@ -145,17 +143,17 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	/* create a zynq crtc */
 	private->crtc = zynq_drm_crtc_create(drm);
-	if (!private->crtc) {
+	if (IS_ERR(private->crtc)) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq crtc\n");
-		err = -EPROBE_DEFER;
+		err = PTR_ERR(private->crtc);
 		goto err_crtc;
 	}
 
 	/* create a zynq encoder */
 	private->encoder = zynq_drm_encoder_create(drm);
-	if (!private->encoder) {
+	if (IS_ERR(private->encoder)) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq encoder\n");
-		err = -EPROBE_DEFER;
+		err = PTR_ERR(private->encoder);
 		goto err_encoder;
 	}
 
@@ -199,12 +197,7 @@ err_crtc:
 	drm_mode_config_cleanup(drm);
 err_alloc:
 	if (err == -EPROBE_DEFER) {
-		if (!zynq_drm_defered) {
-			zynq_drm_defered = true;
-			DRM_INFO("load() is defered & will be called again\n");
-		} else {
-			DRM_ERROR("failed to load zynq_drm drivers\n");
-		}
+		DRM_INFO("load() is defered & will be called again\n");
 	}
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 	return err;
