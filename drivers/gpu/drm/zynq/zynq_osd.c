@@ -127,9 +127,6 @@ struct zynq_osd {
 };
 
 
-static inline void zynq_osd_enable_rue(struct zynq_osd *osd);
-static inline void zynq_osd_disable_rue(struct zynq_osd *osd);
-
 /*
  * osd layer operation
  */
@@ -156,14 +153,12 @@ void zynq_osd_layer_set_alpha(struct zynq_osd_layer *layer, u32 enable,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "alpha: 0x%08x\n", alpha);
 
-	zynq_osd_disable_rue(layer->osd);
 	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value = enable ? (value | OSD_LXC_GALPHAEN) :
 		(value & ~OSD_LXC_GALPHAEN);
 	value &= ~OSD_LXC_ALPHA_MASK;
 	value |= (alpha << OSD_LXC_ALPHA_SHIFT) & OSD_LXC_ALPHA_MASK;
 	zynq_osd_layer_writel(layer, OSD_LXC, value);
-	zynq_osd_enable_rue(layer->osd);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
@@ -176,12 +171,10 @@ void zynq_osd_layer_set_priority(struct zynq_osd_layer *layer, u32 prio)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "prio: %d\n", prio);
 
-	zynq_osd_disable_rue(layer->osd);
 	value = zynq_osd_layer_readl(layer, OSD_LXC);
 	value &= ~OSD_LXC_PRIORITY_MASK;
 	value |= (prio << OSD_LXC_PRIORITY_SHIFT) & OSD_LXC_PRIORITY_MASK;
 	zynq_osd_layer_writel(layer, OSD_LXC, value);
-	zynq_osd_enable_rue(layer->osd);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
@@ -196,8 +189,6 @@ void zynq_osd_layer_set_dimension(struct zynq_osd_layer *layer,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "w: %d(%d), h: %d(%d)\n", xsize, xstart,
 			ysize, ystart);
 
-	zynq_osd_disable_rue(layer->osd);
-
 	value = xstart & OSD_LXP_XSTART_MASK;
 	value |= (ystart << OSD_LXP_YSTART_SHIFT) & OSD_LXP_YSTART_MASK;
 
@@ -207,8 +198,6 @@ void zynq_osd_layer_set_dimension(struct zynq_osd_layer *layer,
 	value |= (ysize << OSD_LXS_YSIZE_SHIFT) & OSD_LXS_YSIZE_MASK;
 
 	zynq_osd_layer_writel(layer, OSD_LXS, value);
-
-	zynq_osd_enable_rue(layer->osd);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
@@ -298,14 +287,14 @@ void zynq_osd_set_color(struct zynq_osd *osd, u8 r, u8 g, u8 b)
 	u32 value;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_disable_rue(osd);
+
 	value = g;
 	zynq_osd_writel(osd, OSD_BC0, value);
 	value = b;
 	zynq_osd_writel(osd, OSD_BC1, value);
 	value = r;
 	zynq_osd_writel(osd, OSD_BC2, value);
-	zynq_osd_enable_rue(osd);
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
@@ -315,10 +304,8 @@ void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height)
 	u32 value;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "w: %d, h: %d\n", width, height);
-	zynq_osd_disable_rue(osd);
 	value = width | ((height << OSD_SS_YSIZE_SHIFT) & OSD_SS_YSIZE_MASK);
 	zynq_osd_writel(osd, OSD_SS, value);
-	zynq_osd_enable_rue(osd);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
@@ -349,7 +336,7 @@ void zynq_osd_disable(struct zynq_osd *osd)
 }
 
 /* register-update-enable osd */
-static inline void zynq_osd_enable_rue(struct zynq_osd *osd)
+void zynq_osd_enable_rue(struct zynq_osd *osd)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) |
@@ -358,7 +345,7 @@ static inline void zynq_osd_enable_rue(struct zynq_osd *osd)
 }
 
 /* register-update-enable osd */
-static inline void zynq_osd_disable_rue(struct zynq_osd *osd)
+void zynq_osd_disable_rue(struct zynq_osd *osd)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) &

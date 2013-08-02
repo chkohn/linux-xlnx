@@ -80,6 +80,8 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 
 			/* enable osd */
 			if (manager->osd) {
+				zynq_osd_disable_rue(manager->osd);
+
 				/* set zorder(= id for now) */
 				zynq_osd_layer_set_priority(plane->osd_layer,
 						plane->id);
@@ -93,17 +95,23 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 							0x0, 0x0);
 					zynq_osd_enable(manager->osd);
 				}
+
+				zynq_osd_enable_rue(manager->osd);
 			}
 
 			break;
 		default:
 			/* disable/reset osd */
 			if (manager->osd) {
+				zynq_osd_disable_rue(manager->osd);
+
 				zynq_osd_layer_set_dimension(plane->osd_layer,
 						0, 0, 0, 0);
 				zynq_osd_layer_disable(plane->osd_layer);
 				if (plane->priv)
 					zynq_osd_reset(manager->osd);
+
+				zynq_osd_enable_rue(manager->osd);
 			}
 
 			/* reset vdma */
@@ -187,6 +195,8 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 
 	/* set OSD dimensions */
 	if (plane->manager->osd) {
+		zynq_osd_disable_rue(plane->manager->osd);
+
 		/* if a plane is private, it's for crtc */
 		if (plane->priv) {
 			zynq_osd_set_dimension(plane->manager->osd,
@@ -195,6 +205,8 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 
 		zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
 				src_w, src_h);
+
+		zynq_osd_enable_rue(plane->manager->osd);
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");

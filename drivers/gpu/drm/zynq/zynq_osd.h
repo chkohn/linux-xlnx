@@ -50,6 +50,9 @@ void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height);
 void zynq_osd_reset(struct zynq_osd *osd);
 void zynq_osd_enable(struct zynq_osd *osd);
 void zynq_osd_disable(struct zynq_osd *osd);
+void zynq_osd_enable_rue(struct zynq_osd *osd);
+void zynq_osd_disable_rue(struct zynq_osd *osd);
+
 
 struct device;
 
