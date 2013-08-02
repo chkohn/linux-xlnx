@@ -33,33 +33,16 @@
 #define ZYNQ_KMS_VTC		(8)
 #define ZYNQ_KMS_DEBUG_ALL	(0x1ff)
 
-extern int zynq_kms_debug_enabled;
+void zynq_drm_debug(int type, const char *func, int line, const char *fmt, ...);
 
-static char *zynq_kms_type[] = {"KMS DRV",
-				"CRTC",
-				"PLANE",
-				"ENCODER",
-				"CONNECTOR",
-				"CRESMAPLE",
-				"OSD",
-				"RGB2YUV",
-				"VTC"};
-
-#define ZYNQ_DEBUG_KMS(type, fmt, args...)				\
-	do {								\
-		if ((1 << type) & zynq_kms_debug_enabled)		\
-			printk(KERN_INFO "[%s]%s:%d " fmt,		\
-					zynq_kms_type[type],		\
-					 __func__, __LINE__, ##args);	\
-	} while (0)
+#define ZYNQ_DEBUG_KMS(type, fmt, ...)	\
+	zynq_drm_debug(type, __func__, __LINE__, fmt, ##__VA_ARGS__);
 
 #else /* ZYNQ_KMS_DEBUG */
 
-#define ZYNQ_DEBUG_KMS(type, fmt, args...)	\
-	do {					\
+#define ZYNQ_DEBUG_KMS(type, fmt, ...)	\
+	do {				\
 	} while (0)
-
-
 
 #endif /* ZYNQ_KMS_DEBUG */
 

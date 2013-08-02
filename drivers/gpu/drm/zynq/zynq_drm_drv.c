@@ -35,6 +35,40 @@
 #define DRIVER_MAJOR	1
 #define DRIVER_MINOR	0
 
+#if ZYNQ_KMS_DEBUG
+
+int zynq_kms_debug_enabled = ZYNQ_KMS_DEBUG_ALL;
+module_param_named(zynq_kms_debug, zynq_kms_debug_enabled, int, 0600);
+
+static char *zynq_kms_type[] = {"DRV",
+				"CRT",
+				"PLA",
+				"ENC",
+				"CON",
+				"CRE",
+				"OSD",
+				"RGB",
+				"VTC"};
+
+void zynq_drm_debug(int type, const char *func, int line, const char *fmt, ...)
+{
+	struct va_format vaf;
+	va_list args;
+
+	if ((1 << type) & zynq_kms_debug_enabled) {
+		va_start(args, fmt);
+
+		vaf.fmt = fmt;
+		vaf.va = &args;
+
+		printk(KERN_INFO "[%s]%s:%d %pV", zynq_kms_type[type], func,
+				line, &vaf);
+
+		va_end(args);
+	}
+}
+#endif
+
 struct zynq_drm_private {
 	struct drm_device *drm;			/* drm device */
 	struct drm_crtc *crtc;			/* crtc */
@@ -344,11 +378,6 @@ static struct platform_driver zynq_drm_private_driver = {
 		.of_match_table = zynq_drm_of_match,
 	},
 };
-
-#if ZYNQ_KMS_DEBUG
-int zynq_kms_debug_enabled = ZYNQ_KMS_DEBUG_ALL;
-module_param_named(zynq_kms_debug, zynq_kms_debug_enabled, int, 0600);
-#endif
 
 #ifdef MODULE
 module_platform_driver(zynq_drm_private_driver);
