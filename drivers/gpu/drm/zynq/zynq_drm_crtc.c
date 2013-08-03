@@ -101,36 +101,6 @@ static bool zynq_drm_crtc_mode_fixup(struct drm_crtc *base_crtc,
 	return true;
 }
 
-static int _zynq_drm_crtc_mode_set(struct zynq_drm_crtc *crtc,
-		struct drm_display_mode *mode, int x, int y)
-{
-	struct drm_crtc *base_crtc = &crtc->base;
-	int ret = 0;
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
-
-	/* configure cresample and rgb2yuv */
-	if (crtc->cresample)
-		zynq_cresample_configure(crtc->cresample,
-				mode->hdisplay, mode->vdisplay);
-	if (crtc->rgb2yuv)
-		zynq_rgb2yuv_configure(crtc->rgb2yuv,
-				mode->hdisplay, mode->vdisplay);
-
-	/* configure a plane: vdma and osd layer */
-	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
-		       	base_crtc->fb, 0, 0, mode->hdisplay, mode->vdisplay,
-			x, y, mode->hdisplay, mode->vdisplay);
-	if (ret) {
-		DRM_ERROR("failed to mode set a plane\n");
-		ret = -EINVAL;
-	}
-
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
-
-	return ret;
-}
-
 /* set new mode in crtc pipe */
 static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 	struct drm_display_mode *mode, struct drm_display_mode *adjusted_mode,
@@ -141,17 +111,29 @@ static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-	ret = _zynq_drm_crtc_mode_set(crtc, adjusted_mode, x, y);
+	/* configure cresample and rgb2yuv */
+	if (crtc->cresample)
+		zynq_cresample_configure(crtc->cresample,
+				adjusted_mode->hdisplay,
+				adjusted_mode->vdisplay);
+	if (crtc->rgb2yuv)
+		zynq_rgb2yuv_configure(crtc->rgb2yuv,
+				adjusted_mode->hdisplay,
+				adjusted_mode->vdisplay);
+
+	/* configure a plane: vdma and osd layer */
+	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
+		       	base_crtc->fb, 0, 0,
+			adjusted_mode->hdisplay, adjusted_mode->vdisplay,
+			x, y,
+			adjusted_mode->hdisplay, adjusted_mode->vdisplay);
 	if (ret) {
-		DRM_ERROR("failed to set mode\n");
-		goto err_out;
+		DRM_ERROR("failed to mode set a plane\n");
+		ret = -EINVAL;
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-	return 0;
-err_out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 	return ret;
 }
 
@@ -164,9 +146,15 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
-	ret = _zynq_drm_crtc_mode_set(crtc, &base_crtc->mode, x, y);
+	/* configure a plane */
+	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
+		       	base_crtc->fb, 0, 0,
+			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay,
+			x, y,
+			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay);
 	if (ret) {
-		DRM_ERROR("failed to set mode\n");
+		DRM_ERROR("failed to mode set a plane\n");
+		ret = -EINVAL;
 		goto err_out;
 	}
 
@@ -176,6 +164,7 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
 	return 0;
+
 err_out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 	return ret;
