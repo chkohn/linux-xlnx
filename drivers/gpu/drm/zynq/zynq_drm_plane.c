@@ -39,6 +39,10 @@ struct zynq_drm_plane {
 	int id;					/* plane id */
 	int dpms;				/* dpms */
 	bool priv;				/* private flag */
+	uint32_t x;				/* x position */
+	uint32_t y;				/* y position */
+	dma_addr_t paddr;			/* phys addr of frame buffer */
+	int bpp;				/* bytes per pixel */
 	struct zynq_drm_plane_vdma vdma;	/* vdma */
 	struct zynq_osd_layer *osd_layer;	/* osd layer */
 	struct zynq_drm_plane_manager* manager;	/* plane manager */
@@ -133,10 +137,29 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 void zynq_drm_plane_commit(struct drm_plane *base_plane)
 {
 	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
+	struct dma_async_tx_descriptor *desc;
+	uint32_t height = plane->vdma.dma_config.hsize;
+	int pitch = plane->vdma.dma_config.stride;
+	size_t offset;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
+
+	offset = plane->x * plane->bpp + plane->y * pitch;
+	desc = dmaengine_prep_slave_single(plane->vdma.chan,
+			plane->paddr + offset, height * pitch,
+			DMA_MEM_TO_DEV, 0);
+	if (!desc) {
+		DRM_ERROR("failed to prepare DMA descriptor\n");
+		goto out;
+	}
+
+	/* submit vdma desc */
+	dmaengine_submit(desc);
+
 	/* start vdma with new mode */
 	dma_async_issue_pending(plane->vdma.chan);
+
+out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
 
@@ -150,10 +173,6 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 {
 	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
 	struct drm_gem_cma_object *obj;
-	struct dma_async_tx_descriptor *desc;
-	int bpp = fb->bits_per_pixel / 8;
-	int pitch = fb->pitches[0];
-	size_t offset;
 	int err_ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
@@ -165,45 +184,35 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 		goto err_out;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
-			src_w, src_x, src_h, src_y, (void *)obj->paddr);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "bpp: %d\n", bpp);
+	plane->x = src_x;
+	plane->y = src_y;
+	plane->bpp = fb->bits_per_pixel / 8;
+	plane->paddr = obj->paddr;
 
-	offset = src_x * bpp + src_y * pitch;
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
+			src_w, crtc_x, src_h, crtc_y, (void *)obj->paddr);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "bpp: %d\n", plane->bpp);
 
 	/* configure vdma desc */
-	plane->vdma.dma_config.hsize = src_w * bpp;
+	plane->vdma.dma_config.hsize = src_w * plane->bpp;
 	plane->vdma.dma_config.vsize = src_h;
-	plane->vdma.dma_config.stride = pitch;
+	plane->vdma.dma_config.stride = fb->pitches[0];
 	plane->vdma.dma_config.park = 1;
 	plane->vdma.dma_config.park_frm = 0;
 
 	dmaengine_device_control(plane->vdma.chan, DMA_SLAVE_CONFIG,
 			(unsigned long)&plane->vdma.dma_config);
 
-	desc = dmaengine_prep_slave_single(plane->vdma.chan,
-			obj->paddr + offset, src_h * pitch,
-			DMA_MEM_TO_DEV, 0);
-	if (!desc) {
-		DRM_ERROR("failed to prepare DMA descriptor\n");
-		err_ret = -EINVAL;
-		goto err_out;
-	}
-
-	/* submit vdma desc */
-	dmaengine_submit(desc);
-
 	/* set OSD dimensions */
 	if (plane->manager->osd) {
 		zynq_osd_disable_rue(plane->manager->osd);
 
 		/* if a plane is private, it's for crtc */
-		if (plane->priv) {
+		if (plane->priv)
 			zynq_osd_set_dimension(plane->manager->osd,
 					crtc_w, crtc_h);
-		}
 
-		zynq_osd_layer_set_dimension(plane->osd_layer, src_x, src_y,
+		zynq_osd_layer_set_dimension(plane->osd_layer, crtc_x, crtc_y,
 				src_w, src_h);
 
 		zynq_osd_enable_rue(plane->manager->osd);
