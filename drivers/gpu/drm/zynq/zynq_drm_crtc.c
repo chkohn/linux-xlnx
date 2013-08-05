@@ -220,6 +220,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 {
 	struct zynq_drm_crtc *crtc;
 	struct drm_crtc *err_ret;
+	struct device_node *sub_node;
 	int possible_crtcs = 1;
 	int res;
 
@@ -233,9 +234,16 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	}
 
 	/* probe chroma resampler and enable */
-	crtc->cresample = zynq_cresample_probe(drm->dev, "xlnx,vcresample");
-	if (crtc->cresample)
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "cresample is probed\n");
+	sub_node = of_parse_phandle(drm->dev->of_node, "cresample", 0);
+	if (sub_node) {
+		crtc->cresample = zynq_cresample_probe(drm->dev, sub_node);
+		of_node_put(sub_node);
+		if (IS_ERR_OR_NULL(crtc->cresample)) {
+			DRM_ERROR("failed to probe a cresample\n");
+			err_ret = (void *)crtc->cresample;
+			goto err_cresample;
+		}
+	}
 
 	/* probe color space converter and enable */
 	crtc->rgb2yuv = zynq_rgb2yuv_probe(drm->dev, "xlnx,vrgb2ycrcb");
@@ -286,6 +294,7 @@ err_plane_manager:
 		zynq_rgb2yuv_remove(crtc->rgb2yuv);
 	if (crtc->cresample)
 		zynq_cresample_remove(crtc->cresample);
+err_cresample:
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 	return err_ret;
