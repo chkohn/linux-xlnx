@@ -379,16 +379,7 @@ static struct platform_driver zynq_drm_private_driver = {
 	},
 };
 
-#ifdef MODULE
 module_platform_driver(zynq_drm_private_driver);
-#else
-static int __init zynq_drm_init(void)
-{
-	return platform_driver_register(&zynq_drm_private_driver);
-}
-
-late_initcall(zynq_drm_init);
-#endif
 
 MODULE_AUTHOR("hyun woo kwon, Xilinx, Inc. <hyunk@xilinx.com>");
 MODULE_DESCRIPTION("Xilinx DRM KMS Driver");
