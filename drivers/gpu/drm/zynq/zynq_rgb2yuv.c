@@ -16,6 +16,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
@@ -113,28 +114,40 @@ void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv)
 }
 
 /* probe rgb2yuv */
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev, char *compatible)
+struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
+		struct device_node *node)
 {
 	struct zynq_rgb2yuv *rgb2yuv;
+	struct zynq_rgb2yuv *err_ret;
+	struct device_node *_node;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
 	rgb2yuv = devm_kzalloc(dev, sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
 		pr_err("failed to alloc rgb2yuv\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_rgb2yuv;
 	}
 
-	rgb2yuv->node = of_find_compatible_node(NULL, NULL, compatible);
-	if (!rgb2yuv->node) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "no rgb2yuv(%s) in dst\n",
-				compatible);
+	_node = node;
+	if (!_node) {
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "no device node is given\n");
+		rgb2yuv->node = of_find_compatible_node(NULL, NULL,
+				"xlnx,vrgb2yuv");
+		_node = rgb2yuv->node;
+	}
+
+	if (!_node) {
+		pr_err("failed to get a device node for rgb2yuv\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_node;
 	}
 
-	rgb2yuv->base = of_iomap(rgb2yuv->node, 0);
+	rgb2yuv->base = of_iomap(_node, 0);
 	if (!rgb2yuv->base) {
 		pr_err("failed to ioremap rgb2yuv\n");
+		err_ret = ERR_PTR(-ENXIO);
 		goto err_iomap;
 	}
 
@@ -147,7 +160,7 @@ err_iomap:
 err_node:
 err_rgb2yuv:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-	return NULL;
+	return err_ret;
 }
 
 /* remove rgb2yuv */

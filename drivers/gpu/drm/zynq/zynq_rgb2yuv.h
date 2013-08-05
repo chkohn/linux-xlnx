@@ -27,8 +27,10 @@ void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv);
 void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv);
 
 struct device;
+struct device_node;
 
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev, char *compatible);
+struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
+		struct device_node *node);
 void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv);
 
 #endif

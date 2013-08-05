@@ -246,9 +246,16 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	}
 
 	/* probe color space converter and enable */
-	crtc->rgb2yuv = zynq_rgb2yuv_probe(drm->dev, "xlnx,vrgb2ycrcb");
-	if (crtc->rgb2yuv)
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "rgb2yuv is probed\n");
+	sub_node = of_parse_phandle(drm->dev->of_node, "rgb2yuv", 0);
+	if (sub_node) {
+		crtc->rgb2yuv = zynq_rgb2yuv_probe(drm->dev, sub_node);
+		of_node_put(sub_node);
+		if (IS_ERR_OR_NULL(crtc->rgb2yuv)) {
+			DRM_ERROR("failed to probe a rgb2yuv\n");
+			err_ret = (void *)crtc->rgb2yuv;
+			goto err_rgb2yuv;
+		}
+	}
 
 	/* probe a plane manager */
 	crtc->plane_manager = zynq_drm_plane_probe_manager(drm);
@@ -292,6 +299,7 @@ err_plane:
 err_plane_manager:
 	if (crtc->rgb2yuv)
 		zynq_rgb2yuv_remove(crtc->rgb2yuv);
+err_rgb2yuv:
 	if (crtc->cresample)
 		zynq_cresample_remove(crtc->cresample);
 err_cresample:
