@@ -66,24 +66,26 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
 			encoder->dpms, dpms);
 
-	if (encoder->dpms != dpms) {
-		encoder->dpms = dpms;
-		switch (dpms) {
-		case DRM_MODE_DPMS_ON:
-			zynq_vtc_enable(encoder->vtc);
-			if (encoder_sfuncs->dpms)
-				encoder_sfuncs->dpms(base_encoder, dpms);
-			break;
-		default:
-			/* TODO: reset_si570(&encoder->si570->dev, 1);*/
-			if (encoder_sfuncs->dpms)
-				encoder_sfuncs->dpms(base_encoder, dpms);
-			zynq_vtc_disable(encoder->vtc);
-			zynq_vtc_reset(encoder->vtc);
-			break;
-		}
+	if (encoder->dpms == dpms)
+		goto out;
+
+	encoder->dpms = dpms;
+	switch (dpms) {
+	case DRM_MODE_DPMS_ON:
+		zynq_vtc_enable(encoder->vtc);
+		if (encoder_sfuncs->dpms)
+			encoder_sfuncs->dpms(base_encoder, dpms);
+		break;
+	default:
+		/* TODO: reset_si570(&encoder->si570->dev, 1);*/
+		if (encoder_sfuncs->dpms)
+			encoder_sfuncs->dpms(base_encoder, dpms);
+		zynq_vtc_disable(encoder->vtc);
+		zynq_vtc_reset(encoder->vtc);
+		break;
 	}
 
+out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
 

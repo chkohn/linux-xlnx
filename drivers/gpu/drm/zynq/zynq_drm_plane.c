@@ -75,61 +75,63 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "dpms: %d -> %d\n", plane->dpms, dpms);
 
-	if (plane->dpms != dpms) {
-		plane->dpms = dpms;
-		switch (dpms) {
-		case DRM_MODE_DPMS_ON:
-			/* start vdma engine */
-			dma_async_issue_pending(plane->vdma.chan);
+	if (plane->dpms == dpms)
+		goto out;
 
-			/* enable osd */
-			if (manager->osd) {
-				zynq_osd_disable_rue(manager->osd);
+	plane->dpms = dpms;
+	switch (dpms) {
+	case DRM_MODE_DPMS_ON:
+		/* start vdma engine */
+		dma_async_issue_pending(plane->vdma.chan);
 
-				/* set zorder(= id for now) */
-				zynq_osd_layer_set_priority(plane->osd_layer,
-						plane->id);
-				/* FIXME: set global alpha for now */
-				zynq_osd_layer_set_alpha(plane->osd_layer, 1,
-						0xff);
-				zynq_osd_layer_enable(plane->osd_layer);
-				if (plane->priv) {
-					/* set background color as black */
-					zynq_osd_set_color(manager->osd, 0x0,
-							0x0, 0x0);
-					zynq_osd_enable(manager->osd);
-				}
+		/* enable osd */
+		if (manager->osd) {
+			zynq_osd_disable_rue(manager->osd);
 
-				zynq_osd_enable_rue(manager->osd);
+			/* set zorder(= id for now) */
+			zynq_osd_layer_set_priority(plane->osd_layer,
+					plane->id);
+			/* FIXME: set global alpha for now */
+			zynq_osd_layer_set_alpha(plane->osd_layer, 1,
+					0xff);
+			zynq_osd_layer_enable(plane->osd_layer);
+			if (plane->priv) {
+				/* set background color as black */
+				zynq_osd_set_color(manager->osd, 0x0,
+						0x0, 0x0);
+				zynq_osd_enable(manager->osd);
 			}
 
-			break;
-		default:
-			/* disable/reset osd */
-			if (manager->osd) {
-				zynq_osd_disable_rue(manager->osd);
-
-				zynq_osd_layer_set_dimension(plane->osd_layer,
-						0, 0, 0, 0);
-				zynq_osd_layer_disable(plane->osd_layer);
-				if (plane->priv)
-					zynq_osd_reset(manager->osd);
-
-				zynq_osd_enable_rue(manager->osd);
-			}
-
-			/* reset vdma */
-			dma_config.reset = 1;
-			dmaengine_device_control(plane->vdma.chan,
-					DMA_SLAVE_CONFIG,
-					(unsigned long)&dma_config);
-
-			/* stop vdma engine and release descriptors */
-			dmaengine_terminate_all(plane->vdma.chan);
-			break;
+			zynq_osd_enable_rue(manager->osd);
 		}
+
+		break;
+	default:
+		/* disable/reset osd */
+		if (manager->osd) {
+			zynq_osd_disable_rue(manager->osd);
+
+			zynq_osd_layer_set_dimension(plane->osd_layer,
+					0, 0, 0, 0);
+			zynq_osd_layer_disable(plane->osd_layer);
+			if (plane->priv)
+				zynq_osd_reset(manager->osd);
+
+			zynq_osd_enable_rue(manager->osd);
+		}
+
+		/* reset vdma */
+		dma_config.reset = 1;
+		dmaengine_device_control(plane->vdma.chan,
+				DMA_SLAVE_CONFIG,
+				(unsigned long)&dma_config);
+
+		/* stop vdma engine and release descriptors */
+		dmaengine_terminate_all(plane->vdma.chan);
+		break;
 	}
 
+out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 }
 

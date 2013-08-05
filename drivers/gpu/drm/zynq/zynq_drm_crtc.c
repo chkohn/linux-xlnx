@@ -47,30 +47,32 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "dpms: %d -> %d\n", crtc->dpms, dpms);
 
-	if (crtc->dpms != dpms) {
-		crtc->dpms = dpms;
-		switch (dpms) {
-		case DRM_MODE_DPMS_ON:
-			zynq_drm_plane_dpms(crtc->priv_plane, dpms);
-			if (crtc->rgb2yuv)
-				zynq_rgb2yuv_enable(crtc->rgb2yuv);
-			if (crtc->cresample)
-				zynq_cresample_enable(crtc->cresample);
-			break;
-		default:
-			if (crtc->cresample) {
-				zynq_cresample_disable(crtc->cresample);
-				zynq_cresample_reset(crtc->cresample);
-			}
-			if (crtc->rgb2yuv) {
-				zynq_rgb2yuv_disable(crtc->rgb2yuv);
-				zynq_rgb2yuv_reset(crtc->rgb2yuv);
-			}
-			zynq_drm_plane_dpms(crtc->priv_plane, dpms);
-			break;
+	if (crtc->dpms == dpms)
+		goto out;
+
+	crtc->dpms = dpms;
+	switch (dpms) {
+	case DRM_MODE_DPMS_ON:
+		zynq_drm_plane_dpms(crtc->priv_plane, dpms);
+		if (crtc->rgb2yuv)
+			zynq_rgb2yuv_enable(crtc->rgb2yuv);
+		if (crtc->cresample)
+			zynq_cresample_enable(crtc->cresample);
+		break;
+	default:
+		if (crtc->cresample) {
+			zynq_cresample_disable(crtc->cresample);
+			zynq_cresample_reset(crtc->cresample);
 		}
+		if (crtc->rgb2yuv) {
+			zynq_rgb2yuv_disable(crtc->rgb2yuv);
+			zynq_rgb2yuv_reset(crtc->rgb2yuv);
+		}
+		zynq_drm_plane_dpms(crtc->priv_plane, dpms);
+		break;
 	}
 
+out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
 
