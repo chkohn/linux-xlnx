@@ -355,9 +355,9 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	if (manager->osd) {
 		/* create an osd layer */
 		plane->osd_layer = zynq_osd_layer_get(manager->osd);
-		if (IS_ERR(plane->osd_layer)) {
+		if (IS_ERR_OR_NULL(plane->osd_layer)) {
 			DRM_ERROR("failed to create a osd layer\n");
-			err_ret = ERR_PTR(-ENODEV);
+			err_ret = (void *)plane->osd_layer;
 			plane->osd_layer = NULL;
 			goto err_osd_layer;
 		}
@@ -406,9 +406,9 @@ struct drm_plane *zynq_drm_plane_create_private(
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
 	plane = _zynq_drm_plane_create(manager, possible_crtcs, true);
-	if (IS_ERR(plane)) {
+	if (IS_ERR_OR_NULL(plane)) {
 		DRM_ERROR("failed to allocate a private plane\n");
-		err_ret = ERR_PTR(-ENODEV);;
+		err_ret = (void *)plane;
 		goto err_out;
 	}
 
@@ -487,11 +487,12 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	struct zynq_drm_plane_manager *manager;
 	struct zynq_drm_plane_manager *err_ret;
 	struct device *dev = drm->dev;
+	struct device_node *sub_node;
 	u32 prop;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
-	manager = devm_kzalloc(drm->dev, sizeof(*manager), GFP_KERNEL);
+	manager = devm_kzalloc(dev, sizeof(*manager), GFP_KERNEL);
 	if (!manager) {
 		DRM_ERROR("failed to allocate a plane manager\n");
 		err_ret = ERR_PTR(-ENOMEM);
@@ -506,14 +507,22 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	manager->num_planes = prop;
 
 	/* probe an OSD. proceed even if there's no OSD */
-	manager->osd = zynq_osd_probe(dev, "xlnx,vosd");
-	if (manager->osd)
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "OSD is probed\n");
+	sub_node = of_parse_phandle(dev->of_node, "osd", 0);
+	if (sub_node) {
+		manager->osd = zynq_osd_probe(dev, sub_node);
+		of_node_put(sub_node);
+		if (IS_ERR_OR_NULL(manager->osd)) {
+			DRM_ERROR("failed to probe an osd\n");
+			err_ret = (void *)manager->osd;
+			goto err_osd;
+		}
+	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 
 	return manager;
 
+err_osd:
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
 	return err_ret;

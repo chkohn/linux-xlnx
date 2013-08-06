@@ -353,11 +353,12 @@ void zynq_osd_disable_rue(struct zynq_osd *osd)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
 
-struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible)
+struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 {
 	struct zynq_osd *osd;
 	struct zynq_osd *err_ret;
 	struct zynq_osd_layer *layer;
+	struct device_node *_node;
 	u32 prop;
 	int i;
 
@@ -366,23 +367,32 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible)
 	osd = devm_kzalloc(dev, sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
 		pr_err("failed to alloc osd\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_osd;
 	}
 
-	osd->node = of_find_compatible_node(NULL, NULL, compatible);
-	if (!osd->node) {
-		pr_err("failed to find a compatible node(%s)\n", compatible);
+	_node = node;
+	if (!_node) {
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "no device node is given\n");
+		osd->node = of_find_compatible_node(NULL, NULL, "xlnx,vosd");
+		_node = osd->node;
+	}
+
+	if (!_node) {
+		pr_err("failed to get a device node for osd\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_node;
 	}
 
-	osd->base = of_iomap(osd->node, 0);
+	osd->base = of_iomap(_node, 0);
 	if (!osd->base) {
 		pr_err("failed to ioremap osd\n");
+		err_ret = ERR_PTR(-ENXIO);
 		goto err_iomap;
 	}
 
 	/* TODO: duplicate get prop in plane. consider clean up */
-	if (of_property_read_u32(osd->node, "xlnx,num-layers", &prop)) {
+	if (of_property_read_u32(_node, "xlnx,num-layers", &prop)) {
 		pr_err("failed to get num of layers prop\n");
 		goto err_prop;
 	}

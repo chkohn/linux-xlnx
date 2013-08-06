@@ -55,8 +55,9 @@ void zynq_osd_disable_rue(struct zynq_osd *osd);
 
 
 struct device;
+struct device_node;
 
-struct zynq_osd *zynq_osd_probe(struct device *dev, char *compatible);
+struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node);
 void zynq_osd_remove(struct zynq_osd *osd);
 
 #endif

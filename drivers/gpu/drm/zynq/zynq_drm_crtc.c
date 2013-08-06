@@ -269,7 +269,7 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	/* there's only one crtc now */
 	crtc->priv_plane = zynq_drm_plane_create_private(crtc->plane_manager,
 			possible_crtcs);
-	if (IS_ERR(crtc->priv_plane)) {
+	if (IS_ERR_OR_NULL(crtc->plane_manager)) {
 		DRM_ERROR("failed to create a private plane for crtc\n");
 		err_ret = ERR_PTR(-ENODEV);
 		goto err_plane;
