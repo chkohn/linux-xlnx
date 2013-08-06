@@ -40,7 +40,6 @@
 
 struct zynq_cresample {
 	void __iomem *base;		/* cresample base addr */
-	struct device_node *node;	/* device node */
 };
 
 /* io write operations */
@@ -124,9 +123,14 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 {
 	struct zynq_cresample *cresample;
 	struct zynq_cresample *err_ret;
-	struct device_node *_node;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+
+	if (!node) {
+		pr_err("no device node is given for cresample\n");
+		err_ret = ERR_PTR(-EINVAL);
+		goto err_node;
+	}
 
 	cresample = devm_kzalloc(dev, sizeof(*cresample), GFP_KERNEL);
 	if (!cresample) {
@@ -135,21 +139,7 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 		goto err_cresample;
 	}
 
-	_node = node;
-	if (!_node) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "no device node is given\n");
-		cresample->node = of_find_compatible_node(NULL, NULL,
-				"xlnx,vcresample");
-		_node = cresample->node;
-	}
-
-	if (!_node) {
-		pr_err("failed to get a device node for cresample\n");
-		err_ret = ERR_PTR(-ENODEV);
-		goto err_node;
-	}
-
-	cresample->base = of_iomap(_node, 0);
+	cresample->base = of_iomap(node, 0);
 	if (!cresample->base) {
 		pr_err("failed to ioremap cresample\n");
 		err_ret = ERR_PTR(-ENXIO);
@@ -161,9 +151,8 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 	return cresample;
 
 err_iomap:
-	of_node_put(cresample->node);
-err_node:
 err_cresample:
+err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 	return err_ret;
 }
@@ -175,7 +164,6 @@ void zynq_cresample_remove(struct zynq_cresample *cresample)
 	zynq_cresample_reset(cresample);
 
 	iounmap(cresample->base);
-	of_node_put(cresample->node);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 }
