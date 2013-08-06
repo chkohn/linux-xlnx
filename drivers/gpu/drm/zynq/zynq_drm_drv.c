@@ -177,7 +177,7 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	/* create a zynq crtc */
 	private->crtc = zynq_drm_crtc_create(drm);
-	if (IS_ERR(private->crtc)) {
+	if (IS_ERR_OR_NULL(private->crtc)) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq crtc\n");
 		err = PTR_ERR(private->crtc);
 		goto err_crtc;
@@ -185,7 +185,7 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	/* create a zynq encoder */
 	private->encoder = zynq_drm_encoder_create(drm);
-	if (IS_ERR(private->encoder)) {
+	if (IS_ERR_OR_NULL(private->encoder)) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "failed to create zynq encoder\n");
 		err = PTR_ERR(private->encoder);
 		goto err_encoder;
@@ -200,8 +200,9 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		goto err_connector;
 	}
 
+	/* initialize zynq cma framebuffer */
 	private->fbdev = drm_fbdev_cma_init(drm, 32, 1, 1);
-	if (IS_ERR(private->fbdev)) {
+	if (IS_ERR_OR_NULL(private->fbdev)) {
 		DRM_ERROR("failed to initialize drm cma fbdev\n");
 		err = PTR_ERR(private->fbdev);
 		goto err_fbdev;
@@ -212,7 +213,6 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 
 	drm_kms_helper_poll_init(drm);
 
-	/* initialize zynq cma framebuffer */
 	drm_helper_disable_unused_functions(drm);
 
 	platform_set_drvdata(pdev, private);
