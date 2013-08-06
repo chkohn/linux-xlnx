@@ -39,7 +39,6 @@
 
 struct zynq_rgb2yuv {
 	void __iomem *base;		/* rgb2yuv base addr */
-	struct device_node *node;	/* device node */
 };
 
 /* io write operations */
@@ -119,9 +118,14 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 {
 	struct zynq_rgb2yuv *rgb2yuv;
 	struct zynq_rgb2yuv *err_ret;
-	struct device_node *_node;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+
+	if (!node) {
+		pr_err("no device node is given for rgb2yuv\n");
+		err_ret = ERR_PTR(-EINVAL);
+		goto err_node;
+	}
 
 	rgb2yuv = devm_kzalloc(dev, sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
@@ -130,21 +134,7 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 		goto err_rgb2yuv;
 	}
 
-	_node = node;
-	if (!_node) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "no device node is given\n");
-		rgb2yuv->node = of_find_compatible_node(NULL, NULL,
-				"xlnx,vrgb2yuv");
-		_node = rgb2yuv->node;
-	}
-
-	if (!_node) {
-		pr_err("failed to get a device node for rgb2yuv\n");
-		err_ret = ERR_PTR(-ENODEV);
-		goto err_node;
-	}
-
-	rgb2yuv->base = of_iomap(_node, 0);
+	rgb2yuv->base = of_iomap(node, 0);
 	if (!rgb2yuv->base) {
 		pr_err("failed to ioremap rgb2yuv\n");
 		err_ret = ERR_PTR(-ENXIO);
@@ -156,9 +146,8 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 	return rgb2yuv;
 
 err_iomap:
-	of_node_put(rgb2yuv->node);
-err_node:
 err_rgb2yuv:
+err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 	return err_ret;
 }
@@ -167,8 +156,10 @@ err_rgb2yuv:
 void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+
 	zynq_rgb2yuv_reset(rgb2yuv);
+
 	iounmap(rgb2yuv->base);
-	of_node_put(rgb2yuv->node);
+
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 }
