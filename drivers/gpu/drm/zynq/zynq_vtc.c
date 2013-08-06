@@ -178,7 +178,6 @@
 struct zynq_vtc {
 	void __iomem *base;		/* vtc base addr */
 	int irq;			/* irq */
-	struct device_node *node;	/* device node */
 };
 
 struct zynq_vtc_polarity {
@@ -508,9 +507,14 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 {
 	struct zynq_vtc *vtc;
 	struct zynq_vtc *err_ret;
-	struct device_node *_node;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+
+	if (!node) {
+		pr_err("no device node is given for vtc\n");
+		err_ret = ERR_PTR(-EINVAL);
+		goto err_node;
+	}
 
 	vtc = devm_kzalloc(dev, sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
@@ -519,20 +523,7 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 		goto err_vtc;
 	}
 
-	_node = node;
-	if (!node) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "no device node is given\n");
-		vtc->node = of_find_compatible_node(NULL, NULL, "xlnx,vtc");
-		_node = vtc->node;
-	}
-
-	if (!_node) {
-		pr_err("failed to find a compatible node\n");
-		err_ret = ERR_PTR(-ENODEV);
-		goto err_node;
-	}
-
-	vtc->base = of_iomap(_node, 0);
+	vtc->base = of_iomap(node, 0);
 	if (!vtc->base) {
 		pr_err("failed to iomap vtc\n");
 		err_ret = ERR_PTR(-ENXIO);
@@ -540,7 +531,7 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 	}
 
 	zynq_vtc_intr_disable(vtc, VTC_IXR_ALLINTR_MASK);
-	vtc->irq = irq_of_parse_and_map(vtc->node, 0);
+	vtc->irq = irq_of_parse_and_map(node, 0);
 	if (vtc->irq > 0) {
 		if (devm_request_irq(dev, vtc->irq, zynq_vtc_intr_handler,
 					IRQF_SHARED, "zynq_vtc", vtc)) {
@@ -556,9 +547,8 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 	return vtc;
 
 err_iomap:
-	of_node_put(vtc->node);
-err_node:
 err_vtc:
+err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 	return err_ret;
 }
@@ -571,7 +561,6 @@ void zynq_vtc_remove(struct zynq_vtc *vtc)
 	zynq_vtc_reset(vtc);
 
 	iounmap(vtc->base);
-	of_node_put(vtc->node);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
