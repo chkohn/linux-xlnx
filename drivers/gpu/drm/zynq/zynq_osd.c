@@ -119,7 +119,6 @@ struct zynq_osd_layer {
 
 struct zynq_osd {
 	void __iomem *base;		/* osd base addr */
-	struct device_node *node;	/* device node */
 	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
 	u32 width;			/* width */
@@ -358,11 +357,16 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 	struct zynq_osd *osd;
 	struct zynq_osd *err_ret;
 	struct zynq_osd_layer *layer;
-	struct device_node *_node;
 	u32 prop;
 	int i;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+
+	if (!node) {
+		pr_err("no device node is given for osd\n");
+		err_ret = ERR_PTR(-EINVAL);
+		goto err_node;
+	}
 
 	osd = devm_kzalloc(dev, sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
@@ -371,20 +375,7 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 		goto err_osd;
 	}
 
-	_node = node;
-	if (!_node) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "no device node is given\n");
-		osd->node = of_find_compatible_node(NULL, NULL, "xlnx,vosd");
-		_node = osd->node;
-	}
-
-	if (!_node) {
-		pr_err("failed to get a device node for osd\n");
-		err_ret = ERR_PTR(-ENODEV);
-		goto err_node;
-	}
-
-	osd->base = of_iomap(_node, 0);
+	osd->base = of_iomap(node, 0);
 	if (!osd->base) {
 		pr_err("failed to ioremap osd\n");
 		err_ret = ERR_PTR(-ENXIO);
@@ -392,7 +383,7 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 	}
 
 	/* TODO: duplicate get prop in plane. consider clean up */
-	if (of_property_read_u32(_node, "xlnx,num-layers", &prop)) {
+	if (of_property_read_u32(node, "xlnx,num-layers", &prop)) {
 		pr_err("failed to get num of layers prop\n");
 		goto err_prop;
 	}
@@ -420,9 +411,8 @@ err_layers:
 err_prop:
 	iounmap(osd->base);
 err_iomap:
-	of_node_put(osd->node);
-err_node:
 err_osd:
+err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return err_ret;
 }
@@ -432,8 +422,8 @@ void zynq_osd_remove(struct zynq_osd *osd)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
 	zynq_osd_reset(osd);
+
 	iounmap(osd->base);
-	of_node_put(osd->node);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 }
