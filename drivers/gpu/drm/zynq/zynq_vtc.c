@@ -16,6 +16,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/err.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/of_address.h>
@@ -503,27 +504,38 @@ static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
 }
 
 /* probe vtc */
-struct zynq_vtc *zynq_vtc_probe(struct device *dev, char *compatible)
+struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 {
 	struct zynq_vtc *vtc;
+	struct zynq_vtc *err_ret;
+	struct device_node *_node;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
 	vtc = devm_kzalloc(dev, sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
 		pr_err("failed to alloc vtc\n");
+		err_ret = ERR_PTR(-ENOMEM);
 		goto err_vtc;
 	}
 
-	vtc->node = of_find_compatible_node(NULL, NULL, compatible);
-	if (!vtc->node) {
+	_node = node;
+	if (!node) {
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "no device node is given\n");
+		vtc->node = of_find_compatible_node(NULL, NULL, "xlnx,vtc");
+		_node = vtc->node;
+	}
+
+	if (!_node) {
 		pr_err("failed to find a compatible node\n");
+		err_ret = ERR_PTR(-ENODEV);
 		goto err_node;
 	}
 
-	vtc->base = of_iomap(vtc->node, 0);
+	vtc->base = of_iomap(_node, 0);
 	if (!vtc->base) {
 		pr_err("failed to iomap vtc\n");
+		err_ret = ERR_PTR(-ENXIO);
 		goto err_iomap;
 	}
 
@@ -548,7 +560,7 @@ err_iomap:
 err_node:
 err_vtc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	return NULL;
+	return err_ret;
 }
 
 /* remove vtc */

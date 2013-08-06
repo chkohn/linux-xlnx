@@ -41,8 +41,9 @@ void zynq_vtc_enable(struct zynq_vtc *vtc);
 void zynq_vtc_disable(struct zynq_vtc *vtc);
 
 struct device;
+struct device_node;
 
-struct zynq_vtc *zynq_vtc_probe(struct device *dev, char *compatible);
+struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node);
 void zynq_vtc_remove(struct zynq_vtc *vtc);
 
 #endif

@@ -16,6 +16,7 @@
  */
 
 #include <linux/hdmi.h>
+#include <linux/err.h>
 #include <linux/i2c.h>
 #include <linux/i2c/si570.h>
 #include <linux/of.h>
@@ -268,7 +269,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 {
 	struct zynq_drm_encoder *encoder;
 	struct platform_device *pdev = drm->platformdev;
-	struct device_node *slave_node;
+	struct device_node *sub_node;
 	struct drm_i2c_encoder_driver *i2c_driver;
 	struct drm_encoder *err_ret;
 	int res;
@@ -290,23 +291,31 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 		goto err_si570;
 	}
 
-	encoder->vtc = zynq_vtc_probe(drm->dev, "xlnx,vtc");
-	if (!encoder->vtc) {
-		DRM_ERROR("failed to probe video timing controller\n");
+	sub_node = of_parse_phandle(pdev->dev.of_node, "tc", 0);
+	if (!sub_node) {
+		DRM_ERROR("failed to get a video timing controller node\n");
 		err_ret = ERR_PTR(-ENODEV);
 		goto err_vtc;
 	}
 
+	encoder->vtc = zynq_vtc_probe(drm->dev, sub_node);
+	of_node_put(sub_node);
+	if (IS_ERR_OR_NULL(encoder->vtc)) {
+		DRM_ERROR("failed to probe video timing controller\n");
+		err_ret = (void *)encoder->vtc;
+		goto err_vtc;
+	}
+
 	/* get slave encoder */
-	slave_node = of_parse_phandle(pdev->dev.of_node, "encoder-slave", 0);
-	if (!slave_node) {
+	sub_node = of_parse_phandle(pdev->dev.of_node, "encoder-slave", 0);
+	if (!sub_node) {
 		DRM_ERROR("failed to get encoder slave node\n");
 		err_ret = ERR_PTR(-ENODEV);
 		goto err_slave;
 	}
 
-	encoder->i2c_slave = of_find_i2c_device_by_node(slave_node);
-	of_node_put(slave_node);
+	encoder->i2c_slave = of_find_i2c_device_by_node(sub_node);
+	of_node_put(sub_node);
 	if (!encoder->i2c_slave) {
 		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get encoder slv\n");
 		err_ret = ERR_PTR(-ENODEV);
