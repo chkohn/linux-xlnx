@@ -16,6 +16,8 @@
  */
 
 #include <linux/device.h>
+#include <linux/i2c.h>
+#include <linux/i2c/si570.h>
 
 #include <drm/drmP.h>
 #include <drm/drm_crtc.h>
@@ -28,12 +30,15 @@
 
 #include "zynq_cresample.h"
 #include "zynq_rgb2yuv.h"
+#include "zynq_vtc.h"
 
 struct zynq_drm_crtc {
 	struct drm_crtc base;			/* base drm crtc object */
 	struct drm_plane *priv_plane;		/* crtc's private plane */
 	struct zynq_cresample *cresample;	/* chroma resampler */
 	struct zynq_rgb2yuv *rgb2yuv;		/* color space converter */
+	struct i2c_client *si570;		/* si570 pixel clock */
+	struct zynq_vtc *vtc;			/* video timing controller */
 	struct zynq_drm_plane_manager *plane_manager;	/* plane manager */
 	int dpms;				/* dpms */
 };
@@ -58,8 +63,12 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 			zynq_rgb2yuv_enable(crtc->rgb2yuv);
 		if (crtc->cresample)
 			zynq_cresample_enable(crtc->cresample);
+		zynq_vtc_enable(crtc->vtc);
 		break;
 	default:
+		/* TODO: reset_si570(&crtc->si570->dev, 1);*/
+		zynq_vtc_disable(crtc->vtc);
+		zynq_vtc_reset(crtc->vtc);
 		if (crtc->cresample) {
 			zynq_cresample_disable(crtc->cresample);
 			zynq_cresample_reset(crtc->cresample);
@@ -109,6 +118,7 @@ static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 	int x, int y, struct drm_framebuffer *old_fb)
 {
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	struct zynq_vtc_sig_config vtc_sig_config;
 	int ret;
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
@@ -133,6 +143,24 @@ static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 		DRM_ERROR("failed to mode set a plane\n");
 		ret = -EINVAL;
 	}
+
+	/* set vtc */
+	vtc_sig_config.htotal = adjusted_mode->htotal;
+	vtc_sig_config.hfrontporch_start = adjusted_mode->hdisplay;
+	vtc_sig_config.hsync_start = adjusted_mode->hsync_start;
+	vtc_sig_config.hbackporch_start = adjusted_mode->hsync_end;
+	vtc_sig_config.hactive_start = 0;
+
+	vtc_sig_config.vtotal = adjusted_mode->vtotal;
+	vtc_sig_config.vfrontporch_start = adjusted_mode->vdisplay;
+	vtc_sig_config.vsync_start = adjusted_mode->vsync_start;
+	vtc_sig_config.vbackporch_start = adjusted_mode->vsync_end;
+	vtc_sig_config.vactive_start = 0;
+
+	zynq_vtc_config_sig(crtc->vtc, &vtc_sig_config);
+
+	/* set si570 pixel clock */
+	set_frequency_si570(&crtc->si570->dev, adjusted_mode->clock * 1000);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 
@@ -199,6 +227,8 @@ void zynq_drm_crtc_destroy(struct drm_crtc *base_crtc)
 	zynq_drm_crtc_dpms(base_crtc, DRM_MODE_DPMS_OFF);
 
 	drm_crtc_cleanup(base_crtc);
+
+	zynq_vtc_remove(crtc->vtc);
 	zynq_drm_plane_destroy_planes(crtc->plane_manager);
 	zynq_drm_plane_destroy_private(crtc->plane_manager, crtc->priv_plane);
 	zynq_drm_plane_remove_manager(crtc->plane_manager);
@@ -278,6 +308,28 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	/* create extra planes */
 	zynq_drm_plane_create_planes(crtc->plane_manager, possible_crtcs);
 
+	crtc->si570 = get_i2c_client_si570();
+	if (!crtc->si570) {
+		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get si570 clock\n");
+		err_ret = ERR_PTR(-EPROBE_DEFER);
+		goto err_si570;
+	}
+
+	sub_node = of_parse_phandle(drm->dev->of_node, "tc", 0);
+	if (!sub_node) {
+		DRM_ERROR("failed to get a video timing controller node\n");
+		err_ret = ERR_PTR(-ENODEV);
+		goto err_vtc;
+	}
+
+	crtc->vtc = zynq_vtc_probe(drm->dev, sub_node);
+	of_node_put(sub_node);
+	if (IS_ERR_OR_NULL(crtc->vtc)) {
+		DRM_ERROR("failed to probe video timing controller\n");
+		err_ret = (void *)crtc->vtc;
+		goto err_vtc;
+	}
+
 	/* initialize drm crtc */
 	res = drm_crtc_init(drm, &crtc->base, &zynq_drm_crtc_funcs);
 	if (res) {
@@ -292,6 +344,9 @@ struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm)
 	return &crtc->base;
 
 err_init:
+	zynq_vtc_remove(crtc->vtc);
+err_si570:
+err_vtc:
 	zynq_drm_plane_destroy_planes(crtc->plane_manager);
 	zynq_drm_plane_destroy_private(crtc->plane_manager, crtc->priv_plane);
 err_plane:

@@ -18,7 +18,6 @@
 #include <linux/hdmi.h>
 #include <linux/err.h>
 #include <linux/i2c.h>
-#include <linux/i2c/si570.h>
 #include <linux/of.h>
 #include <linux/of_i2c.h>
 #include <linux/platform_device.h>
@@ -32,14 +31,10 @@
 
 #include "zynq_drm_drv.h"
 
-#include "zynq_vtc.h"
-
 struct zynq_drm_encoder {
 	struct drm_encoder_slave slave;	/* slave encoder */
 	struct i2c_client *i2c_slave;	/* i2c slave encoder client */
 	bool rgb;			/* rgb flag */
-	struct i2c_client *si570;	/* si570 pixel clock */
-	struct zynq_vtc *vtc;		/* video timing controller */
 	int dpms;			/* dpms */
 };
 
@@ -71,20 +66,8 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 		goto out;
 
 	encoder->dpms = dpms;
-	switch (dpms) {
-	case DRM_MODE_DPMS_ON:
-		zynq_vtc_enable(encoder->vtc);
-		if (encoder_sfuncs->dpms)
-			encoder_sfuncs->dpms(base_encoder, dpms);
-		break;
-	default:
-		/* TODO: reset_si570(&encoder->si570->dev, 1);*/
-		if (encoder_sfuncs->dpms)
-			encoder_sfuncs->dpms(base_encoder, dpms);
-		zynq_vtc_disable(encoder->vtc);
-		zynq_vtc_reset(encoder->vtc);
-		break;
-	}
+	if (encoder_sfuncs->dpms)
+		encoder_sfuncs->dpms(base_encoder, dpms);
 
 out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
@@ -117,7 +100,6 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct drm_display_mode *mode, struct drm_display_mode *adjusted_mode)
 {
 	struct zynq_drm_encoder *encoder;
-	struct zynq_vtc_sig_config vtc_sig_config;
 	struct drm_device *dev = base_encoder->dev;
 	struct drm_encoder_slave *encoder_slave;
 	struct drm_encoder_slave_funcs *encoder_sfuncs;
@@ -145,24 +127,6 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 		DRM_ERROR("failed to find a connector\n");
 		goto out;
 	}
-
-	/* set vtc */
-	vtc_sig_config.htotal = adjusted_mode->htotal;
-	vtc_sig_config.hfrontporch_start = adjusted_mode->hdisplay;
-	vtc_sig_config.hsync_start = adjusted_mode->hsync_start;
-	vtc_sig_config.hbackporch_start = adjusted_mode->hsync_end;
-	vtc_sig_config.hactive_start = 0;
-
-	vtc_sig_config.vtotal = adjusted_mode->vtotal;
-	vtc_sig_config.vfrontporch_start = adjusted_mode->vdisplay;
-	vtc_sig_config.vsync_start = adjusted_mode->vsync_start;
-	vtc_sig_config.vbackporch_start = adjusted_mode->vsync_end;
-	vtc_sig_config.vactive_start = 0;
-
-	zynq_vtc_config_sig(encoder->vtc, &vtc_sig_config);
-
-	/* set si570 pixel clock */
-	set_frequency_si570(&encoder->si570->dev, adjusted_mode->clock * 1000);
 
 	if (connector->display_info.raw_edid) {
 		edid = (struct edid *)connector->display_info.raw_edid;
@@ -255,7 +219,6 @@ void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder)
 
 	drm_encoder_cleanup(base_encoder);
 	put_device(&encoder->i2c_slave->dev);
-	zynq_vtc_remove(encoder->vtc);
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 }
@@ -268,7 +231,6 @@ static struct drm_encoder_funcs zynq_drm_encoder_funcs = {
 struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 {
 	struct zynq_drm_encoder *encoder;
-	struct platform_device *pdev = drm->platformdev;
 	struct device_node *sub_node;
 	struct drm_i2c_encoder_driver *i2c_driver;
 	struct drm_encoder *err_ret;
@@ -284,30 +246,8 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	}
 	encoder->dpms = DRM_MODE_DPMS_OFF;
 
-	encoder->si570 = get_i2c_client_si570();
-	if (!encoder->si570) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get si570 clock\n");
-		err_ret = ERR_PTR(-EPROBE_DEFER);
-		goto err_si570;
-	}
-
-	sub_node = of_parse_phandle(pdev->dev.of_node, "tc", 0);
-	if (!sub_node) {
-		DRM_ERROR("failed to get a video timing controller node\n");
-		err_ret = ERR_PTR(-ENODEV);
-		goto err_vtc;
-	}
-
-	encoder->vtc = zynq_vtc_probe(drm->dev, sub_node);
-	of_node_put(sub_node);
-	if (IS_ERR_OR_NULL(encoder->vtc)) {
-		DRM_ERROR("failed to probe video timing controller\n");
-		err_ret = (void *)encoder->vtc;
-		goto err_vtc;
-	}
-
 	/* get slave encoder */
-	sub_node = of_parse_phandle(pdev->dev.of_node, "encoder-slave", 0);
+	sub_node = of_parse_phandle(drm->dev->of_node, "encoder-slave", 0);
 	if (!sub_node) {
 		DRM_ERROR("failed to get encoder slave node\n");
 		err_ret = ERR_PTR(-ENODEV);
@@ -344,7 +284,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 		goto err_slave_func;
 	}
 
-	encoder->rgb = of_property_read_bool(pdev->dev.of_node, "adi,is-rgb");
+	encoder->rgb = of_property_read_bool(drm->dev->of_node, "adi,is-rgb");
 
 	/* initialize encoder */
 	encoder->slave.base.possible_crtcs = 1;
@@ -368,9 +308,6 @@ err_slave_func:
 err_slave_init:
 	put_device(&encoder->i2c_slave->dev);
 err_slave:
-	zynq_vtc_remove(encoder->vtc);
-err_vtc:
-err_si570:
 err_alloc:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
 	return err_ret;
