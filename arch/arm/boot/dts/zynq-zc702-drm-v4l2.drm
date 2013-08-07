@@ -425,6 +425,8 @@
 		vtc_0: vtc@40010000 {
 			compatible = "xlnx,vtc";
 			reg = <0x40010000 0x10000>;
+			interrupts = <0 54 4>;
+			interrupt-parent = <&gic>;
 		};
 
 		vcresample_0: vcresample@40020000 {
