@@ -41,6 +41,7 @@ struct zynq_drm_crtc {
 	struct zynq_vtc *vtc;			/* video timing controller */
 	struct zynq_drm_plane_manager *plane_manager;	/* plane manager */
 	int dpms;				/* dpms */
+	struct drm_pending_vblank_event *event;	/* vblank event */
 };
 
 #define to_zynq_crtc(x)	container_of(x, struct zynq_drm_crtc, base)
@@ -240,9 +241,149 @@ void zynq_drm_crtc_destroy(struct drm_crtc *base_crtc)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 }
 
+/* cancel page flip functions */
+void zynq_drm_crtc_cancel_page_flip(struct drm_crtc *base_crtc,
+		struct drm_file *file)
+{
+	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	struct drm_device *drm = base_crtc->dev;
+	struct drm_pending_vblank_event *event;
+	unsigned long flags;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+
+	spin_lock_irqsave(&drm->event_lock, flags);
+	event = crtc->event;
+	if (event && (event->base.file_priv == file)) {
+		crtc->event = NULL;
+		event->base.destroy(&event->base);
+		drm_vblank_put(drm, 0);
+	}
+	spin_unlock_irqrestore(&drm->event_lock, flags);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+}
+
+/* finish page flip functions */
+static void zynq_drm_crtc_finish_page_flip(struct drm_crtc *base_crtc)
+{
+	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	struct drm_device *drm = base_crtc->dev;
+	struct drm_pending_vblank_event *event;
+	struct timeval vblanktime;
+	unsigned long flags;
+
+	spin_lock_irqsave(&drm->event_lock, flags);
+	event = crtc->event;
+	crtc->event = NULL;
+	spin_unlock_irqrestore(&drm->event_lock, flags);
+
+	if (event == NULL)
+		return;
+
+	event->event.sequence = drm_vblank_count_and_time(drm, 0, &vblanktime);
+	event->event.tv_sec = vblanktime.tv_sec;
+	event->event.tv_usec = vblanktime.tv_usec;
+
+	spin_lock_irqsave(&drm->event_lock, flags);
+	list_add_tail(&event->base.link, &event->base.file_priv->event_list);
+	wake_up_interruptible(&event->base.file_priv->event_wait);
+	spin_unlock_irqrestore(&drm->event_lock, flags);
+
+	drm_vblank_put(drm, 0);
+}
+
+/* page flip functions */
+static int zynq_drm_crtc_page_flip(struct drm_crtc *base_crtc,
+		struct drm_framebuffer *fb,
+		struct drm_pending_vblank_event *event)
+{
+	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	struct drm_device *drm = base_crtc->dev;
+	unsigned long flags;
+	int ret;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+
+	spin_lock_irqsave(&drm->event_lock, flags);
+	if (crtc->event != NULL) {
+		spin_unlock_irqrestore(&drm->event_lock, flags);
+		ret = -EBUSY;
+		goto err_out;
+	}
+	spin_unlock_irqrestore(&drm->event_lock, flags);
+
+	base_crtc->fb = fb;
+
+	/* configure a plane */
+	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
+		       	fb, 0, 0,
+			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay,
+			base_crtc->x, base_crtc->y,
+			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay);
+	if (ret) {
+		DRM_ERROR("failed to mode set a plane\n");
+		ret = -EINVAL;
+		goto err_out;
+	}
+
+	/* apply the new fb addr */
+	zynq_drm_crtc_commit(base_crtc);
+
+	if (event) {
+		event->pipe = 0;
+		spin_lock_irqsave(&drm->event_lock, flags);
+		crtc->event = event;
+		spin_unlock_irqrestore(&drm->event_lock, flags);
+		drm_vblank_get(drm, 0);
+	}
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+
+	return 0;
+
+err_out:
+	return ret;
+}
+
+/* vblank interrupt handler */
+static void zynq_drm_crtc_vblank_handler(void *data)
+{
+	struct drm_crtc *base_crtc = data;
+	struct drm_device *drm;
+
+	if (!base_crtc)
+		return;
+
+	drm = base_crtc->dev;
+
+	drm_handle_vblank(drm, 0);
+	zynq_drm_crtc_finish_page_flip(base_crtc);
+}
+
+/* enable vblank interrupt */
+void zynq_drm_crtc_enable_vblank(struct drm_crtc *base_crtc)
+{
+	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	zynq_vtc_enable_vblank_intr(crtc->vtc,
+			zynq_drm_crtc_vblank_handler, base_crtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+}
+
+/* disable vblank interrupt */
+void zynq_drm_crtc_disable_vblank(struct drm_crtc *base_crtc)
+{
+	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	zynq_vtc_disable_vblank_intr(crtc->vtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+}
+
 static struct drm_crtc_funcs zynq_drm_crtc_funcs = {
-	.set_config = drm_crtc_helper_set_config,
 	.destroy = zynq_drm_crtc_destroy,
+	.set_config = drm_crtc_helper_set_config,
+	.page_flip = zynq_drm_crtc_page_flip,
 };
 
 /* create crtc */

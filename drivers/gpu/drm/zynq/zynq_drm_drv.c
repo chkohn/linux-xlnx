@@ -106,6 +106,7 @@ const struct zynq_drm_format_info *zynq_drm_format_get(u32 fourcc)
 	return info;
 }
 
+/* create a fb */
 static struct drm_framebuffer *zynq_drm_fb_create(struct drm_device *drm,
 		struct drm_file *file_priv, struct drm_mode_fb_cmd2 *mode_cmd)
 {
@@ -125,6 +126,7 @@ static struct drm_framebuffer *zynq_drm_fb_create(struct drm_device *drm,
 	return drm_fb_cma_create(drm, file_priv, mode_cmd);
 }
 
+/* poll changed handler */
 static void zynq_drm_output_poll_changed(struct drm_device *drm)
 {
 	struct zynq_drm_private *private = drm->dev_private;
@@ -137,6 +139,28 @@ static const struct drm_mode_config_funcs zynq_drm_mode_config_funcs = {
 	.fb_create = zynq_drm_fb_create,
 	.output_poll_changed = zynq_drm_output_poll_changed,
 };
+
+/* enable vblank */
+static int zynq_drm_enable_vblank(struct drm_device *drm, int crtc)
+{
+	struct zynq_drm_private *private = drm->dev_private;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+	zynq_drm_crtc_enable_vblank(private->crtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+
+	return 0;
+}
+
+/* disable vblank */
+static void zynq_drm_disable_vblank(struct drm_device *drm, int crtc)
+{
+	struct zynq_drm_private *private = drm->dev_private;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+	zynq_drm_crtc_disable_vblank(private->crtc);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+}
 
 /* initialize mode config */
 static void zynq_drm_mode_config_init(struct drm_device *drm)
@@ -200,6 +224,12 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		goto err_connector;
 	}
 
+	err = drm_vblank_init(drm, 1);
+	if (err) {
+		dev_err(&pdev->dev, "failed to initialize vblank\n");
+		goto err_vblank;
+	}
+
 	/* initialize zynq cma framebuffer */
 	private->fbdev = drm_fbdev_cma_init(drm, 32, 1, 1);
 	if (IS_ERR_OR_NULL(private->fbdev)) {
@@ -222,12 +252,15 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 	return 0;
 
 err_fbdev:
+	drm_vblank_cleanup(drm);
+err_vblank:
 	zynq_drm_connector_destroy(private->connector);
 err_connector:
 	zynq_drm_encoder_destroy(private->encoder);
 err_encoder:
 	zynq_drm_crtc_destroy(private->crtc);
 err_crtc:
+	drm->vblank_disable_allowed = 1;
 	drm_mode_config_cleanup(drm);
 err_alloc:
 	if (err == -EPROBE_DEFER) {
@@ -244,6 +277,9 @@ static int zynq_drm_unload(struct drm_device *drm)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
+	drm->vblank_disable_allowed = 1;
+	drm_vblank_cleanup(drm);
+
 	drm_kms_helper_poll_fini(drm);
 
 	drm_fbdev_cma_fini(private->fbdev);
@@ -253,6 +289,17 @@ static int zynq_drm_unload(struct drm_device *drm)
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
 	return 0;
+}
+
+/* preclose */
+static void zynq_drm_preclose(struct drm_device *drm, struct drm_file *file)
+{
+	struct zynq_drm_private *private = drm->dev_private;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
+	/* cancel pending page flip request */
+	zynq_drm_crtc_cancel_page_flip(private->crtc, file);
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 }
 
 /* restore the default mode when zynq drm is released */
@@ -286,7 +333,12 @@ static struct drm_driver zynq_drm_driver = {
 	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_PRIME,
 	.load = zynq_drm_load,
 	.unload = zynq_drm_unload,
+	.preclose = zynq_drm_preclose,
 	.lastclose = zynq_drm_lastclose,
+
+	.get_vblank_counter = drm_vblank_count,
+	.enable_vblank = zynq_drm_enable_vblank,
+	.disable_vblank = zynq_drm_disable_vblank,
 
 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,

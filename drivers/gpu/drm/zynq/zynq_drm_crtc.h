@@ -21,7 +21,12 @@
 struct drm_device;
 struct drm_crtc;
 
+void zynq_drm_crtc_enable_vblank(struct drm_crtc *base_crtc);
+void zynq_drm_crtc_disable_vblank(struct drm_crtc *base_crtc);
+void zynq_drm_crtc_cancel_page_flip(struct drm_crtc *base_crtc,
+		struct drm_file *file);
+
 struct drm_crtc *zynq_drm_crtc_create(struct drm_device *drm);
-void zynq_drm_crtc_destroy(struct drm_crtc *crtc);
+void zynq_drm_crtc_destroy(struct drm_crtc *base_crtc);
 
 #endif
