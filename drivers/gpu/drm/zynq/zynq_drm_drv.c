@@ -229,6 +229,8 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		dev_err(&pdev->dev, "failed to initialize vblank\n");
 		goto err_vblank;
 	}
+	/* allow disable vblank */
+	drm->vblank_disable_allowed = 1;
 
 	/* initialize zynq cma framebuffer */
 	private->fbdev = drm_fbdev_cma_init(drm, 32, 1, 1);
@@ -260,7 +262,6 @@ err_connector:
 err_encoder:
 	zynq_drm_crtc_destroy(private->crtc);
 err_crtc:
-	drm->vblank_disable_allowed = 1;
 	drm_mode_config_cleanup(drm);
 err_alloc:
 	if (err == -EPROBE_DEFER) {
@@ -277,7 +278,6 @@ static int zynq_drm_unload(struct drm_device *drm)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_DRV, "\n");
 
-	drm->vblank_disable_allowed = 1;
 	drm_vblank_cleanup(drm);
 
 	drm_kms_helper_poll_fini(drm);
