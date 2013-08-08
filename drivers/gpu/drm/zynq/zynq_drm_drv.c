@@ -229,6 +229,10 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		dev_err(&pdev->dev, "failed to initialize vblank\n");
 		goto err_vblank;
 	}
+
+	/* enable irq to enable vblank feature*/
+	drm->irq_enabled = 1;
+
 	/* allow disable vblank */
 	drm->vblank_disable_allowed = 1;
 
