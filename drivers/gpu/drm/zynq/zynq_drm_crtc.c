@@ -168,24 +168,20 @@ static int zynq_drm_crtc_mode_set(struct drm_crtc *base_crtc,
 	return ret;
 }
 
-/* update address and information from fb */
-static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
-		int y, struct drm_framebuffer *old_fb)
+static int _zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc,
+		struct drm_framebuffer *fb, int x, int y)
 {
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 	int ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
-
 	/* configure a plane */
 	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
-		       	base_crtc->fb, 0, 0,
+		       	fb, 0, 0,
 			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay,
 			x, y,
 			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay);
 	if (ret) {
 		DRM_ERROR("failed to mode set a plane\n");
-		ret = -EINVAL;
 		goto err_out;
 	}
 
@@ -199,6 +195,15 @@ static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x,
 err_out:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
 	return ret;
+}
+
+/* update address and information from fb */
+static int zynq_drm_crtc_mode_set_base(struct drm_crtc *base_crtc, int x, int y,
+		struct drm_framebuffer *old_fb)
+{
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
+	/* configure a plane */
+	return _zynq_drm_crtc_mode_set_base(base_crtc, base_crtc->fb, x, y);
 }
 
 /* load rgb LUT for crtc */
@@ -313,22 +318,15 @@ static int zynq_drm_crtc_page_flip(struct drm_crtc *base_crtc,
 	}
 	spin_unlock_irqrestore(&drm->event_lock, flags);
 
-	base_crtc->fb = fb;
-
 	/* configure a plane */
-	ret = zynq_drm_plane_mode_set(crtc->priv_plane, base_crtc,
-		       	fb, 0, 0,
-			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay,
-			base_crtc->x, base_crtc->y,
-			base_crtc->hwmode.hdisplay, base_crtc->hwmode.vdisplay);
+	ret = _zynq_drm_crtc_mode_set_base(base_crtc, fb,
+			base_crtc->x, base_crtc->y);
 	if (ret) {
 		DRM_ERROR("failed to mode set a plane\n");
-		ret = -EINVAL;
 		goto err_out;
 	}
 
-	/* apply the new fb addr */
-	zynq_drm_crtc_commit(base_crtc);
+	base_crtc->fb = fb;
 
 	if (event) {
 		event->pipe = 0;
