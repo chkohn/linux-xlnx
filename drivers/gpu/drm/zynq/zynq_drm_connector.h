@@ -23,6 +23,6 @@ struct drm_connector;
 
 struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 		struct drm_encoder *base_encoder);
-void zynq_drm_connector_destroy(struct drm_connector *connector);
+void zynq_drm_connector_destroy(struct drm_connector *base_connector);
 
 #endif

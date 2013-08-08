@@ -22,6 +22,6 @@ struct drm_device;
 struct drm_encoder;
 
 struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm);
-void zynq_drm_encoder_destroy(struct drm_encoder *encoder);
+void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder);
 
 #endif
