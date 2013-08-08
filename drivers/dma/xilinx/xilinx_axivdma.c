@@ -691,10 +691,6 @@ static irqreturn_t xilinx_vdma_irq_handler(int irq, void *data)
 	struct xilinx_vdma_chan *chan = data;
 	u32 status;
 
-	/* Disable all interrupts. */
-	vdma_ctrl_clr(chan, XILINX_VDMA_REG_DMACR,
-		      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
-
 	/* Read the status and ack the interrupts. */
 	status = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMASR);
 	dev_dbg(chan->xdev->dev, "%s: %s: status 0x%08x\n",
@@ -735,6 +731,9 @@ static irqreturn_t xilinx_vdma_irq_handler(int irq, void *data)
 	if (status & XILINX_VDMA_DMASR_FRM_CNT_IRQ) {
 		dev_dbg(chan->xdev->dev, "%s: %s: xfer complete\n",
 			chan->id ? "s2mm" : "mm2s", __func__);
+		/* Disable all interrupts. */
+		vdma_ctrl_clr(chan, XILINX_VDMA_REG_DMACR,
+				XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
 		xilinx_vdma_complete_descriptor(chan);
 		xilinx_vdma_start_transfer(chan);
 	}
