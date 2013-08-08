@@ -178,6 +178,8 @@
 struct zynq_vtc {
 	void __iomem *base;		/* vtc base addr */
 	int irq;			/* irq */
+	void (*vblank_fn)(void *);	/* vblank handler func */
+	void *vblank_data;		/* vblank handler private data */
 };
 
 struct zynq_vtc_polarity {
@@ -476,7 +478,7 @@ static inline void zynq_vtc_intr_enable(struct zynq_vtc *vtc, u32 intr)
 static inline void zynq_vtc_intr_disable(struct zynq_vtc *vtc, u32 intr)
 {
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_IER, (~intr & VTC_IXR_ALLINTR_MASK) &
+	zynq_vtc_writel(vtc, VTC_IER, ~(intr & VTC_IXR_ALLINTR_MASK) &
 			zynq_vtc_readl(vtc, VTC_IER));
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
@@ -484,7 +486,6 @@ static inline void zynq_vtc_intr_disable(struct zynq_vtc *vtc, u32 intr)
 /* get interrupt */
 static inline u32 zynq_vtc_intr_get(struct zynq_vtc *vtc)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 	return zynq_vtc_readl(vtc, VTC_IER) & zynq_vtc_readl(vtc, VTC_ISR) &
 		VTC_IXR_ALLINTR_MASK;
 }
@@ -498,8 +499,40 @@ static inline void zynq_vtc_intr_clear(struct zynq_vtc *vtc, u32 intr)
 /* interrupt handler */
 static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	struct zynq_vtc *vtc = data;
+	u32 intr = zynq_vtc_intr_get(vtc);
+
+	if ((intr & VTC_IXR_G_VBLANK) && (vtc->vblank_fn))
+		vtc->vblank_fn(vtc->vblank_data);
+
+	zynq_vtc_intr_clear(vtc, intr);
+
 	return IRQ_HANDLED;
+}
+
+/* enable vblank interrupt */
+void zynq_vtc_enable_vblank_intr(struct zynq_vtc *vtc,
+		void (*vblank_fn)(void *), void *vblank_priv)
+{
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+
+	vtc->vblank_fn = vblank_fn;
+	vtc->vblank_data = vblank_priv;
+	zynq_vtc_intr_enable(vtc, VTC_IXR_G_VBLANK);
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+}
+
+/* disable vblank interrupt */
+void zynq_vtc_disable_vblank_intr(struct zynq_vtc *vtc)
+{
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+
+	zynq_vtc_intr_disable(vtc, VTC_IXR_G_VBLANK);
+	vtc->vblank_data = NULL;
+	vtc->vblank_fn = NULL;
+
+	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 }
 
 /* probe vtc */
@@ -537,8 +570,6 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 					IRQF_SHARED, "zynq_vtc", vtc)) {
 			vtc->irq = 0;
 			pr_warn("failed to requet_irq() for zynq_vtc\n");
-		} else {
-			zynq_vtc_intr_enable(vtc, VTC_IXR_ALLINTR_MASK);
 		}
 	}
 

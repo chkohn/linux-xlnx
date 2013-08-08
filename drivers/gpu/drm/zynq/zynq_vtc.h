@@ -36,6 +36,9 @@ struct zynq_vtc_sig_config {
 
 void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 		struct zynq_vtc_sig_config *sig_config);
+void zynq_vtc_enable_vblank_intr(struct zynq_vtc *vtc,
+		void (*fn)(void *), void *data);
+void zynq_vtc_disable_vblank_intr(struct zynq_vtc *vtc);
 void zynq_vtc_reset(struct zynq_vtc *vtc);
 void zynq_vtc_enable(struct zynq_vtc *vtc);
 void zynq_vtc_disable(struct zynq_vtc *vtc);
