@@ -126,12 +126,6 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 
-	if (!node) {
-		pr_err("no device node is given for cresample\n");
-		err_ret = ERR_PTR(-EINVAL);
-		goto err_node;
-	}
-
 	cresample = devm_kzalloc(dev, sizeof(*cresample), GFP_KERNEL);
 	if (!cresample) {
 		pr_err("failed to alloc cresample\n");
@@ -152,7 +146,6 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 
 err_iomap:
 err_cresample:
-err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
 	return err_ret;
 }
