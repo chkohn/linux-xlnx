@@ -543,12 +543,6 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 
-	if (!node) {
-		pr_err("no device node is given for vtc\n");
-		err_ret = ERR_PTR(-EINVAL);
-		goto err_node;
-	}
-
 	vtc = devm_kzalloc(dev, sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
 		pr_err("failed to alloc vtc\n");
@@ -579,7 +573,6 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 
 err_iomap:
 err_vtc:
-err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
 	return err_ret;
 }
