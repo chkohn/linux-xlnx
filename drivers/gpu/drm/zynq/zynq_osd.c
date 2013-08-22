@@ -362,12 +362,6 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 
-	if (!node) {
-		pr_err("no device node is given for osd\n");
-		err_ret = ERR_PTR(-EINVAL);
-		goto err_node;
-	}
-
 	osd = devm_kzalloc(dev, sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
 		pr_err("failed to alloc osd\n");
@@ -412,7 +406,6 @@ err_prop:
 	iounmap(osd->base);
 err_iomap:
 err_osd:
-err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
 	return err_ret;
 }
