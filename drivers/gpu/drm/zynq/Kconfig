@@ -1,7 +1,8 @@
 config DRM_ZYNQ
 	tristate "DRM Support for Xilinx Zynq"
-	depends on DRM 
+	depends on DRM  && ARCH_ZYNQ
 	select DRM_KMS_HELPER
 	select DRM_KMS_CMA_HELPER
+	select DRM_KMS_GEM_HELPER
 	select SI570
 	select XILINX_AXIVDMA
