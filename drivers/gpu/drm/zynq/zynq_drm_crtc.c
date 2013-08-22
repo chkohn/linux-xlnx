@@ -67,7 +67,6 @@ static void zynq_drm_crtc_dpms(struct drm_crtc *base_crtc, int dpms)
 		zynq_vtc_enable(crtc->vtc);
 		break;
 	default:
-		/* TODO: reset_si570(&crtc->si570->dev, 1);*/
 		zynq_vtc_disable(crtc->vtc);
 		zynq_vtc_reset(crtc->vtc);
 		if (crtc->cresample) {
@@ -275,27 +274,16 @@ static void zynq_drm_crtc_finish_page_flip(struct drm_crtc *base_crtc)
 	struct zynq_drm_crtc *crtc = to_zynq_crtc(base_crtc);
 	struct drm_device *drm = base_crtc->dev;
 	struct drm_pending_vblank_event *event;
-	struct timeval vblanktime;
 	unsigned long flags;
 
 	spin_lock_irqsave(&drm->event_lock, flags);
 	event = crtc->event;
 	crtc->event = NULL;
+	if (event) {
+		drm_send_vblank_event(drm, 0, event);
+		drm_vblank_put(drm, 0);
+	}
 	spin_unlock_irqrestore(&drm->event_lock, flags);
-
-	if (event == NULL)
-		return;
-
-	event->event.sequence = drm_vblank_count_and_time(drm, 0, &vblanktime);
-	event->event.tv_sec = vblanktime.tv_sec;
-	event->event.tv_usec = vblanktime.tv_usec;
-
-	spin_lock_irqsave(&drm->event_lock, flags);
-	list_add_tail(&event->base.link, &event->base.file_priv->event_list);
-	wake_up_interruptible(&event->base.file_priv->event_wait);
-	spin_unlock_irqrestore(&drm->event_lock, flags);
-
-	drm_vblank_put(drm, 0);
 }
 
 /* page flip functions */
@@ -330,10 +318,10 @@ static int zynq_drm_crtc_page_flip(struct drm_crtc *base_crtc,
 
 	if (event) {
 		event->pipe = 0;
+		drm_vblank_get(drm, 0);
 		spin_lock_irqsave(&drm->event_lock, flags);
 		crtc->event = event;
 		spin_unlock_irqrestore(&drm->event_lock, flags);
-		drm_vblank_get(drm, 0);
 	}
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRTC, "\n");
