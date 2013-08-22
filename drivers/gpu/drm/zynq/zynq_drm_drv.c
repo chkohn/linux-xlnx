@@ -230,7 +230,7 @@ static int zynq_drm_load(struct drm_device *drm, unsigned long flags)
 		goto err_vblank;
 	}
 
-	/* enable irq to enable vblank feature*/
+	/* enable irq to enable vblank feature */
 	drm->irq_enabled = 1;
 
 	/* allow disable vblank */
@@ -437,6 +437,6 @@ static struct platform_driver zynq_drm_private_driver = {
 
 module_platform_driver(zynq_drm_private_driver);
 
-MODULE_AUTHOR("hyun woo kwon, Xilinx, Inc. <hyunk@xilinx.com>");
+MODULE_AUTHOR("Xilinx, Inc.");
 MODULE_DESCRIPTION("Xilinx DRM KMS Driver");
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");
