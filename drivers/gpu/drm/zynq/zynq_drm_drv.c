@@ -61,8 +61,7 @@ void zynq_drm_debug(int type, const char *func, int line, const char *fmt, ...)
 		vaf.fmt = fmt;
 		vaf.va = &args;
 
-		printk(KERN_INFO "[%s]%s:%d %pV", zynq_kms_type[type], func,
-				line, &vaf);
+		pr_info("[%s]%s:%d %pV", zynq_kms_type[type], func, line, &vaf);
 
 		va_end(args);
 	}
