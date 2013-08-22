@@ -121,12 +121,6 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 
-	if (!node) {
-		pr_err("no device node is given for rgb2yuv\n");
-		err_ret = ERR_PTR(-EINVAL);
-		goto err_node;
-	}
-
 	rgb2yuv = devm_kzalloc(dev, sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
 		pr_err("failed to alloc rgb2yuv\n");
@@ -147,7 +141,6 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 
 err_iomap:
 err_rgb2yuv:
-err_node:
 	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
 	return err_ret;
 }
