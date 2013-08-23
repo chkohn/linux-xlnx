@@ -1,5 +1,5 @@
 /*
- * Xilinx Chroma Resampler support for Zynq DRM KMS
+ * Xilinx Chroma Resampler support for Xilinx DRM KMS
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -22,7 +22,7 @@
 #include <linux/of_address.h>
 #include <linux/slab.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
 /* registers */
 /* general control registers */
@@ -38,93 +38,93 @@
 #define CRESAMPLE_CTL_RESET		(1 << 31)	/* software reset -
 							   instantaneous */
 
-struct zynq_cresample {
+struct xilinx_cresample {
 	void __iomem *base;		/* cresample base addr */
 };
 
 /* io write operations */
-static inline void zynq_cresample_writel(struct zynq_cresample *cresample,
+static inline void xilinx_cresample_writel(struct xilinx_cresample *cresample,
 		int offset, u32 val)
 {
 	writel(val, cresample->base + offset);
 }
 
 /* io read operations */
-static inline u32 zynq_cresample_readl(struct zynq_cresample *cresample,
+static inline u32 xilinx_cresample_readl(struct xilinx_cresample *cresample,
 		int offset)
 {
 	return readl(cresample->base + offset);
 }
 
 /* enable cresample */
-void zynq_cresample_enable(struct zynq_cresample *cresample)
+void xilinx_cresample_enable(struct xilinx_cresample *cresample)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
-	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
+	reg = xilinx_cresample_readl(cresample, CRESAMPLE_CONTROL);
 	reg |= CRESAMPLE_CTL_EN;
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
+	xilinx_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 }
 
 /* disable cresample */
-void zynq_cresample_disable(struct zynq_cresample *cresample)
+void xilinx_cresample_disable(struct xilinx_cresample *cresample)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
-	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
+	reg = xilinx_cresample_readl(cresample, CRESAMPLE_CONTROL);
 	reg &= ~CRESAMPLE_CTL_EN;
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
+	xilinx_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 }
 
 /* configure cresample */
-void zynq_cresample_configure(struct zynq_cresample *cresample,
+void xilinx_cresample_configure(struct xilinx_cresample *cresample,
 		int hactive, int vactive)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
 	/* disable register update */
-	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
+	reg = xilinx_cresample_readl(cresample, CRESAMPLE_CONTROL);
 	reg &= ~CRESAMPLE_CTL_RU;
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
+	xilinx_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
 	/* configure hsize and vsize */
-	zynq_cresample_writel(cresample, CRESAMPLE_ACTIVE_SIZE,
+	xilinx_cresample_writel(cresample, CRESAMPLE_ACTIVE_SIZE,
 			(vactive << 16) | hactive);
 
 	/* enable register update */
-	reg = zynq_cresample_readl(cresample, CRESAMPLE_CONTROL);
+	reg = xilinx_cresample_readl(cresample, CRESAMPLE_CONTROL);
 	reg |= CRESAMPLE_CTL_RU;
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
+	xilinx_cresample_writel(cresample, CRESAMPLE_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 }
 
 /* reset cresample */
-void zynq_cresample_reset(struct zynq_cresample *cresample)
+void xilinx_cresample_reset(struct xilinx_cresample *cresample)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
-	zynq_cresample_writel(cresample, CRESAMPLE_CONTROL,
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
+	xilinx_cresample_writel(cresample, CRESAMPLE_CONTROL,
 			CRESAMPLE_CTL_RESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 }
 
-struct zynq_cresample *zynq_cresample_probe(struct device *dev,
+struct xilinx_cresample *xilinx_cresample_probe(struct device *dev,
 		struct device_node *node)
 {
-	struct zynq_cresample *cresample;
-	struct zynq_cresample *err_ret;
+	struct xilinx_cresample *cresample;
+	struct xilinx_cresample *err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
 	cresample = devm_kzalloc(dev, sizeof(*cresample), GFP_KERNEL);
 	if (!cresample) {
@@ -140,23 +140,23 @@ struct zynq_cresample *zynq_cresample_probe(struct device *dev,
 		goto err_iomap;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
 	return cresample;
 
 err_iomap:
 err_cresample:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 	return err_ret;
 }
 
-void zynq_cresample_remove(struct zynq_cresample *cresample)
+void xilinx_cresample_remove(struct xilinx_cresample *cresample)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 
-	zynq_cresample_reset(cresample);
+	xilinx_cresample_reset(cresample);
 
 	iounmap(cresample->base);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CRESAMPLE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CRESAMPLE, "\n");
 }

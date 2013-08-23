@@ -1,5 +1,5 @@
 /*
- * Xilinx DRM plane driver for Zynq
+ * Xilinx DRM plane driver for Xilinx
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -25,16 +25,16 @@
 #include <drm/drm_fb_cma_helper.h>
 #include <drm/drm_gem_cma_helper.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
-#include "zynq_osd.h"
+#include "xilinx_osd.h"
 
-struct zynq_drm_plane_vdma {
+struct xilinx_drm_plane_vdma {
 	struct dma_chan *chan;			/* dma channel */
 	struct xilinx_vdma_config dma_config;	/* dma config */
 };
 
-struct zynq_drm_plane {
+struct xilinx_drm_plane {
 	struct drm_plane base;			/* base drm plane object */
 	int id;					/* plane id */
 	int dpms;				/* dpms */
@@ -43,37 +43,38 @@ struct zynq_drm_plane {
 	uint32_t y;				/* y position */
 	dma_addr_t paddr;			/* phys addr of frame buffer */
 	int bpp;				/* bytes per pixel */
-	struct zynq_drm_plane_vdma vdma;	/* vdma */
-	struct zynq_osd_layer *osd_layer;	/* osd layer */
-	struct zynq_drm_plane_manager* manager;	/* plane manager */
+	struct xilinx_drm_plane_vdma vdma;	/* vdma */
+	struct xilinx_osd_layer *osd_layer;	/* osd layer */
+	struct xilinx_drm_plane_manager *manager;	/* plane manager */
 };
 
 #define MAX_PLANES 8
 
-struct zynq_drm_plane_manager {
+struct xilinx_drm_plane_manager {
 	struct drm_device *drm;			/* drm device */
-	struct zynq_osd *osd;			/* osd */
+	struct xilinx_osd *osd;			/* osd */
 	int num_planes;				/* num of planes */
-	struct zynq_drm_plane *planes[MAX_PLANES]; /* planes */
+	struct xilinx_drm_plane *planes[MAX_PLANES]; /* planes */
 	/* TODO: list to manage z order of planes */
 };
 
-static const uint32_t zynq_drm_plane_formats[] = {
+static const uint32_t xilinx_drm_plane_formats[] = {
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_YUYV,
 };
 
-#define to_zynq_plane(x)	container_of(x, struct zynq_drm_plane, base)
+#define to_xilinx_plane(x)	container_of(x, struct xilinx_drm_plane, base)
 
 /* set plane dpms */
-void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
+void xilinx_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 {
-	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
-	struct zynq_drm_plane_manager *manager = plane->manager;
+	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
+	struct xilinx_drm_plane_manager *manager = plane->manager;
 	struct xilinx_vdma_config dma_config;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "dpms: %d -> %d\n", plane->dpms, dpms);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "plane->id: %d\n", plane->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "dpms: %d -> %d\n",
+			plane->dpms, dpms);
 
 	if (plane->dpms == dpms)
 		goto out;
@@ -86,38 +87,38 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 
 		/* enable osd */
 		if (manager->osd) {
-			zynq_osd_disable_rue(manager->osd);
+			xilinx_osd_disable_rue(manager->osd);
 
 			/* set zorder(= id for now) */
-			zynq_osd_layer_set_priority(plane->osd_layer,
+			xilinx_osd_layer_set_priority(plane->osd_layer,
 					plane->id);
 			/* FIXME: set global alpha for now */
-			zynq_osd_layer_set_alpha(plane->osd_layer, 1,
+			xilinx_osd_layer_set_alpha(plane->osd_layer, 1,
 					0xff);
-			zynq_osd_layer_enable(plane->osd_layer);
+			xilinx_osd_layer_enable(plane->osd_layer);
 			if (plane->priv) {
 				/* set background color as black */
-				zynq_osd_set_color(manager->osd, 0x0,
+				xilinx_osd_set_color(manager->osd, 0x0,
 						0x0, 0x0);
-				zynq_osd_enable(manager->osd);
+				xilinx_osd_enable(manager->osd);
 			}
 
-			zynq_osd_enable_rue(manager->osd);
+			xilinx_osd_enable_rue(manager->osd);
 		}
 
 		break;
 	default:
 		/* disable/reset osd */
 		if (manager->osd) {
-			zynq_osd_disable_rue(manager->osd);
+			xilinx_osd_disable_rue(manager->osd);
 
-			zynq_osd_layer_set_dimension(plane->osd_layer,
+			xilinx_osd_layer_set_dimension(plane->osd_layer,
 					0, 0, 0, 0);
-			zynq_osd_layer_disable(plane->osd_layer);
+			xilinx_osd_layer_disable(plane->osd_layer);
 			if (plane->priv)
-				zynq_osd_reset(manager->osd);
+				xilinx_osd_reset(manager->osd);
 
-			zynq_osd_enable_rue(manager->osd);
+			xilinx_osd_enable_rue(manager->osd);
 		}
 
 		/* reset vdma */
@@ -132,19 +133,19 @@ void zynq_drm_plane_dpms(struct drm_plane *base_plane, int dpms)
 	}
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }
 
 /* apply mode to plane pipe */
-void zynq_drm_plane_commit(struct drm_plane *base_plane)
+void xilinx_drm_plane_commit(struct drm_plane *base_plane)
 {
-	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
+	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 	struct dma_async_tx_descriptor *desc;
 	uint32_t height = plane->vdma.dma_config.hsize;
 	int pitch = plane->vdma.dma_config.stride;
 	size_t offset;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "plane->id: %d\n", plane->id);
 
 	offset = plane->x * plane->bpp + plane->y * pitch;
 	desc = dmaengine_prep_slave_single(plane->vdma.chan,
@@ -162,22 +163,22 @@ void zynq_drm_plane_commit(struct drm_plane *base_plane)
 	dma_async_issue_pending(plane->vdma.chan);
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }
 
 /* mode set a plane */
-int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
+int xilinx_drm_plane_mode_set(struct drm_plane *base_plane,
 		struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		int crtc_x, int crtc_y,
 		unsigned int crtc_w, unsigned int crtc_h,
 		uint32_t src_x, uint32_t src_y,
 		uint32_t src_w, uint32_t src_h)
 {
-	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
+	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 	struct drm_gem_cma_object *obj;
 	int err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "plane->id: %d\n", plane->id);
 
 	obj = drm_fb_cma_get_gem_obj(fb, 0);
 	if (!obj) {
@@ -191,9 +192,9 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 	plane->bpp = fb->bits_per_pixel / 8;
 	plane->paddr = obj->paddr;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "h: %d(%d), v: %d(%d), paddr: %p\n",
 			src_w, crtc_x, src_h, crtc_y, (void *)obj->paddr);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "bpp: %d\n", plane->bpp);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "bpp: %d\n", plane->bpp);
 
 	/* configure vdma desc */
 	plane->vdma.dma_config.hsize = src_w * plane->bpp;
@@ -207,20 +208,20 @@ int zynq_drm_plane_mode_set(struct drm_plane *base_plane,
 
 	/* set OSD dimensions */
 	if (plane->manager->osd) {
-		zynq_osd_disable_rue(plane->manager->osd);
+		xilinx_osd_disable_rue(plane->manager->osd);
 
 		/* if a plane is private, it's for crtc */
 		if (plane->priv)
-			zynq_osd_set_dimension(plane->manager->osd,
+			xilinx_osd_set_dimension(plane->manager->osd,
 					crtc_w, crtc_h);
 
-		zynq_osd_layer_set_dimension(plane->osd_layer, crtc_x, crtc_y,
+		xilinx_osd_layer_set_dimension(plane->osd_layer, crtc_x, crtc_y,
 				src_w, src_h);
 
-		zynq_osd_enable_rue(plane->manager->osd);
+		xilinx_osd_enable_rue(plane->manager->osd);
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return 0;
 
 err_out:
@@ -228,7 +229,7 @@ err_out:
 }
 
 /* update a plane. just call mode_set() with bit-shifted values */
-static int zynq_drm_plane_update(struct drm_plane *base_plane,
+static int xilinx_drm_plane_update(struct drm_plane *base_plane,
 		struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		int crtc_x, int crtc_y,
 		unsigned int crtc_w, unsigned int crtc_h,
@@ -237,22 +238,22 @@ static int zynq_drm_plane_update(struct drm_plane *base_plane,
 {
 	int err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
-	err_ret = zynq_drm_plane_mode_set(base_plane, crtc, fb, crtc_x, crtc_y,
-			crtc_w, crtc_h, src_x >> 16, src_y >> 16,
-			src_w >> 16, src_h >> 16);
+	err_ret = xilinx_drm_plane_mode_set(base_plane, crtc, fb,
+			crtc_x, crtc_y, crtc_w, crtc_h,
+			src_x >> 16, src_y >> 16, src_w >> 16, src_h >> 16);
 	if (err_ret) {
 		DRM_ERROR("failed to mode-set a plane\n");
 		goto err_out;
 	}
 
 	/* make sure a plane is on */
-	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_ON);
+	xilinx_drm_plane_dpms(base_plane, DRM_MODE_DPMS_ON);
 	/* apply the new fb addr */
-	zynq_drm_plane_commit(base_plane);
+	xilinx_drm_plane_commit(base_plane);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return 0;
 
 err_out:
@@ -260,69 +261,68 @@ err_out:
 }
 
 /* disable a plane */
-static int zynq_drm_plane_disable(struct drm_plane *base_plane)
+static int xilinx_drm_plane_disable(struct drm_plane *base_plane)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_OFF);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
+	xilinx_drm_plane_dpms(base_plane, DRM_MODE_DPMS_OFF);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return 0;
 }
 
 /*destroy a plane */
-static void zynq_drm_plane_destroy(struct drm_plane *base_plane)
+static void xilinx_drm_plane_destroy(struct drm_plane *base_plane)
 {
-	struct zynq_drm_plane *plane = to_zynq_plane(base_plane);
+	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "plane->id: %d\n", plane->id);
 
-	zynq_drm_plane_dpms(base_plane, DRM_MODE_DPMS_OFF);
+	xilinx_drm_plane_dpms(base_plane, DRM_MODE_DPMS_OFF);
 
 	plane->manager->planes[plane->id] = NULL;
 	drm_plane_cleanup(base_plane);
 	dma_release_channel(plane->vdma.chan);
 	if (plane->manager->osd) {
-		zynq_osd_layer_disable(plane->osd_layer);
-		zynq_osd_layer_put(plane->osd_layer);
+		xilinx_osd_layer_disable(plane->osd_layer);
+		xilinx_osd_layer_put(plane->osd_layer);
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }
 
 /* set property of a plane */
-static int zynq_drm_plane_set_property(struct drm_plane *base_plane,
+static int xilinx_drm_plane_set_property(struct drm_plane *base_plane,
 				     struct drm_property *property,
 				     uint64_t val)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	/* TODO: set zorder, etc */
 	return -EINVAL;
 }
 
-static struct drm_plane_funcs zynq_drm_plane_funcs = {
-	.update_plane = zynq_drm_plane_update,
-	.disable_plane = zynq_drm_plane_disable,
-	.destroy = zynq_drm_plane_destroy,
-	.set_property = zynq_drm_plane_set_property,
+static struct drm_plane_funcs xilinx_drm_plane_funcs = {
+	.update_plane = xilinx_drm_plane_update,
+	.disable_plane = xilinx_drm_plane_disable,
+	.destroy = xilinx_drm_plane_destroy,
+	.set_property = xilinx_drm_plane_set_property,
 };
 
 /* create a plane */
-static struct zynq_drm_plane *_zynq_drm_plane_create(
-		struct zynq_drm_plane_manager *manager,
+static struct xilinx_drm_plane *_xilinx_drm_plane_create(
+		struct xilinx_drm_plane_manager *manager,
 		unsigned int possible_crtcs, bool priv)
 {
-	struct zynq_drm_plane *plane;
-	struct zynq_drm_plane *err_ret;
+	struct xilinx_drm_plane *plane;
+	struct xilinx_drm_plane *err_ret;
 	struct device *dev = manager->drm->dev;
 	char dma_name[16];
 	int i;
 	int res;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	for (i = 0; i < manager->num_planes; i++) {
-		if (!manager->planes[i]) {
+		if (!manager->planes[i])
 			break;
-		}
 	}
 	if (i >= manager->num_planes) {
 		DRM_ERROR("failed to allocate plane\n");
@@ -340,7 +340,7 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	plane->priv = priv;
 	plane->id = i;
 	plane->dpms = DRM_MODE_DPMS_OFF;
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "plane->id: %d\n", plane->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "plane->id: %d\n", plane->id);
 	/* TODO: add to the manager's zorder list */
 
 	snprintf(dma_name, sizeof(dma_name), "vdma%d", i);
@@ -354,21 +354,19 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	/* create an OSD layer when OSD is available */
 	if (manager->osd) {
 		/* create an osd layer */
-		plane->osd_layer = zynq_osd_layer_get(manager->osd);
+		plane->osd_layer = xilinx_osd_layer_get(manager->osd);
 		if (IS_ERR_OR_NULL(plane->osd_layer)) {
 			DRM_ERROR("failed to create a osd layer\n");
 			err_ret = (void *)plane->osd_layer;
 			plane->osd_layer = NULL;
 			goto err_osd_layer;
 		}
-
-	
 	}
 
 	/* initialize drm plane */
 	res = drm_plane_init(manager->drm, &plane->base, possible_crtcs,
-			&zynq_drm_plane_funcs, zynq_drm_plane_formats,
-			ARRAY_SIZE(zynq_drm_plane_formats), priv);
+			&xilinx_drm_plane_funcs, xilinx_drm_plane_formats,
+			ARRAY_SIZE(xilinx_drm_plane_formats), priv);
 	if (res) {
 		DRM_ERROR("failed to initialize plane\n");
 		err_ret = ERR_PTR(res);
@@ -377,91 +375,91 @@ static struct zynq_drm_plane *_zynq_drm_plane_create(
 	plane->manager = manager;
 	manager->planes[i] = plane;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	return plane;
 
 err_init:
 	if (plane->manager->osd) {
-		zynq_osd_layer_disable(plane->osd_layer);
-		zynq_osd_layer_put(plane->osd_layer);
+		xilinx_osd_layer_disable(plane->osd_layer);
+		xilinx_osd_layer_put(plane->osd_layer);
 	}
 err_osd_layer:
 	dma_release_channel(plane->vdma.chan);
 err_dma_request:
 err_alloc:
 err_plane:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return err_ret;
 }
 
 /* create a private plane */
-struct drm_plane *zynq_drm_plane_create_private(
-		struct zynq_drm_plane_manager *manager,
+struct drm_plane *xilinx_drm_plane_create_private(
+		struct xilinx_drm_plane_manager *manager,
 		unsigned int possible_crtcs)
 {
-	struct zynq_drm_plane *plane;
+	struct xilinx_drm_plane *plane;
 	struct drm_plane *err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
-	plane = _zynq_drm_plane_create(manager, possible_crtcs, true);
+	plane = _xilinx_drm_plane_create(manager, possible_crtcs, true);
 	if (IS_ERR_OR_NULL(plane)) {
 		DRM_ERROR("failed to allocate a private plane\n");
 		err_ret = (void *)plane;
 		goto err_out;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	return &plane->base;
 
 err_out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return err_ret;
 }
 
-void zynq_drm_plane_destroy_private(struct zynq_drm_plane_manager *manager,
+void xilinx_drm_plane_destroy_private(struct xilinx_drm_plane_manager *manager,
 		struct drm_plane *base_plane)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
-	zynq_drm_plane_destroy(base_plane);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
+	xilinx_drm_plane_destroy(base_plane);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }
 
 /* destroy planes */
-void zynq_drm_plane_destroy_planes(struct zynq_drm_plane_manager *manager)
+void xilinx_drm_plane_destroy_planes(struct xilinx_drm_plane_manager *manager)
 {
-	struct zynq_drm_plane *plane;
+	struct xilinx_drm_plane *plane;
 	int i;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	for (i = 0; i < manager->num_planes; i++) {
 		plane = manager->planes[i];
 		if (plane && !plane->priv) {
-			zynq_drm_plane_destroy(&plane->base);
+			xilinx_drm_plane_destroy(&plane->base);
 			manager->planes[i] = NULL;
 		}
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }
 
 /* create planes */
-int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
+int xilinx_drm_plane_create_planes(struct xilinx_drm_plane_manager *manager,
 		unsigned int possible_crtcs)
 {
 	int i;
 	int err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	/* find if there any available plane */
 	for (i = 0; i < manager->num_planes; i++) {
 		if (manager->planes[i])
 			continue;
-		manager->planes[i] = _zynq_drm_plane_create(manager,
+		manager->planes[i] = _xilinx_drm_plane_create(manager,
 				possible_crtcs, false);
 		if (!manager->planes[i]) {
 			DRM_ERROR("failed to allocate a plane\n");
@@ -471,26 +469,26 @@ int zynq_drm_plane_create_planes(struct zynq_drm_plane_manager *manager,
 		}
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	return 0;
 
 err_out:
-	zynq_drm_plane_destroy_planes(manager);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	xilinx_drm_plane_destroy_planes(manager);
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return err_ret;
 }
 
-struct zynq_drm_plane_manager *
-zynq_drm_plane_probe_manager(struct drm_device *drm)
+struct xilinx_drm_plane_manager *
+xilinx_drm_plane_probe_manager(struct drm_device *drm)
 {
-	struct zynq_drm_plane_manager *manager;
-	struct zynq_drm_plane_manager *err_ret;
+	struct xilinx_drm_plane_manager *manager;
+	struct xilinx_drm_plane_manager *err_ret;
 	struct device *dev = drm->dev;
 	struct device_node *sub_node;
 	u32 prop;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	manager = devm_kzalloc(dev, sizeof(*manager), GFP_KERNEL);
 	if (!manager) {
@@ -509,7 +507,7 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 	/* probe an OSD. proceed even if there's no OSD */
 	sub_node = of_parse_phandle(dev->of_node, "osd", 0);
 	if (sub_node) {
-		manager->osd = zynq_osd_probe(dev, sub_node);
+		manager->osd = xilinx_osd_probe(dev, sub_node);
 		of_node_put(sub_node);
 		if (IS_ERR_OR_NULL(manager->osd)) {
 			DRM_ERROR("failed to probe an osd\n");
@@ -518,34 +516,34 @@ zynq_drm_plane_probe_manager(struct drm_device *drm)
 		}
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	return manager;
 
 err_osd:
 err_alloc:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 	return err_ret;
 }
 
-void zynq_drm_plane_remove_manager(struct zynq_drm_plane_manager *manager)
+void xilinx_drm_plane_remove_manager(struct xilinx_drm_plane_manager *manager)
 {
 	int i;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 
 	for (i = 0; i < manager->num_planes; i++) {
 		if (manager->planes[i] && !manager->planes[i]->priv) {
-			zynq_drm_plane_dpms(&manager->planes[i]->base,
+			xilinx_drm_plane_dpms(&manager->planes[i]->base,
 					DRM_MODE_DPMS_OFF);
-			zynq_drm_plane_destroy(&manager->planes[i]->base);
+			xilinx_drm_plane_destroy(&manager->planes[i]->base);
 			manager->planes[i] = NULL;
 		}
 	}
 	if (manager->osd) {
-		zynq_osd_disable(manager->osd);
-		zynq_osd_remove(manager->osd);
+		xilinx_osd_disable(manager->osd);
+		xilinx_osd_remove(manager->osd);
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_PLANE, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_PLANE, "\n");
 }

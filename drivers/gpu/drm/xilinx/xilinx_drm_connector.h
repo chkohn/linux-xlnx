@@ -1,5 +1,5 @@
 /*
- * Xilinx DRM encoder header for Zynq
+ * Xilinx DRM connector header for Xilinx
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -15,13 +15,14 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _ZYNQ_DRM_ENCODER_H_
-#define _ZYNQ_DRM_ENCODER_H_
+#ifndef _XILINX_DRM_CONNECTOR_H_
+#define _XILINX_DRM_CONNECTOR_H_
 
 struct drm_device;
-struct drm_encoder;
+struct drm_connector;
 
-struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm);
-void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder);
+struct drm_connector *xilinx_drm_connector_create(struct drm_device *drm,
+		struct drm_encoder *base_encoder);
+void xilinx_drm_connector_destroy(struct drm_connector *base_connector);
 
 #endif

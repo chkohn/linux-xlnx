@@ -201,7 +201,7 @@ config DRM_ENCODER_ADV7511
 	select REGMAP_I2C
 	select HDMI
 
-source "drivers/gpu/drm/zynq/Kconfig"
+source "drivers/gpu/drm/xilinx/Kconfig"
 
 source "drivers/gpu/drm/adi_axi_hdmi/Kconfig"
 

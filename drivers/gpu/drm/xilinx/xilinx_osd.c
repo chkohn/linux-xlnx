@@ -23,7 +23,7 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
 /*
  * registers
@@ -84,9 +84,9 @@
  * osd layer control (layer 0 through (OSD_MAX_NUM_OF_LAYERS - 1))
  */
 #define OSD_LXC_ALPHA_MASK	0x0fff0000	/* global alpha value */
-#define OSD_LXC_ALPHA_SHIFT	16	  	/* bit shift of alpha value */
+#define OSD_LXC_ALPHA_SHIFT	16		/* bit shift of alpha value */
 #define OSD_LXC_PRIORITY_MASK	0x00000700	/* layer priority */
-#define OSD_LXC_PRIORITY_SHIFT	8	  	/* bit shift of priority */
+#define OSD_LXC_PRIORITY_SHIFT	8		/* bit shift of priority */
 #define OSD_LXC_GALPHAEN	(1 << 1)	/* global alpha enable */
 #define OSD_LXC_EN		(1 << 0)	/* layer enable */
 
@@ -102,7 +102,7 @@
  * osd layer size (layer 0 through (OSD_MAX_NUM_OF_LAYERS - 1))
  */
 #define OSD_LXS_YSIZE_MASK	0x0fff0000	/* vertical size of layer */
-#define OSD_LXS_YSIZE_SHIFT	16	  	/* bit shift of vertical size */
+#define OSD_LXS_YSIZE_SHIFT	16		/* bit shift of vertical size */
 #define OSD_LXS_XSIZE_MASK	0x00000fff	/* horizontal size of layer */
 
 /*
@@ -110,16 +110,16 @@
  */
 #define OSD_RST_RESET	(1 << 31)	/* software reset */
 
-struct zynq_osd_layer {
+struct xilinx_osd_layer {
 	void __iomem *base;		/* layer base addr */
 	int id;				/* layer id */
 	bool avail;			/* avail flag */
-	struct zynq_osd *osd;		/* osd */
+	struct xilinx_osd *osd;		/* osd */
 };
 
-struct zynq_osd {
+struct xilinx_osd {
 	void __iomem *base;		/* osd base addr */
-	struct zynq_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
+	struct xilinx_osd_layer *layers[OSD_MAX_NUM_OF_LAYERS];	/* layers */
 	int num_layers;			/* num of layers */
 	u32 width;			/* width */
 	u32 height;			/* height */
@@ -130,109 +130,109 @@ struct zynq_osd {
  * osd layer operation
  */
 /* layer io write operations */
-static inline void zynq_osd_layer_writel(struct zynq_osd_layer *layer,
+static inline void xilinx_osd_layer_writel(struct xilinx_osd_layer *layer,
 		int offset, u32 val)
 {
 	writel(val, layer->base + offset);
 }
 
 /* layer io read operations */
-static inline u32 zynq_osd_layer_readl(struct zynq_osd_layer *layer,
+static inline u32 xilinx_osd_layer_readl(struct xilinx_osd_layer *layer,
 		int offset)
 {
 	return readl(layer->base + offset);
 }
 
 /* set layer alpha */
-void zynq_osd_layer_set_alpha(struct zynq_osd_layer *layer, u32 enable,
+void xilinx_osd_layer_set_alpha(struct xilinx_osd_layer *layer, u32 enable,
 		u32 alpha)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "alpha: 0x%08x\n", alpha);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer->id: %d\n", layer->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "alpha: 0x%08x\n", alpha);
 
-	value = zynq_osd_layer_readl(layer, OSD_LXC);
+	value = xilinx_osd_layer_readl(layer, OSD_LXC);
 	value = enable ? (value | OSD_LXC_GALPHAEN) :
 		(value & ~OSD_LXC_GALPHAEN);
 	value &= ~OSD_LXC_ALPHA_MASK;
 	value |= (alpha << OSD_LXC_ALPHA_SHIFT) & OSD_LXC_ALPHA_MASK;
-	zynq_osd_layer_writel(layer, OSD_LXC, value);
+	xilinx_osd_layer_writel(layer, OSD_LXC, value);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* set layer priority */
-void zynq_osd_layer_set_priority(struct zynq_osd_layer *layer, u32 prio)
+void xilinx_osd_layer_set_priority(struct xilinx_osd_layer *layer, u32 prio)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "prio: %d\n", prio);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer->id: %d\n", layer->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "prio: %d\n", prio);
 
-	value = zynq_osd_layer_readl(layer, OSD_LXC);
+	value = xilinx_osd_layer_readl(layer, OSD_LXC);
 	value &= ~OSD_LXC_PRIORITY_MASK;
 	value |= (prio << OSD_LXC_PRIORITY_SHIFT) & OSD_LXC_PRIORITY_MASK;
-	zynq_osd_layer_writel(layer, OSD_LXC, value);
+	xilinx_osd_layer_writel(layer, OSD_LXC, value);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* set layer dimension */
-void zynq_osd_layer_set_dimension(struct zynq_osd_layer *layer,
+void xilinx_osd_layer_set_dimension(struct xilinx_osd_layer *layer,
 		u16 xstart, u16 ystart, u16 xsize, u16 ysize)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "w: %d(%d), h: %d(%d)\n", xsize, xstart,
-			ysize, ystart);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer->id: %d\n", layer->id);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "w: %d(%d), h: %d(%d)\n",
+			xsize, xstart, ysize, ystart);
 
 	value = xstart & OSD_LXP_XSTART_MASK;
 	value |= (ystart << OSD_LXP_YSTART_SHIFT) & OSD_LXP_YSTART_MASK;
 
-	zynq_osd_layer_writel(layer, OSD_LXP, value);
+	xilinx_osd_layer_writel(layer, OSD_LXP, value);
 
 	value = xsize & OSD_LXS_XSIZE_MASK;
 	value |= (ysize << OSD_LXS_YSIZE_SHIFT) & OSD_LXS_YSIZE_MASK;
 
-	zynq_osd_layer_writel(layer, OSD_LXS, value);
+	xilinx_osd_layer_writel(layer, OSD_LXS, value);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* enable layer */
-void zynq_osd_layer_enable(struct zynq_osd_layer *layer)
+void xilinx_osd_layer_enable(struct xilinx_osd_layer *layer)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	value = zynq_osd_layer_readl(layer, OSD_LXC);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer->id: %d\n", layer->id);
+	value = xilinx_osd_layer_readl(layer, OSD_LXC);
 	value |= OSD_LXC_EN;
-	zynq_osd_layer_writel(layer, OSD_LXC, value);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	xilinx_osd_layer_writel(layer, OSD_LXC, value);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* disable layer */
-void zynq_osd_layer_disable(struct zynq_osd_layer *layer)
+void xilinx_osd_layer_disable(struct xilinx_osd_layer *layer)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer->id: %d\n", layer->id);
-	value = zynq_osd_layer_readl(layer, OSD_LXC);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer->id: %d\n", layer->id);
+	value = xilinx_osd_layer_readl(layer, OSD_LXC);
 	value &= ~OSD_LXC_EN;
-	zynq_osd_layer_writel(layer, OSD_LXC, value);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	xilinx_osd_layer_writel(layer, OSD_LXC, value);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* get an available layer */
-struct zynq_osd_layer *zynq_osd_layer_get(struct zynq_osd *osd)
+struct xilinx_osd_layer *xilinx_osd_layer_get(struct xilinx_osd *osd)
 {
-	struct zynq_osd_layer *layer = NULL;
-	struct zynq_osd_layer *err_ret;
+	struct xilinx_osd_layer *layer = NULL;
+	struct xilinx_osd_layer *err_ret;
 	int i;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 
 	for (i = 0; i < osd->num_layers; i++) {
 		if (osd->layers[i]->avail) {
@@ -247,21 +247,21 @@ struct zynq_osd_layer *zynq_osd_layer_get(struct zynq_osd *osd)
 		goto err_out;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "layer id: %d\n", i);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "layer id: %d\n", i);
 
 	return layer;
 
 err_out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 	return err_ret;
 }
 
 /* put a layer */
-void zynq_osd_layer_put(struct zynq_osd_layer *layer)
+void xilinx_osd_layer_put(struct xilinx_osd_layer *layer)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 	layer->avail = true;
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 	return;
 }
 
@@ -269,98 +269,100 @@ void zynq_osd_layer_put(struct zynq_osd_layer *layer)
  * osd operation
  */
 /* io write operations */
-static inline void zynq_osd_writel(struct zynq_osd *osd, int offset, u32 val)
+static inline void xilinx_osd_writel(struct xilinx_osd *osd, int offset,
+		u32 val)
 {
 	writel(val, osd->base + offset);
 }
 
 /* io read operations */
-static inline u32 zynq_osd_readl(struct zynq_osd *osd, int offset)
+static inline u32 xilinx_osd_readl(struct xilinx_osd *osd, int offset)
 {
 	return readl(osd->base + offset);
 }
 
 /* set osd color*/
-void zynq_osd_set_color(struct zynq_osd *osd, u8 r, u8 g, u8 b)
+void xilinx_osd_set_color(struct xilinx_osd *osd, u8 r, u8 g, u8 b)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 
 	value = g;
-	zynq_osd_writel(osd, OSD_BC0, value);
+	xilinx_osd_writel(osd, OSD_BC0, value);
 	value = b;
-	zynq_osd_writel(osd, OSD_BC1, value);
+	xilinx_osd_writel(osd, OSD_BC1, value);
 	value = r;
-	zynq_osd_writel(osd, OSD_BC2, value);
+	xilinx_osd_writel(osd, OSD_BC2, value);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* set osd dimension*/
-void zynq_osd_set_dimension(struct zynq_osd *osd, u32 width, u32 height)
+void xilinx_osd_set_dimension(struct xilinx_osd *osd, u32 width, u32 height)
 {
 	u32 value;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "w: %d, h: %d\n", width, height);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "w: %d, h: %d\n", width, height);
 	value = width | ((height << OSD_SS_YSIZE_SHIFT) & OSD_SS_YSIZE_MASK);
-	zynq_osd_writel(osd, OSD_SS, value);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_SS, value);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* reset osd */
-void zynq_osd_reset(struct zynq_osd *osd)
+void xilinx_osd_reset(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_CTL, OSD_RST_RESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_CTL, OSD_RST_RESET);
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* enable osd */
-void zynq_osd_enable(struct zynq_osd *osd)
+void xilinx_osd_enable(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) |
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_CTL, xilinx_osd_readl(osd, OSD_CTL) |
 			OSD_CTL_EN);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* disable osd */
-void zynq_osd_disable(struct zynq_osd *osd)
+void xilinx_osd_disable(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) &
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_CTL, xilinx_osd_readl(osd, OSD_CTL) &
 			~OSD_CTL_EN);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* register-update-enable osd */
-void zynq_osd_enable_rue(struct zynq_osd *osd)
+void xilinx_osd_enable_rue(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) |
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_CTL, xilinx_osd_readl(osd, OSD_CTL) |
 			OSD_CTL_RUE);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
 /* register-update-enable osd */
-void zynq_osd_disable_rue(struct zynq_osd *osd)
+void xilinx_osd_disable_rue(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
-	zynq_osd_writel(osd, OSD_CTL, zynq_osd_readl(osd, OSD_CTL) &
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
+	xilinx_osd_writel(osd, OSD_CTL, xilinx_osd_readl(osd, OSD_CTL) &
 			~OSD_CTL_RUE);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }
 
-struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
+struct xilinx_osd *xilinx_osd_probe(struct device *dev,
+		struct device_node *node)
 {
-	struct zynq_osd *osd;
-	struct zynq_osd *err_ret;
-	struct zynq_osd_layer *layer;
+	struct xilinx_osd *osd;
+	struct xilinx_osd *err_ret;
+	struct xilinx_osd_layer *layer;
 	u32 prop;
 	int i;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 
 	osd = devm_kzalloc(dev, sizeof(*osd), GFP_KERNEL);
 	if (!osd) {
@@ -397,7 +399,7 @@ struct zynq_osd *zynq_osd_probe(struct device *dev, struct device_node *node)
 		osd->layers[i] = layer;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 
 	return osd;
 
@@ -406,17 +408,17 @@ err_prop:
 	iounmap(osd->base);
 err_iomap:
 err_osd:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 	return err_ret;
 }
 
-void zynq_osd_remove(struct zynq_osd *osd)
+void xilinx_osd_remove(struct xilinx_osd *osd)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 
-	zynq_osd_reset(osd);
+	xilinx_osd_reset(osd);
 
 	iounmap(osd->base);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_OSD, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_OSD, "\n");
 }

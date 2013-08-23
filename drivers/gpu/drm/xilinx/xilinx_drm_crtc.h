@@ -1,5 +1,5 @@
 /*
- * Xilinx DRM connector header for Zynq
+ * Xilinx DRM crtc header for Xilinx
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -15,14 +15,18 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _ZYNQ_DRM_CONNECTOR_H_
-#define _ZYNQ_DRM_CONNECTOR_H_
+#ifndef _XILINX_DRM_CRTC_H_
+#define _XILINX_DRM_CRTC_H_
 
 struct drm_device;
-struct drm_connector;
+struct drm_crtc;
 
-struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
-		struct drm_encoder *base_encoder);
-void zynq_drm_connector_destroy(struct drm_connector *base_connector);
+void xilinx_drm_crtc_enable_vblank(struct drm_crtc *base_crtc);
+void xilinx_drm_crtc_disable_vblank(struct drm_crtc *base_crtc);
+void xilinx_drm_crtc_cancel_page_flip(struct drm_crtc *base_crtc,
+		struct drm_file *file);
+
+struct drm_crtc *xilinx_drm_crtc_create(struct drm_device *drm);
+void xilinx_drm_crtc_destroy(struct drm_crtc *base_crtc);
 
 #endif

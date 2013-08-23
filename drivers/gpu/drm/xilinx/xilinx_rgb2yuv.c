@@ -1,5 +1,5 @@
 /*
- * Xilinx rgb to yuv converter support for Zynq DRM KMS
+ * Xilinx rgb to yuv converter support for Xilinx DRM KMS
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -22,7 +22,7 @@
 #include <linux/of_address.h>
 #include <linux/slab.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
 /* registers */
 /* general control registers */
@@ -37,89 +37,90 @@
 /* ccm reset register bit definition */
 #define RGB_RST_RESET	(1 << 31)	/* software reset - instantaneous */
 
-struct zynq_rgb2yuv {
+struct xilinx_rgb2yuv {
 	void __iomem *base;		/* rgb2yuv base addr */
 };
 
 /* io write operations */
-static inline void zynq_rgb2yuv_writel(struct zynq_rgb2yuv *rgb2yuv, int offset,
-		u32 val)
+static inline void xilinx_rgb2yuv_writel(struct xilinx_rgb2yuv *rgb2yuv,
+		int offset, u32 val)
 {
 	writel(val, rgb2yuv->base + offset);
 }
 
 /* io read operations */
-static inline u32 zynq_rgb2yuv_readl(struct zynq_rgb2yuv *rgb2yuv, int offset)
+static inline u32 xilinx_rgb2yuv_readl(struct xilinx_rgb2yuv *rgb2yuv,
+		int offset)
 {
 	return readl(rgb2yuv->base + offset);
 }
 
 /* enable rgb2yuv */
-void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv)
+void xilinx_rgb2yuv_enable(struct xilinx_rgb2yuv *rgb2yuv)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
-	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
+	reg = xilinx_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
 	reg |= RGB_CTL_EN;
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 }
 
 /* disable rgb2yuv */
-void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv)
+void xilinx_rgb2yuv_disable(struct xilinx_rgb2yuv *rgb2yuv)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
-	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
+	reg = xilinx_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
 	reg &= ~RGB_CTL_EN;
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 }
 
 /* configure rgb2yuv */
-void zynq_rgb2yuv_configure(struct zynq_rgb2yuv *rgb2yuv,
+void xilinx_rgb2yuv_configure(struct xilinx_rgb2yuv *rgb2yuv,
 		int hactive, int vactive)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
-	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
+	reg = xilinx_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
 	reg &= ~RGB_CTL_RUE;
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_ACTIVE_SIZE,
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_ACTIVE_SIZE,
 			(vactive << 16) | hactive);
 
-	reg = zynq_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
+	reg = xilinx_rgb2yuv_readl(rgb2yuv, RGB_CONTROL);
 	reg |= RGB_CTL_RUE;
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 }
 
 /* reset rgb2yuv */
-void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv)
+void xilinx_rgb2yuv_reset(struct xilinx_rgb2yuv *rgb2yuv)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
-	zynq_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, RGB_RST_RESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
+	xilinx_rgb2yuv_writel(rgb2yuv, RGB_CONTROL, RGB_RST_RESET);
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 }
 
 /* probe rgb2yuv */
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
+struct xilinx_rgb2yuv *xilinx_rgb2yuv_probe(struct device *dev,
 		struct device_node *node)
 {
-	struct zynq_rgb2yuv *rgb2yuv;
-	struct zynq_rgb2yuv *err_ret;
+	struct xilinx_rgb2yuv *rgb2yuv;
+	struct xilinx_rgb2yuv *err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
 	rgb2yuv = devm_kzalloc(dev, sizeof(*rgb2yuv), GFP_KERNEL);
 	if (!rgb2yuv) {
@@ -135,24 +136,24 @@ struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
 		goto err_iomap;
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
 	return rgb2yuv;
 
 err_iomap:
 err_rgb2yuv:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 	return err_ret;
 }
 
 /* remove rgb2yuv */
-void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv)
+void xilinx_rgb2yuv_remove(struct xilinx_rgb2yuv *rgb2yuv)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 
-	zynq_rgb2yuv_reset(rgb2yuv);
+	xilinx_rgb2yuv_reset(rgb2yuv);
 
 	iounmap(rgb2yuv->base);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_RGB2YUV, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_RGB2YUV, "\n");
 }

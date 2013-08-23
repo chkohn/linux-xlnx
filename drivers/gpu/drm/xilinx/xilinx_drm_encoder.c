@@ -1,5 +1,5 @@
 /*
- * Xilinx DRM encoder driver for Zynq
+ * Xilinx DRM encoder driver for Xilinx
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -29,16 +29,17 @@
 
 #include "../i2c/adv7511.h"
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
-struct zynq_drm_encoder {
+struct xilinx_drm_encoder {
 	struct drm_encoder_slave slave;	/* slave encoder */
 	struct i2c_client *i2c_slave;	/* i2c slave encoder client */
 	bool rgb;			/* rgb flag */
 	int dpms;			/* dpms */
 };
 
-#define to_zynq_encoder(x)	container_of(x, struct zynq_drm_encoder, slave)
+#define to_xilinx_encoder(x)	\
+	container_of(x, struct xilinx_drm_encoder, slave)
 
 static const uint16_t adv7511_csc_ycbcr_to_rgb[] = {
 	0x0734, 0x04ad, 0x0000, 0x1c1b,
@@ -47,19 +48,19 @@ static const uint16_t adv7511_csc_ycbcr_to_rgb[] = {
 };
 
 /* set encoder dpms */
-static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
+static void xilinx_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 {
-	struct zynq_drm_encoder *encoder;
+	struct xilinx_drm_encoder *encoder;
 	struct drm_encoder_slave *encoder_slave;
 	struct drm_encoder_slave_funcs *encoder_sfuncs;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	encoder_slave = to_encoder_slave(base_encoder);
 	encoder_sfuncs = encoder_slave->slave_funcs;
-	encoder = to_zynq_encoder(encoder_slave);
+	encoder = to_xilinx_encoder(encoder_slave);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "dpms: %d -> %d\n",
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "dpms: %d -> %d\n",
 			encoder->dpms, dpms);
 
 	if (encoder->dpms == dpms)
@@ -70,11 +71,11 @@ static void zynq_drm_encoder_dpms(struct drm_encoder *base_encoder, int dpms)
 		encoder_sfuncs->dpms(base_encoder, dpms);
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 }
 
 /* adjust a mode if needed */
-static bool zynq_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
+static bool xilinx_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
 		const struct drm_display_mode *mode,
 		struct drm_display_mode *adjusted_mode)
 {
@@ -82,7 +83,7 @@ static bool zynq_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
 	struct drm_encoder_slave_funcs *encoder_sfuncs = NULL;
 	bool ret = true;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	encoder_slave = to_encoder_slave(base_encoder);
 	encoder_sfuncs = encoder_slave->slave_funcs;
@@ -90,16 +91,16 @@ static bool zynq_drm_encoder_mode_fixup(struct drm_encoder *base_encoder,
 		ret = encoder_sfuncs->mode_fixup(base_encoder, mode,
 				adjusted_mode);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	return ret;
 }
 
-/* set mode to zynq encoder */
-static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
+/* set mode to xilinx encoder */
+static void xilinx_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct drm_display_mode *mode, struct drm_display_mode *adjusted_mode)
 {
-	struct zynq_drm_encoder *encoder;
+	struct xilinx_drm_encoder *encoder;
 	struct drm_device *dev = base_encoder->dev;
 	struct drm_encoder_slave *encoder_slave;
 	struct drm_encoder_slave_funcs *encoder_sfuncs;
@@ -108,12 +109,13 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 	struct adv7511_video_config config;
 	struct edid *edid;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "h: %d, v: %d, p clock: %d khz\n",
-			adjusted_mode->hdisplay, adjusted_mode->vdisplay,
-			adjusted_mode->clock);
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "h: %d, v: %d\n",
+			adjusted_mode->hdisplay, adjusted_mode->vdisplay);
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "refresh: %d, pclock: %d khz\n",
+			adjusted_mode->vrefresh, adjusted_mode->clock);
 
 	encoder_slave = to_encoder_slave(base_encoder);
-	encoder = to_zynq_encoder(encoder_slave);
+	encoder = to_xilinx_encoder(encoder_slave);
 
 	/* search for a connector for this encoder */
 	/* assume there's only one connector for this encoder */
@@ -166,77 +168,77 @@ static void zynq_drm_encoder_mode_set(struct drm_encoder *base_encoder,
 		encoder_sfuncs->mode_set(base_encoder, mode, adjusted_mode);
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 }
 
 /* apply mode to encoder pipe */
-static void zynq_drm_encoder_commit(struct drm_encoder *base_encoder)
+static void xilinx_drm_encoder_commit(struct drm_encoder *base_encoder)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 	/* start encoder with new mode */
-	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_ON);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	xilinx_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_ON);
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 }
 
 /* prepare encoder */
-static void zynq_drm_encoder_prepare(struct drm_encoder *base_encoder)
+static void xilinx_drm_encoder_prepare(struct drm_encoder *base_encoder)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
-	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
+	xilinx_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 }
 
 /* get crtc */
-static struct drm_crtc *zynq_drm_encoder_get_crtc(
+static struct drm_crtc *xilinx_drm_encoder_get_crtc(
 		struct drm_encoder *base_encoder)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 	return base_encoder->crtc;
 }
 
-static struct drm_encoder_helper_funcs zynq_drm_encoder_helper_funcs = {
-	.dpms		= zynq_drm_encoder_dpms,
-	.mode_fixup	= zynq_drm_encoder_mode_fixup,
-	.mode_set	= zynq_drm_encoder_mode_set,
-	.prepare	= zynq_drm_encoder_prepare,
-	.commit		= zynq_drm_encoder_commit,
-	.get_crtc	= zynq_drm_encoder_get_crtc,
+static struct drm_encoder_helper_funcs xilinx_drm_encoder_helper_funcs = {
+	.dpms		= xilinx_drm_encoder_dpms,
+	.mode_fixup	= xilinx_drm_encoder_mode_fixup,
+	.mode_set	= xilinx_drm_encoder_mode_set,
+	.prepare	= xilinx_drm_encoder_prepare,
+	.commit		= xilinx_drm_encoder_commit,
+	.get_crtc	= xilinx_drm_encoder_get_crtc,
 };
 
 /* destroy encoder */
-void zynq_drm_encoder_destroy(struct drm_encoder *base_encoder)
+void xilinx_drm_encoder_destroy(struct drm_encoder *base_encoder)
 {
-	struct zynq_drm_encoder *encoder;
+	struct xilinx_drm_encoder *encoder;
 	struct drm_encoder_slave *encoder_slave;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	encoder_slave = to_encoder_slave(base_encoder);
-	encoder = to_zynq_encoder(encoder_slave);
+	encoder = to_xilinx_encoder(encoder_slave);
 
 	/* make sure encoder is off */
-	zynq_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
+	xilinx_drm_encoder_dpms(base_encoder, DRM_MODE_DPMS_OFF);
 
 	drm_encoder_cleanup(base_encoder);
 	put_device(&encoder->i2c_slave->dev);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 }
 
-static struct drm_encoder_funcs zynq_drm_encoder_funcs = {
-	.destroy = zynq_drm_encoder_destroy,
+static struct drm_encoder_funcs xilinx_drm_encoder_funcs = {
+	.destroy = xilinx_drm_encoder_destroy,
 };
 
 /* create encoder */
-struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
+struct drm_encoder *xilinx_drm_encoder_create(struct drm_device *drm)
 {
-	struct zynq_drm_encoder *encoder;
+	struct xilinx_drm_encoder *encoder;
 	struct device_node *sub_node;
 	struct drm_i2c_encoder_driver *i2c_driver;
 	struct drm_encoder *err_ret;
 	int res;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	encoder = devm_kzalloc(drm->dev, sizeof(*encoder), GFP_KERNEL);
 	if (!encoder) {
@@ -257,7 +259,8 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	encoder->i2c_slave = of_find_i2c_device_by_node(sub_node);
 	of_node_put(sub_node);
 	if (!encoder->i2c_slave) {
-		ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "failed to get encoder slv\n");
+		XILINX_DEBUG_KMS(XILINX_KMS_ENCODER,
+				"failed to get encoder slv\n");
 		err_ret = ERR_PTR(-ENODEV);
 		goto err_slave;
 	}
@@ -289,7 +292,7 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	/* initialize encoder */
 	encoder->slave.base.possible_crtcs = 1;
 	res = drm_encoder_init(drm, &encoder->slave.base,
-			&zynq_drm_encoder_funcs, DRM_MODE_ENCODER_TMDS);
+			&xilinx_drm_encoder_funcs, DRM_MODE_ENCODER_TMDS);
 	if (res) {
 		DRM_ERROR("failed to initialize drm encoder\n");
 		err_ret = ERR_PTR(res);
@@ -297,9 +300,9 @@ struct drm_encoder *zynq_drm_encoder_create(struct drm_device *drm)
 	}
 
 	drm_encoder_helper_add(&encoder->slave.base,
-			&zynq_drm_encoder_helper_funcs);
+			&xilinx_drm_encoder_helper_funcs);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 
 	return &encoder->slave.base;
 
@@ -309,6 +312,6 @@ err_slave_init:
 	put_device(&encoder->i2c_slave->dev);
 err_slave:
 err_alloc:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_ENCODER, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_ENCODER, "\n");
 	return err_ret;
 }

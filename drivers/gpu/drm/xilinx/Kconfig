@@ -1,5 +1,5 @@
-config DRM_ZYNQ
-	tristate "DRM Support for Xilinx Zynq"
+config DRM_XILINX
+	tristate "DRM Support for Xilinx"
 	depends on DRM  && ARCH_ZYNQ
 	select DRM_KMS_HELPER
 	select DRM_KMS_CMA_HELPER

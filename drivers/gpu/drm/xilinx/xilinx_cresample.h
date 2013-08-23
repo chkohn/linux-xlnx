@@ -1,5 +1,5 @@
 /*
- * Color Space Converter Header for Zynq DRM KMS
+ * Xilinx Chroma Resampler Header for Xilinx DRM KMS
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -15,22 +15,22 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _ZYNQ_RGB2YUV_H_
-#define _ZYNQ_RGB2YUV_H_
+#ifndef _XILINX_CRESAMPLE_H_
+#define _XILINX_CRESAMPLE_H_
 
-struct zynq_rgb2yuv;
+struct xilinx_cresample;
 
-void zynq_rgb2yuv_configure(struct zynq_rgb2yuv *rgb2yuv,
+void xilinx_cresample_configure(struct xilinx_cresample *cresample,
 		int hactive, int vactive);
-void zynq_rgb2yuv_reset(struct zynq_rgb2yuv *rgb2yuv);
-void zynq_rgb2yuv_enable(struct zynq_rgb2yuv *rgb2yuv);
-void zynq_rgb2yuv_disable(struct zynq_rgb2yuv *rgb2yuv);
+void xilinx_cresample_reset(struct xilinx_cresample *cresample);
+void xilinx_cresample_enable(struct xilinx_cresample *cresample);
+void xilinx_cresample_disable(struct xilinx_cresample *cresample);
 
 struct device;
 struct device_node;
 
-struct zynq_rgb2yuv *zynq_rgb2yuv_probe(struct device *dev,
+struct xilinx_cresample *xilinx_cresample_probe(struct device *dev,
 		struct device_node *node);
-void zynq_rgb2yuv_remove(struct zynq_rgb2yuv *rgb2yuv);
+void xilinx_cresample_remove(struct xilinx_cresample *cresample);
 
 #endif

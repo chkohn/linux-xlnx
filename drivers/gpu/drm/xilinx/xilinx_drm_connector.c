@@ -1,5 +1,5 @@
 /*
- * Xilinx DRM connector driver for Zynq
+ * Xilinx DRM connector driver for Xilinx
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -22,27 +22,28 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_encoder_slave.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
-struct zynq_drm_connector {
+struct xilinx_drm_connector {
 	struct drm_connector base;
 	struct drm_encoder *encoder;
 };
 
-#define to_zynq_connector(x)	container_of(x, struct zynq_drm_connector, base)
+#define to_xilinx_connector(x)	\
+	container_of(x, struct xilinx_drm_connector, base)
 
 /* get mode list */
-static int zynq_drm_connector_get_modes(struct drm_connector *base_connector)
+static int xilinx_drm_connector_get_modes(struct drm_connector *base_connector)
 {
-	struct zynq_drm_connector *connector =
-		to_zynq_connector(base_connector);
+	struct xilinx_drm_connector *connector =
+		to_xilinx_connector(base_connector);
 	struct drm_encoder *encoder = connector->encoder;
 	struct drm_encoder_slave *encoder_slave = to_encoder_slave(encoder);
 	struct drm_encoder_slave_funcs *encoder_sfuncs =
 		encoder_slave->slave_funcs;
 	int count = 0;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	kfree(base_connector->display_info.raw_edid);
 	base_connector->display_info.raw_edid = NULL;
@@ -50,18 +51,18 @@ static int zynq_drm_connector_get_modes(struct drm_connector *base_connector)
 	if (encoder_sfuncs->get_modes)
 		count += encoder_sfuncs->get_modes(encoder, base_connector);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	return count;
 }
 
 /* check if mode is valid */
-static int zynq_drm_connector_mode_valid(struct drm_connector *base_connector,
+static int xilinx_drm_connector_mode_valid(struct drm_connector *base_connector,
 	struct drm_display_mode *mode)
 {
 	int ret = MODE_OK;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	if (mode->clock > 165000) {
 		ret = MODE_CLOCK_HIGH;
@@ -74,39 +75,39 @@ static int zynq_drm_connector_mode_valid(struct drm_connector *base_connector,
 	}
 
 out:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "ret: %d\n", ret);
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "ret: %d\n", ret);
 
 	return ret;
 }
 
 /* find best encoder: return stored encoder */
-static struct drm_encoder *zynq_drm_connector_best_encoder(
+static struct drm_encoder *xilinx_drm_connector_best_encoder(
 		struct drm_connector *base_connector)
 {
-	struct zynq_drm_connector *connector =
-		to_zynq_connector(base_connector);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	struct xilinx_drm_connector *connector =
+		to_xilinx_connector(base_connector);
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 	return connector->encoder;
 }
 
-static struct drm_connector_helper_funcs zynq_drm_connector_helper_funcs = {
-	.get_modes = zynq_drm_connector_get_modes,
-	.mode_valid = zynq_drm_connector_mode_valid,
-	.best_encoder = zynq_drm_connector_best_encoder,
+static struct drm_connector_helper_funcs xilinx_drm_connector_helper_funcs = {
+	.get_modes = xilinx_drm_connector_get_modes,
+	.mode_valid = xilinx_drm_connector_mode_valid,
+	.best_encoder = xilinx_drm_connector_best_encoder,
 };
 
-static enum drm_connector_status zynq_drm_connector_detect(
+static enum drm_connector_status xilinx_drm_connector_detect(
 	struct drm_connector *base_connector, bool force)
 {
-	struct zynq_drm_connector *connector =
-		to_zynq_connector(base_connector);
+	struct xilinx_drm_connector *connector =
+		to_xilinx_connector(base_connector);
 	enum drm_connector_status status = connector_status_unknown;
 	struct drm_encoder *encoder = connector->encoder;
 	struct drm_encoder_slave *encoder_slave = to_encoder_slave(encoder);
 	struct drm_encoder_slave_funcs *encoder_sfuncs =
 		encoder_slave->slave_funcs;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	if (encoder_sfuncs->detect)
 		status = encoder_sfuncs->detect(encoder, base_connector);
@@ -115,38 +116,38 @@ static enum drm_connector_status zynq_drm_connector_detect(
 	if (force && (status != connector_status_connected))
 		status = encoder_sfuncs->detect(encoder, base_connector);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "status: %d\n", status);
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "status: %d\n", status);
 
 	return status;
 }
 
 /* destroy connector */
-void zynq_drm_connector_destroy(struct drm_connector *base_connector)
+void xilinx_drm_connector_destroy(struct drm_connector *base_connector)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	drm_sysfs_connector_remove(base_connector);
 	drm_connector_cleanup(base_connector);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 }
 
-static struct drm_connector_funcs zynq_drm_connector_funcs = {
+static struct drm_connector_funcs xilinx_drm_connector_funcs = {
 	.dpms = drm_helper_connector_dpms,
 	.fill_modes = drm_helper_probe_single_connector_modes,
-	.detect = zynq_drm_connector_detect,
-	.destroy = zynq_drm_connector_destroy,
+	.detect = xilinx_drm_connector_detect,
+	.destroy = xilinx_drm_connector_destroy,
 };
 
 /* create connector */
-struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
+struct drm_connector *xilinx_drm_connector_create(struct drm_device *drm,
 		struct drm_encoder *base_encoder)
 {
-	struct zynq_drm_connector *connector;
+	struct xilinx_drm_connector *connector;
 	struct drm_connector *err_ret;
 	int res;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	connector = devm_kzalloc(drm->dev, sizeof(*connector), GFP_KERNEL);
 	if (!connector) {
@@ -159,7 +160,7 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 				DRM_CONNECTOR_POLL_DISCONNECT;
 
 	res = drm_connector_init(drm, &connector->base,
-			&zynq_drm_connector_funcs, DRM_MODE_CONNECTOR_HDMIA);
+			&xilinx_drm_connector_funcs, DRM_MODE_CONNECTOR_HDMIA);
 	if (res) {
 		DRM_ERROR("failed to initialize connector\n");
 		err_ret = ERR_PTR(res);
@@ -167,7 +168,7 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 	}
 
 	drm_connector_helper_add(&connector->base,
-			&zynq_drm_connector_helper_funcs);
+			&xilinx_drm_connector_helper_funcs);
 
 	/* add sysfs entry for connector */
 	(res = drm_sysfs_connector_add(&connector->base));
@@ -187,7 +188,7 @@ struct drm_connector *zynq_drm_connector_create(struct drm_device *drm,
 	}
 	connector->encoder = base_encoder;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 
 	return &connector->base;
 
@@ -197,6 +198,6 @@ err_sysfs:
 	drm_connector_cleanup(&connector->base);
 err_init:
 err_alloc:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_CONNECTOR, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_CONNECTOR, "\n");
 	return err_ret;
 }

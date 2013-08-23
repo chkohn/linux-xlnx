@@ -1,5 +1,5 @@
 /*
- * Video Timing Controller Header for Zynq DRM KMS
+ * Video Timing Controller Header for Xilinx DRM KMS
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -15,12 +15,12 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _ZYNQ_VTC_H_
-#define _ZYNQ_VTC_H_
+#ifndef _XILINX_VTC_H_
+#define _XILINX_VTC_H_
 
-struct zynq_vtc;
+struct xilinx_vtc;
 
-struct zynq_vtc_sig_config {
+struct xilinx_vtc_sig_config {
 	u16 htotal;
 	u16 hfrontporch_start;
 	u16 hsync_start;
@@ -34,19 +34,20 @@ struct zynq_vtc_sig_config {
 	u16 vactive_start;
 };
 
-void zynq_vtc_config_sig(struct zynq_vtc *vtc,
-		struct zynq_vtc_sig_config *sig_config);
-void zynq_vtc_enable_vblank_intr(struct zynq_vtc *vtc,
+void xilinx_vtc_config_sig(struct xilinx_vtc *vtc,
+		struct xilinx_vtc_sig_config *sig_config);
+void xilinx_vtc_enable_vblank_intr(struct xilinx_vtc *vtc,
 		void (*fn)(void *), void *data);
-void zynq_vtc_disable_vblank_intr(struct zynq_vtc *vtc);
-void zynq_vtc_reset(struct zynq_vtc *vtc);
-void zynq_vtc_enable(struct zynq_vtc *vtc);
-void zynq_vtc_disable(struct zynq_vtc *vtc);
+void xilinx_vtc_disable_vblank_intr(struct xilinx_vtc *vtc);
+void xilinx_vtc_reset(struct xilinx_vtc *vtc);
+void xilinx_vtc_enable(struct xilinx_vtc *vtc);
+void xilinx_vtc_disable(struct xilinx_vtc *vtc);
 
 struct device;
 struct device_node;
 
-struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node);
-void zynq_vtc_remove(struct zynq_vtc *vtc);
+struct xilinx_vtc *xilinx_vtc_probe(struct device *dev,
+		struct device_node *node);
+void xilinx_vtc_remove(struct xilinx_vtc *vtc);
 
 #endif

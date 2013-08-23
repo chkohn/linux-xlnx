@@ -445,8 +445,8 @@
 			xlnx,num-layers = <2>;
 		};
 
-		zynq_drm{
-			compatible = "xlnx,zynq_drm";
+		xilinx_drm{
+			compatible = "xlnx,drm";
 			xlnx,num-planes = <2>;
 			dmas = <&axi_vdma_0 0
 				&axi_vdma_1 0>;

@@ -1,5 +1,5 @@
 /*
- * Video Timing Controller support for Zynq DRM KMS
+ * Video Timing Controller support for Xilinx DRM KMS
  *
  *  Copyright (C) 2013 Xilinx
  *
@@ -23,9 +23,9 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 
-#include "zynq_drm_drv.h"
+#include "xilinx_drm_drv.h"
 
-#include "zynq_vtc.h"
+#include "xilinx_vtc.h"
 
 /* register offsets */
 #define VTC_CTL		0x000	/* control */
@@ -175,14 +175,14 @@
 		VTC_IXR_D_ALL_MASK | \
 		VTC_IXR_LOCKALL_MASK)	/* mask for all interrupts */
 
-struct zynq_vtc {
+struct xilinx_vtc {
 	void __iomem *base;		/* vtc base addr */
 	int irq;			/* irq */
 	void (*vblank_fn)(void *);	/* vblank handler func */
 	void *vblank_data;		/* vblank handler private data */
 };
 
-struct zynq_vtc_polarity {
+struct xilinx_vtc_polarity {
 	u8 active_chroma;
 	u8 active_video;
 	u8 field_id;
@@ -192,14 +192,14 @@ struct zynq_vtc_polarity {
 	u8 hsync;
 };
 
-struct zynq_vtc_hori_offset {
+struct xilinx_vtc_hori_offset {
 	u16 vblank_hori_start;
 	u16 vblank_hori_end;
 	u16 vsync_hori_start;
 	u16 vsync_hori_end;
 };
 
-struct zynq_vtc_src_config {
+struct xilinx_vtc_src_config {
 	u8 field_id_pol;
 	u8 active_chroma_pol;
 	u8 active_video_pol;
@@ -223,26 +223,27 @@ struct zynq_vtc_src_config {
 };
 
 /* io write operations */
-static inline void zynq_vtc_writel(struct zynq_vtc *vtc, int offset, u32 val)
+static inline void xilinx_vtc_writel(struct xilinx_vtc *vtc, int offset,
+		u32 val)
 {
 	writel(val, vtc->base + offset);
 }
 
 /* io read operations */
-static inline u32 zynq_vtc_readl(struct zynq_vtc *vtc, int offset)
+static inline u32 xilinx_vtc_readl(struct xilinx_vtc *vtc, int offset)
 {
 	return readl(vtc->base + offset);
 }
 
 /* configure polarity of signals */
-static void zynq_vtc_config_polarity(struct zynq_vtc *vtc,
-		struct zynq_vtc_polarity *polarity)
+static void xilinx_vtc_config_polarity(struct xilinx_vtc *vtc,
+		struct xilinx_vtc_polarity *polarity)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
-	reg = zynq_vtc_readl(vtc, VTC_GPOL);
+	reg = xilinx_vtc_readl(vtc, VTC_GPOL);
 
 	if (polarity->active_chroma)
 		reg |= VTC_CTL_ACP;
@@ -259,41 +260,41 @@ static void zynq_vtc_config_polarity(struct zynq_vtc *vtc,
 	if (polarity->hsync)
 		reg |= VTC_CTL_HSP;
 
-	zynq_vtc_writel(vtc, VTC_GPOL, reg);
+	xilinx_vtc_writel(vtc, VTC_GPOL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* configure horizontal offset */
-static void zynq_vtc_config_hori_offset(struct zynq_vtc *vtc,
-		struct zynq_vtc_hori_offset *hori_offset)
+static void xilinx_vtc_config_hori_offset(struct xilinx_vtc *vtc,
+		struct xilinx_vtc_hori_offset *hori_offset)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	reg = (hori_offset->vblank_hori_start) & VTC_XVXHOX_HSTART_MASK;
 	reg |= (hori_offset->vblank_hori_end << VTC_XVXHOX_HEND_SHIFT) &
 		VTC_XVXHOX_HEND_MASK;
-	zynq_vtc_writel(vtc, VTC_GVBHOFF, reg);
+	xilinx_vtc_writel(vtc, VTC_GVBHOFF, reg);
 
 	reg = (hori_offset->vsync_hori_start) & VTC_XVXHOX_HSTART_MASK;
 	reg |= (hori_offset->vsync_hori_end << VTC_XVXHOX_HEND_SHIFT) &
 		VTC_XVXHOX_HEND_MASK;
-	zynq_vtc_writel(vtc, VTC_GVSHOFF, reg);
+	xilinx_vtc_writel(vtc, VTC_GVSHOFF, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* configure source */
-static void zynq_vtc_config_src(struct zynq_vtc *vtc,
-		struct zynq_vtc_src_config *src_config)
+static void xilinx_vtc_config_src(struct xilinx_vtc *vtc,
+		struct xilinx_vtc_src_config *src_config)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
-	reg = zynq_vtc_readl(vtc, VTC_CTL);
+	reg = xilinx_vtc_readl(vtc, VTC_CTL);
 
 	if (src_config->field_id_pol)
 		reg |= VTC_CTL_FIPSS;
@@ -332,55 +333,55 @@ static void zynq_vtc_config_src(struct zynq_vtc *vtc,
 	if (src_config->htotal)
 		reg |= VTC_CTL_HTSS;
 
-	zynq_vtc_writel(vtc, VTC_CTL, reg);
+	xilinx_vtc_writel(vtc, VTC_CTL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* enable vtc */
-void zynq_vtc_enable(struct zynq_vtc *vtc)
+void xilinx_vtc_enable(struct xilinx_vtc *vtc)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	/* enable a generator only for now */
-	reg = zynq_vtc_readl(vtc, VTC_CTL);
+	reg = xilinx_vtc_readl(vtc, VTC_CTL);
 	reg |= VTC_CTL_GE;
-	zynq_vtc_writel(vtc, VTC_CTL, reg);
+	xilinx_vtc_writel(vtc, VTC_CTL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* disable vtc */
-void zynq_vtc_disable(struct zynq_vtc *vtc)
+void xilinx_vtc_disable(struct xilinx_vtc *vtc)
 {
 	u32 reg;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	/* disable a generator only for now */
-	reg = zynq_vtc_readl(vtc, VTC_CTL);
+	reg = xilinx_vtc_readl(vtc, VTC_CTL);
 	reg &= ~VTC_CTL_GE;
-	zynq_vtc_writel(vtc, VTC_CTL, reg);
+	xilinx_vtc_writel(vtc, VTC_CTL, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* configure vtc signals */
-void zynq_vtc_config_sig(struct zynq_vtc *vtc,
-		struct zynq_vtc_sig_config *sig_config)
+void xilinx_vtc_config_sig(struct xilinx_vtc *vtc,
+		struct xilinx_vtc_sig_config *sig_config)
 {
 	u32 reg;
 	u32 htotal, vtotal, hactive, vactive;
-	struct zynq_vtc_hori_offset hori_offset;
-	struct zynq_vtc_polarity polarity;
-	struct zynq_vtc_src_config src;
+	struct xilinx_vtc_hori_offset hori_offset;
+	struct xilinx_vtc_polarity polarity;
+	struct xilinx_vtc_src_config src;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
-	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	zynq_vtc_writel(vtc, VTC_CTL, reg & ~VTC_CTL_RU);
+	reg = xilinx_vtc_readl(vtc, VTC_CTL);
+	xilinx_vtc_writel(vtc, VTC_CTL, reg & ~VTC_CTL_RU);
 
 	htotal = sig_config->htotal;
 	vtotal = sig_config->vtotal;
@@ -389,33 +390,33 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	vactive = sig_config->vfrontporch_start;
 
 	reg = htotal & 0x1fff;
-	zynq_vtc_writel(vtc, VTC_GHSIZE, reg);
+	xilinx_vtc_writel(vtc, VTC_GHSIZE, reg);
 
 	reg = vtotal & 0x1fff;
-	zynq_vtc_writel(vtc, VTC_GVSIZE, reg);
+	xilinx_vtc_writel(vtc, VTC_GVSIZE, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "ht: %d, vt: %d\n", htotal, vtotal);
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "ht: %d, vt: %d\n", htotal, vtotal);
 
 	reg = hactive & 0x1fff;
 	reg |= (vactive & 0x1fff) << 16;
-	zynq_vtc_writel(vtc, VTC_GASIZE, reg);
+	xilinx_vtc_writel(vtc, VTC_GASIZE, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "ha: %d, va: %d\n", hactive, vactive);
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "ha: %d, va: %d\n", hactive, vactive);
 
 	reg = (sig_config->hsync_start) & VTC_GH1_SYNCSTART_MASK;
 	reg |= (sig_config->hbackporch_start) << VTC_GH1_BPSTART_SHIFT &
 		VTC_GH1_BPSTART_MASK;
-	zynq_vtc_writel(vtc, VTC_GHSYNC, reg);
+	xilinx_vtc_writel(vtc, VTC_GHSYNC, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "hs: %d, hb: %d\n",
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "hs: %d, hb: %d\n",
 			sig_config->hsync_start, sig_config->hbackporch_start);
 
 	reg = (sig_config->vsync_start) & VTC_GV1_SYNCSTART_MASK;
 	reg |= (sig_config->vbackporch_start) << VTC_GV1_BPSTART_SHIFT &
 		VTC_GV1_BPSTART_MASK;
-	zynq_vtc_writel(vtc, VTC_GVSYNC, reg);
+	xilinx_vtc_writel(vtc, VTC_GVSYNC, reg);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "vs: %d, vb: %d\n",
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "vs: %d, vb: %d\n",
 			sig_config->vsync_start, sig_config->vbackporch_start);
 
 	hori_offset.vblank_hori_start = hactive;
@@ -423,7 +424,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	hori_offset.vsync_hori_start = hactive;
 	hori_offset.vsync_hori_end = hactive;
 
-	zynq_vtc_config_hori_offset(vtc, &hori_offset);
+	xilinx_vtc_config_hori_offset(vtc, &hori_offset);
 
 	/* set up polarity */
 	memset(&polarity, 0x0, sizeof(polarity));
@@ -434,7 +435,7 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	polarity.active_video = 1;
 	polarity.active_chroma = 1;
 	polarity.field_id = 1;
-	zynq_vtc_config_polarity(vtc, &polarity);
+	xilinx_vtc_config_polarity(vtc, &polarity);
 
 	/* set up src config */
 	memset(&src, 0x0, sizeof(src));
@@ -449,99 +450,100 @@ void zynq_vtc_config_sig(struct zynq_vtc *vtc,
 	src.hsync = 1;
 	src.hfrontporch = 1;
 	src.htotal = 1;
-	zynq_vtc_config_src(vtc, &src);
+	xilinx_vtc_config_src(vtc, &src);
 
-	reg = zynq_vtc_readl(vtc, VTC_CTL);
-	zynq_vtc_writel(vtc, VTC_CTL, reg | VTC_CTL_RU);
+	reg = xilinx_vtc_readl(vtc, VTC_CTL);
+	xilinx_vtc_writel(vtc, VTC_CTL, reg | VTC_CTL_RU);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* reset vtc */
-void zynq_vtc_reset(struct zynq_vtc *vtc)
+void xilinx_vtc_reset(struct xilinx_vtc *vtc)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_RESET, VTC_RESET_RESET);
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
+	xilinx_vtc_writel(vtc, VTC_RESET, VTC_RESET_RESET);
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* enable interrupt */
-static inline void zynq_vtc_intr_enable(struct zynq_vtc *vtc, u32 intr)
+static inline void xilinx_vtc_intr_enable(struct xilinx_vtc *vtc, u32 intr)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_IER, (intr & VTC_IXR_ALLINTR_MASK) |
-			zynq_vtc_readl(vtc, VTC_IER));
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
+	xilinx_vtc_writel(vtc, VTC_IER, (intr & VTC_IXR_ALLINTR_MASK) |
+			xilinx_vtc_readl(vtc, VTC_IER));
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* disable interrupt */
-static inline void zynq_vtc_intr_disable(struct zynq_vtc *vtc, u32 intr)
+static inline void xilinx_vtc_intr_disable(struct xilinx_vtc *vtc, u32 intr)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
-	zynq_vtc_writel(vtc, VTC_IER, ~(intr & VTC_IXR_ALLINTR_MASK) &
-			zynq_vtc_readl(vtc, VTC_IER));
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
+	xilinx_vtc_writel(vtc, VTC_IER, ~(intr & VTC_IXR_ALLINTR_MASK) &
+			xilinx_vtc_readl(vtc, VTC_IER));
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* get interrupt */
-static inline u32 zynq_vtc_intr_get(struct zynq_vtc *vtc)
+static inline u32 xilinx_vtc_intr_get(struct xilinx_vtc *vtc)
 {
-	return zynq_vtc_readl(vtc, VTC_IER) & zynq_vtc_readl(vtc, VTC_ISR) &
+	return xilinx_vtc_readl(vtc, VTC_IER) & xilinx_vtc_readl(vtc, VTC_ISR) &
 		VTC_IXR_ALLINTR_MASK;
 }
 
 /* clear interrupt */
-static inline void zynq_vtc_intr_clear(struct zynq_vtc *vtc, u32 intr)
+static inline void xilinx_vtc_intr_clear(struct xilinx_vtc *vtc, u32 intr)
 {
-	zynq_vtc_writel(vtc, VTC_ISR, intr & VTC_IXR_ALLINTR_MASK);
+	xilinx_vtc_writel(vtc, VTC_ISR, intr & VTC_IXR_ALLINTR_MASK);
 }
 
 /* interrupt handler */
-static irqreturn_t zynq_vtc_intr_handler(int irq, void *data)
+static irqreturn_t xilinx_vtc_intr_handler(int irq, void *data)
 {
-	struct zynq_vtc *vtc = data;
-	u32 intr = zynq_vtc_intr_get(vtc);
+	struct xilinx_vtc *vtc = data;
+	u32 intr = xilinx_vtc_intr_get(vtc);
 
 	if ((intr & VTC_IXR_G_VBLANK) && (vtc->vblank_fn))
 		vtc->vblank_fn(vtc->vblank_data);
 
-	zynq_vtc_intr_clear(vtc, intr);
+	xilinx_vtc_intr_clear(vtc, intr);
 
 	return IRQ_HANDLED;
 }
 
 /* enable vblank interrupt */
-void zynq_vtc_enable_vblank_intr(struct zynq_vtc *vtc,
+void xilinx_vtc_enable_vblank_intr(struct xilinx_vtc *vtc,
 		void (*vblank_fn)(void *), void *vblank_priv)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	vtc->vblank_fn = vblank_fn;
 	vtc->vblank_data = vblank_priv;
-	zynq_vtc_intr_enable(vtc, VTC_IXR_G_VBLANK);
+	xilinx_vtc_intr_enable(vtc, VTC_IXR_G_VBLANK);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* disable vblank interrupt */
-void zynq_vtc_disable_vblank_intr(struct zynq_vtc *vtc)
+void xilinx_vtc_disable_vblank_intr(struct xilinx_vtc *vtc)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
-	zynq_vtc_intr_disable(vtc, VTC_IXR_G_VBLANK);
+	xilinx_vtc_intr_disable(vtc, VTC_IXR_G_VBLANK);
 	vtc->vblank_data = NULL;
 	vtc->vblank_fn = NULL;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
 
 /* probe vtc */
-struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
+struct xilinx_vtc *xilinx_vtc_probe(struct device *dev,
+		struct device_node *node)
 {
-	struct zynq_vtc *vtc;
-	struct zynq_vtc *err_ret;
+	struct xilinx_vtc *vtc;
+	struct xilinx_vtc *err_ret;
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	vtc = devm_kzalloc(dev, sizeof(*vtc), GFP_KERNEL);
 	if (!vtc) {
@@ -557,34 +559,34 @@ struct zynq_vtc *zynq_vtc_probe(struct device *dev, struct device_node *node)
 		goto err_iomap;
 	}
 
-	zynq_vtc_intr_disable(vtc, VTC_IXR_ALLINTR_MASK);
+	xilinx_vtc_intr_disable(vtc, VTC_IXR_ALLINTR_MASK);
 	vtc->irq = irq_of_parse_and_map(node, 0);
 	if (vtc->irq > 0) {
-		if (devm_request_irq(dev, vtc->irq, zynq_vtc_intr_handler,
-					IRQF_SHARED, "zynq_vtc", vtc)) {
+		if (devm_request_irq(dev, vtc->irq, xilinx_vtc_intr_handler,
+					IRQF_SHARED, "xilinx_vtc", vtc)) {
 			vtc->irq = 0;
-			pr_warn("failed to requet_irq() for zynq_vtc\n");
+			pr_warn("failed to requet_irq() for xilinx_vtc\n");
 		}
 	}
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
 	return vtc;
 
 err_iomap:
 err_vtc:
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 	return err_ret;
 }
 
 /* remove vtc */
-void zynq_vtc_remove(struct zynq_vtc *vtc)
+void xilinx_vtc_remove(struct xilinx_vtc *vtc)
 {
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 
-	zynq_vtc_reset(vtc);
+	xilinx_vtc_reset(vtc);
 
 	iounmap(vtc->base);
 
-	ZYNQ_DEBUG_KMS(ZYNQ_KMS_VTC, "\n");
+	XILINX_DEBUG_KMS(XILINX_KMS_VTC, "\n");
 }
