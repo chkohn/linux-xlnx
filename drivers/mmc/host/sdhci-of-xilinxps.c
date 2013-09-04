@@ -188,7 +188,7 @@ static int sdhci_zynq_probe(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "Unable to register clock notifier.\n");
 
 
-	ret = sdhci_pltfm_register(pdev, &sdhci_zynq_pdata);
+	ret = sdhci_pltfm_register(pdev, &sdhci_zynq_pdata, 0);
 	if (ret) {
 		dev_err(&pdev->dev, "Platform registration failed\n");
 		goto clk_notif_unreg;
