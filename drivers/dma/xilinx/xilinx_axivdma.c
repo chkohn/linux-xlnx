@@ -1035,6 +1035,7 @@ static int my_log(int value)
 
 static void xilinx_vdma_chan_remove(struct xilinx_vdma_chan *chan)
 {
+	free_irq(chan->irq, chan);
 	irq_dispose_mapping(chan->irq);
 	list_del(&chan->common.device_node);
 	kfree(chan);
@@ -1176,6 +1177,7 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 	return 0;
 
 out_free_irq:
+	free_irq(chan->irq, chan);
 	irq_dispose_mapping(chan->irq);
 out_free_chan:
 	kfree(chan);
