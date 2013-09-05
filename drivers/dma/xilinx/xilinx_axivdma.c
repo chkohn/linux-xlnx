@@ -663,7 +663,7 @@ static int xilinx_vdma_reset(struct xilinx_vdma_chan *chan)
 		dev_err(chan->dev, "reset timeout, cr %x, sr %x\n",
 			vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR),
 			vdma_ctrl_read(chan, XILINX_VDMA_REG_DMASR));
-		return 1;
+		return -ENXIO;
 	}
 
 	chan->err = 0;
@@ -748,7 +748,7 @@ static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
 		 * Channel is no longer functional
 		 */
 		if (xilinx_vdma_reset(chan))
-			return -EBUSY;
+			return -ENXIO;
 	}
 
 	spin_lock_irqsave(&chan->lock, flags);
