@@ -561,13 +561,6 @@ static void xilinx_vdma_start_transfer(struct xilinx_vdma_chan *chan)
 	if (chan->err)
 		goto out_unlock;
 
-	/*
-	 * Enable interrupts
-	 * park/genlock testing does not use interrupts
-	 */
-	vdma_ctrl_set(chan, XILINX_VDMA_REG_DMACR,
-		      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
-
 	/* Start the transfer */
 	if (chan->has_sg) {
 		struct xilinx_vdma_tx_segment *head, *tail;
@@ -675,10 +668,6 @@ static irqreturn_t xilinx_vdma_irq_handler(int irq, void *data)
 	struct xilinx_vdma_chan *chan = data;
 	u32 status;
 
-	/* Disable all interrupts. */
-	vdma_ctrl_clr(chan, XILINX_VDMA_REG_DMACR,
-		      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
-
 	/* Read the status and ack the interrupts. */
 	status = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMASR);
 	if (!(status & XILINX_VDMA_DMAXR_ALL_IRQ_MASK))
@@ -755,6 +744,10 @@ static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
 		err = xilinx_vdma_reset(chan);
 		if (err < 0)
 			return err;
+
+		/* Enable interrupts */
+		vdma_ctrl_set(chan, XILINX_VDMA_REG_DMACR,
+			      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
 	}
 
 	spin_lock_irqsave(&chan->lock, flags);
@@ -878,9 +871,18 @@ static int xilinx_vdma_slave_config(struct xilinx_vdma_chan *chan,
 				    struct xilinx_vdma_config *cfg)
 {
 	u32 dmacr;
+	int err;
 
-	if (cfg->reset)
-		return xilinx_vdma_reset(chan);
+	if (cfg->reset) {
+		err = xilinx_vdma_reset(chan);
+		if (err < 0)
+			return err;
+
+		/* Enable interrupts */
+		vdma_ctrl_set(chan, XILINX_VDMA_REG_DMACR,
+			      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
+		return 0;
+	}
 
 	dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
 
@@ -989,6 +991,10 @@ static int xilinx_vdma_device_control(struct dma_chan *dchan,
 
 static void xilinx_vdma_chan_remove(struct xilinx_vdma_chan *chan)
 {
+	/* Disable all interrupts */
+	vdma_ctrl_clr(chan, XILINX_VDMA_REG_DMACR,
+		      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
+
 	irq_dispose_mapping(chan->irq);
 	list_del(&chan->common.device_node);
 }
@@ -1105,6 +1111,10 @@ static int xilinx_vdma_chan_probe(struct xilinx_vdma_device *xdev,
 
 	list_add_tail(&chan->common.device_node, &xdev->common.channels);
 	xdev->chan[chan->id] = chan;
+
+	/* Enable interrupts */
+	vdma_ctrl_set(chan, XILINX_VDMA_REG_DMACR,
+		      XILINX_VDMA_DMAXR_ALL_IRQ_MASK);
 
 	return 0;
 }
