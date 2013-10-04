@@ -9,6 +9,9 @@ Required properties:
  - xlnx,num-layers: the number of layers(up to 8) supported by OSD
  - xlnx,screen-width: the maximum size(up to 4096) of screen pixel width by OSD
 
+Optional properties:
+ - xlnx,video-format: the video format of OSD. This can be read from register
+
 Example:
 
 	v_osd_0: v-osd@40040000 {
@@ -16,4 +19,5 @@ Example:
 		reg = <0x40040000 0x10000>;
 		xlnx,num-layers = <2>;
 		xlnx,screen-width = <1920>;
+		xlnx,video-format = <1>;
 	};
