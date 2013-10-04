@@ -338,9 +338,11 @@ struct xilinx_osd *xilinx_osd_probe(struct device *dev,
 		return ERR_PTR(ret);
 	}
 
-	/* read the video format set by a user */
-	osd->format = xilinx_drm_readl(osd->base, OSD_ENC) &
-		      OSD_VIDEO_FORMAT_MASK;
+	ret = of_property_read_u32(node, "xlnx,video-format", &osd->format);
+	if (ret)
+		/* read the video format set by a user */
+		osd->format = xilinx_drm_readl(osd->base, OSD_ENC) &
+			      OSD_VIDEO_FORMAT_MASK;
 
 	for (i = 0; i < osd->num_layers; i++) {
 		layer = devm_kzalloc(dev, sizeof(*layer), GFP_KERNEL);
