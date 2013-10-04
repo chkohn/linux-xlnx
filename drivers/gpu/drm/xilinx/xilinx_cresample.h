@@ -26,6 +26,11 @@ void xilinx_cresample_reset(struct xilinx_cresample *cresample);
 void xilinx_cresample_enable(struct xilinx_cresample *cresample);
 void xilinx_cresample_disable(struct xilinx_cresample *cresample);
 
+unsigned int
+xilinx_cresample_get_input_format(struct xilinx_cresample *cresample);
+unsigned int
+xilinx_cresample_get_output_format(struct xilinx_cresample *cresample);
+
 struct device;
 struct device_node;
 
