@@ -4,7 +4,8 @@ Xilinx OSD provides the multiplane support. Some properties can be configured
 in IP synthesis.
 
 Required properties:
- - compatible: value should be "xlnx,v-osd-5.01.a"
+ - compatible: value should be one of following depending on the IP version
+	       - "xlnx,v-osd-5.01.a", "xlnx,v-osd-6.0"
  - reg: base address and size of the OSD IP
  - xlnx,num-layers: the number of layers(up to 8) supported by OSD
  - xlnx,screen-width: the maximum size(up to 4096) of screen pixel width by OSD
