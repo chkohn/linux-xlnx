@@ -3,7 +3,8 @@ Device-Tree bindings for Xilinx Chroma Resampler(CRESAMPLE)
 Xilinx CRESAMPLE provides the chroma resampling of YUV formats.
 
 Required properties:
- - compatible: value should be "xlnx,v-cresample-3.01.a"
+ - compatible: value should be one of following depending on the IP version
+	       - "xlnx,v-cresample-3.01.a", "xlnx,v-cresample-4.0"
  - reg: base address and size of the CRESAMPLE IP
  - xlnx,input-format: the input video format of CRESAMPLE
  - xlnx,output-format: the output video format of CRESAMPLE
