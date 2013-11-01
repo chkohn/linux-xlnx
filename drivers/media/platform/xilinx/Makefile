@@ -5,6 +5,7 @@ obj-$(CONFIG_VIDEO_XILINX_CCM) += xilinx-ccm.o
 obj-$(CONFIG_VIDEO_XILINX_CFA) += xilinx-cfa.o
 obj-$(CONFIG_VIDEO_XILINX_CRESAMPLE) += xilinx-cresample.o
 obj-$(CONFIG_VIDEO_XILINX_ENHANCE) += xilinx-enhance.o
+obj-$(CONFIG_VIDEO_XILINX_GAMMA) += xilinx-gamma.o
 obj-$(CONFIG_VIDEO_XILINX_REMAPPER) += xilinx-remapper.o
 obj-$(CONFIG_VIDEO_XILINX_SOBEL) += xilinx-sobel.o
 obj-$(CONFIG_VIDEO_XILINX_TPG) += xilinx-tpg.o
