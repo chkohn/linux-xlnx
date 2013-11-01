@@ -31,6 +31,12 @@ config VIDEO_XILINX_ENHANCE
 	---help---
 	   Driver for the Xilinx Image Enhancement
 
+config VIDEO_XILINX_GAMMA
+	tristate "Xilinx Video Gamma"
+	depends on VIDEO_XILINX
+	---help---
+	   Driver for the Xilinx Gamma
+
 config VIDEO_XILINX_REMAPPER
 	tristate "Xilinx Video Remapper"
 	depends on VIDEO_XILINX
