@@ -61,6 +61,12 @@ config VIDEO_XILINX_SPC
 	---help---
 	   Driver for the Xilinx Video Spatial Pixel Correction
 
+config VIDEO_XILINX_STATS
+	tristate "Xilinx Video Image Statistics"
+	depends on VIDEO_XILINX
+	---help---
+	   Driver for the Xilinx Video Image Statistics
+
 config VIDEO_XILINX_TPG
 	tristate "Xilinx Video Test Pattern Generator"
 	depends on VIDEO_XILINX
