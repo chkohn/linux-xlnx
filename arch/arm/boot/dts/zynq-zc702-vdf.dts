@@ -220,7 +220,7 @@
 						adi,vsync-polarity = <0x02>;
 						adi,hsync-polarity = <0x02>;
 						adi,tdms-clock-inversion;
-						adi,clock-delay = <0x00>;
+						adi,clock-delay = <0x07>;
 					};
 				};
 
