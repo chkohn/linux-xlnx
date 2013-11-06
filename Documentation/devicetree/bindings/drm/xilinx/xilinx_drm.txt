@@ -16,6 +16,7 @@ Required properties:
  - cresample: the phandle for chroma resampler IP if used in the hardware design
  - vtc: the phandle for video timing controller IP
  - encoder-slave: the phandle for the encoder slave.
+ - clocks: the phandle for the pixel clock
  - planes: the subnode for resources for each plane
 
 Required plane properties:
@@ -33,6 +34,7 @@ Example:
 		cresample = <&v_cresample_1>;
 		vtc = <&v_tc_0>;
 		encoder-slave = <&adv7511>;
+		clocks = <&si570>;
 		planes {
 			plane0 {
 				dma = <&axi_vdma_0>;
