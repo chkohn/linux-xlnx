@@ -202,8 +202,7 @@ static int xgamma_s_ctrl(struct v4l2_ctrl *ctrl)
 
 	switch (ctrl->id) {
 	case V4L2_CID_XILINX_GAMMA_SWITCH_LUT:
-		xvip_write(&xgamma->xvip, XGAMMA_GAMMA_TABLE_UPDATE,
-			   ctrl->val);
+		xvip_write(&xgamma->xvip, XGAMMA_GAMMA_TABLE_UPDATE, 1);
 		return 0;
 	case V4L2_CID_XILINX_GAMMA_UPDATE_LUT:
 		xvip_write(&xgamma->xvip, XGAMMA_GAMMA_ADDR_DATA, ctrl->val);
