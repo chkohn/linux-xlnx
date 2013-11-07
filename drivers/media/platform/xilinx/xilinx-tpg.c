@@ -51,12 +51,17 @@
 #define XTPG_MOTION_MASK			(0x1 << XTPG_MOTION_OFFSET)
 #define XTPG_MOTION_SPEED			0x0104
 #define XTPG_CROSS_HAIRS			0x0108
+#define XTPG_CROSS_HAIR_COLUMN_OFFSET		16
+#define XTPG_CROSS_HAIR_POS_MASK		0xfff
 #define XTPG_ZPLATE_HOR_CONTROL			0x010c
 #define XTPG_ZPLATE_VER_CONTROL			0x0110
+#define XTPG_ZPLATE_SPEED_OFFSET		16
+#define XTPG_ZPLATE_MASK			0xffff
 #define XTPG_BOX_SIZE				0x0114
 #define XTPG_BOX_COLOR				0x0118
 #define XTPG_STUCK_PIXEL_THRESH			0x011c
 #define XTPG_NOISE_GAIN				0x0120
+#define XTPG_BAYER_PHASE			0x0124
 
 /**
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
@@ -108,12 +113,6 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 	xvip_write(&xtpg->xvip, XVIP_TIMING_ACTIVE_SIZE,
 		   (height << XVIP_TIMING_ACTIVE_VSIZE_SHIFT) |
 		   (width << XVIP_TIMING_ACTIVE_HSIZE_SHIFT));
-
-	xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, 1);
-	xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL, (74 * 1920) / width);
-	xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL, (3 * 1080) / height);
-	xvip_write(&xtpg->xvip, XTPG_BOX_SIZE, (112 * height) / 1080);
-	xvip_write(&xtpg->xvip, XTPG_BOX_COLOR, 0x76543200);
 
 	xvip_write(&xtpg->xvip, XVIP_CTRL_CONTROL, XVIP_CTRL_CONTROL_SW_ENABLE |
 		   XVIP_CTRL_CONTROL_REG_UPDATE);
@@ -276,7 +275,57 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 			   (reg & ~XTPG_MOTION_MASK) |
 			   (ctrl->val << XTPG_MOTION_OFFSET));
 		return 0;
-
+	case V4L2_CID_XILINX_TPG_MOTION_SPEED:
+		xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_CROSS_HAIR_ROW:
+		reg = xvip_read(&xtpg->xvip, XTPG_CROSS_HAIRS);
+		xvip_write(&xtpg->xvip, XTPG_CROSS_HAIRS,
+			   (reg & ~XTPG_CROSS_HAIR_POS_MASK) | ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_CROSS_HAIR_COLUMN:
+		reg = xvip_read(&xtpg->xvip, XTPG_CROSS_HAIRS);
+		xvip_write(&xtpg->xvip, XTPG_CROSS_HAIRS,
+			   (reg & XTPG_CROSS_HAIR_POS_MASK) |
+			   (ctrl->val << XTPG_CROSS_HAIR_COLUMN_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_ZPLATE_HOR_START:
+		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL,
+			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_ZPLATE_HOR_SPEED:
+		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL,
+			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val <<
+			   XTPG_ZPLATE_SPEED_OFFSET);
+		return 0;
+	case V4L2_CID_XILINX_TPG_ZPLATE_VER_START:
+		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL,
+			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_ZPLATE_VER_SPEED:
+		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL,
+			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val <<
+			   XTPG_ZPLATE_SPEED_OFFSET);
+		return 0;
+	case V4L2_CID_XILINX_TPG_BOX_SIZE:
+		xvip_write(&xtpg->xvip, XTPG_BOX_SIZE, ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_BOX_COLOR:
+		xvip_write(&xtpg->xvip, XTPG_BOX_COLOR, ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_STUCK_PIXEL_THRESH:
+		xvip_write(&xtpg->xvip, XTPG_STUCK_PIXEL_THRESH, ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_NOISE_GAIN:
+		xvip_write(&xtpg->xvip, XTPG_NOISE_GAIN, ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_BAYER_PHASE:
+		xvip_write(&xtpg->xvip, XTPG_BAYER_PHASE, ctrl->val);
+		return 0;
 	}
 
 	return -EINVAL;
@@ -342,6 +391,7 @@ static struct v4l2_ctrl_config xtpg_pattern = {
 	.type = V4L2_CTRL_TYPE_MENU,
 	.min = 0,
 	.max = 15,
+	.def = 0,
 	.qmenu = xtpg_pattern_strings,
 };
 
@@ -353,6 +403,7 @@ static struct v4l2_ctrl_config xtpg_cross_hairs = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
 };
 
 static struct v4l2_ctrl_config xtpg_moving_box = {
@@ -363,6 +414,7 @@ static struct v4l2_ctrl_config xtpg_moving_box = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
 };
 
 static struct v4l2_ctrl_config xtpg_color_mask = {
@@ -372,6 +424,7 @@ static struct v4l2_ctrl_config xtpg_color_mask = {
 	.type = V4L2_CTRL_TYPE_BITMASK,
 	.min = 0,
 	.max = 0xf,
+	.def = 0,
 };
 
 static struct v4l2_ctrl_config xtpg_stuck_pixel = {
@@ -382,6 +435,7 @@ static struct v4l2_ctrl_config xtpg_stuck_pixel = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
 };
 
 static struct v4l2_ctrl_config xtpg_noise = {
@@ -392,6 +446,7 @@ static struct v4l2_ctrl_config xtpg_noise = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
 };
 
 static struct v4l2_ctrl_config xtpg_motion = {
@@ -402,6 +457,158 @@ static struct v4l2_ctrl_config xtpg_motion = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
+};
+
+static struct v4l2_ctrl_config xtpg_motion_speed = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_MOTION_SPEED,
+	.name = "Test Pattern: Motion Speed",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 8) - 1,
+	.step = 1,
+	.def = 4,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_cross_hair_row = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_CROSS_HAIR_ROW,
+	.name = "Test Pattern: Cross Hairs Row",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 12) - 1,
+	.step = 1,
+	.def = 0x64,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_cross_hair_column = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_CROSS_HAIR_COLUMN,
+	.name = "Test Pattern: Cross Hairs Column",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 12) - 1,
+	.step = 1,
+	.def = 0x64,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_hor_start = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_ZPLATE_HOR_START,
+	.name = "Test Pattern: Zplate Horizontal Start Pos",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 16) - 1,
+	.step = 1,
+	.def = 0x1e,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_hor_speed = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_ZPLATE_HOR_SPEED,
+	.name = "Test Pattern: Zplate Horizontal Speed",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 16) - 1,
+	.step = 1,
+	.def = 0,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_ver_start = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_ZPLATE_VER_START,
+	.name = "Test Pattern: Zplate Vertical Start Pos",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 16) - 1,
+	.step = 1,
+	.def = 1,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_ver_speed = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_ZPLATE_VER_SPEED,
+	.name = "Test Pattern: Zplate Vertical Speed",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 16) - 1,
+	.step = 1,
+	.def = 0,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_box_size = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_BOX_SIZE,
+	.name = "Test Pattern: Box Size",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 12) - 1,
+	.step = 1,
+	.def = 0x32,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_box_color = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_BOX_COLOR,
+	.name = "Test Pattern: Box Color(RGB)",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 24) - 1,
+	.step = 1,
+	.def = 0,
+};
+
+static struct v4l2_ctrl_config xtpg_stuck_pixel_thresh = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_STUCK_PIXEL_THRESH,
+	.name = "Test Pattern: Stuck Pixel threshhold",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 16) - 1,
+	.step = 1,
+	.def = 0,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static struct v4l2_ctrl_config xtpg_noise_gain = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_NOISE_GAIN,
+	.name = "Test Pattern: Noise Gain",
+	.type = V4L2_CTRL_TYPE_INTEGER,
+	.min = 0,
+	.max = (1 << 8) - 1,
+	.step = 1,
+	.def = 0,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
+};
+
+static const char *const xtpg_bayer_phase_menu_strings[] = {
+	"RGRG Bayer",
+	"GRGR Bayer",
+	"GBGB Bayer",
+	"BGBG Bayer",
+	"Off",
+	NULL,
+};
+
+static struct v4l2_ctrl_config xtpg_bayer_phase = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_BAYER_PHASE,
+	.name = "Test Pattern: Bayer Phase",
+	.type = V4L2_CTRL_TYPE_MENU,
+	.min = 0,
+	.max = 4,
+	.def = 4,
+	.qmenu = xtpg_bayer_phase_menu_strings,
 };
 
 /* -----------------------------------------------------------------------------
@@ -481,37 +688,28 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 5);
-	xtpg_pattern.def = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-				     XTPG_PATTERN_MASK;
+	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 14);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_pattern, NULL);
-
-	xtpg_cross_hairs.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-				XTPG_CROSS_HAIRS_MASK) >>
-			       XTPG_CROSS_HAIRS_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hairs, NULL);
-
-	xtpg_moving_box.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-			       XTPG_MOVING_BOX_MASK) >> XTPG_MOVING_BOX_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_moving_box, NULL);
-
-	xtpg_color_mask.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-			       XTPG_COLOR_MASK_MASK) >> XTPG_COLOR_MASK_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_color_mask, NULL);
-
-	xtpg_stuck_pixel.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-				XTPG_STUCK_PIXEL_MASK) >>
-			       XTPG_STUCK_PIXEL_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_stuck_pixel, NULL);
-
-	xtpg_noise.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-			  XTPG_NOISE_MASK) >>  XTPG_NOISE_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_noise, NULL);
-
-	xtpg_motion.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
-			  XTPG_MOTION_MASK) >>  XTPG_MOTION_OFFSET;
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_motion, NULL);
-
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_motion_speed, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hair_row, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hair_column,
+			     NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_hor_start, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_hor_speed, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_ver_start, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_ver_speed, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_box_size, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_box_color, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_stuck_pixel_thresh,
+			     NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_noise_gain, NULL);
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_bayer_phase, NULL);
 	if (xtpg->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xtpg->ctrl_handler.error;
