@@ -37,18 +37,18 @@
 #define XCCM_PAD_SINK				0
 #define XCCM_PAD_SOURCE				1
 
-#define XCCM_COEFF11				0x100
-#define XCCM_COEFF12				0x104
-#define XCCM_COEFF13				0x108
-#define XCCM_COEFF21				0x10c
-#define XCCM_COEFF22				0x110
-#define XCCM_COEFF23				0x114
-#define XCCM_COEFF31				0x118
-#define XCCM_COEFF32				0x11c
-#define XCCM_COEFF33				0x120
-#define XCCM_RED_OFFSET				0x124
-#define XCCM_GREEN_OFFSET			0x128
-#define XCCM_BLUE_OFFSET			0x12c
+#define XCCM_K11				0x100
+#define XCCM_K12				0x104
+#define XCCM_K13				0x108
+#define XCCM_K21				0x10c
+#define XCCM_K22				0x110
+#define XCCM_K23				0x114
+#define XCCM_K31				0x118
+#define XCCM_K32				0x11c
+#define XCCM_K33				0x120
+#define XCCM_ROFFSET				0x124
+#define XCCM_GOFFSET			0x128
+#define XCCM_BOFFSET			0x12c
 #define XCCM_CLIP				0x130
 #define XCCM_CLAMP				0x134
 
@@ -59,20 +59,6 @@
  * @vip_format: Xilinx Video IP format
  * @format: V4L2 media bus format at the source pad
  * @ctrl_handler: control handler
- * @coeff11: Color correction matrix coefficient 11 control
- * @coeff12: Color correction matrix coefficient 12 control
- * @coeff13: Color correction matrix coefficient 13 control
- * @coeff21: Color correction matrix coefficient 21 control
- * @coeff22: Color correction matrix coefficient 22 control
- * @coeff23: Color correction matrix coefficient 23 control
- * @coeff31: Color correction matrix coefficient 31 control
- * @coeff32: Color correction matrix coefficient 32 control
- * @coeff33: Color correction matrix coefficient 33 control
- * @red_offset: Color correction matrix red offset coefficient
- * @green_offset: Color correction matrix green offset coefficient
- * @blue_offset: Color correction matrix blue offset coefficient
- * @clip: Maximum output
- * @clamp: Minimum output
  */
 struct xccm_device {
 	struct xvip_device xvip;
@@ -80,20 +66,6 @@ struct xccm_device {
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *coeff11;
-	struct v4l2_ctrl *coeff12;
-	struct v4l2_ctrl *coeff13;
-	struct v4l2_ctrl *coeff21;
-	struct v4l2_ctrl *coeff22;
-	struct v4l2_ctrl *coeff23;
-	struct v4l2_ctrl *coeff31;
-	struct v4l2_ctrl *coeff32;
-	struct v4l2_ctrl *coeff33;
-	struct v4l2_ctrl *red_offset;
-	struct v4l2_ctrl *green_offset;
-	struct v4l2_ctrl *blue_offset;
-	struct v4l2_ctrl *clip;
-	struct v4l2_ctrl *clamp;
 };
 
 static inline struct xccm_device *to_ccm(struct v4l2_subdev *subdev)
@@ -240,40 +212,40 @@ static int xccm_s_ctrl(struct v4l2_ctrl *ctrl)
 
 	switch (ctrl->id) {
 	case V4L2_CID_XILINX_CCM_COEFF11:
-		xvip_write(&xccm->xvip, XCCM_COEFF11, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K11, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF12:
-		xvip_write(&xccm->xvip, XCCM_COEFF12, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K12, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF13:
-		xvip_write(&xccm->xvip, XCCM_COEFF13, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K13, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF21:
-		xvip_write(&xccm->xvip, XCCM_COEFF21, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K21, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF22:
-		xvip_write(&xccm->xvip, XCCM_COEFF22, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K22, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF23:
-		xvip_write(&xccm->xvip, XCCM_COEFF23, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K23, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF31:
-		xvip_write(&xccm->xvip, XCCM_COEFF31, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K31, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF32:
-		xvip_write(&xccm->xvip, XCCM_COEFF32, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K32, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_COEFF33:
-		xvip_write(&xccm->xvip, XCCM_COEFF33, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_K33, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_RED_OFFSET:
-		xvip_write(&xccm->xvip, XCCM_RED_OFFSET, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_ROFFSET, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_GREEN_OFFSET:
-		xvip_write(&xccm->xvip, XCCM_GREEN_OFFSET, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_GOFFSET, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_BLUE_OFFSET:
-		xvip_write(&xccm->xvip, XCCM_BLUE_OFFSET, ctrl->val);
+		xvip_write(&xccm->xvip, XCCM_BOFFSET, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_CCM_CLIP:
 		xvip_write(&xccm->xvip, XCCM_CLIP, ctrl->val);
@@ -326,148 +298,135 @@ static const struct v4l2_subdev_internal_ops xccm_internal_ops = {
  * Control Configs
  */
 
-static const struct v4l2_ctrl_config xccm_coeff11 = {
+static struct v4l2_ctrl_config xccm_coeff11 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF11,
 	.name = "Color Correction: Coefficient 11",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff12 = {
+static struct v4l2_ctrl_config xccm_coeff12 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF12,
 	.name = "Color Correction: Coefficient 12",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff13 = {
+static struct v4l2_ctrl_config xccm_coeff13 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF13,
 	.name = "Color Correction: Coefficient 13",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff21 = {
+static struct v4l2_ctrl_config xccm_coeff21 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF21,
 	.name = "Color Correction: Coefficient 21",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff22 = {
+static struct v4l2_ctrl_config xccm_coeff22 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF22,
 	.name = "Color Correction: Coefficient 22",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff23 = {
+static struct v4l2_ctrl_config xccm_coeff23 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF23,
 	.name = "Color Correction: Coefficient 23",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff31 = {
+static struct v4l2_ctrl_config xccm_coeff31 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF31,
 	.name = "Color Correction: Coefficient 31",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff32 = {
+static struct v4l2_ctrl_config xccm_coeff32 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF32,
 	.name = "Color Correction: Coefficient 32",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_coeff33 = {
+static struct v4l2_ctrl_config xccm_coeff33 = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_COEFF33,
 	.name = "Color Correction: Coefficient 33",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = -8,
-	.max = 8,
+	.min = 0,
+	.max = (1 << 18) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_red_offset = {
+static struct v4l2_ctrl_config xccm_red_offset = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_RED_OFFSET,
 	.name = "Color Correction: Red Offset",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
-	.min = -((1 << 24) - 1) ,
-	.max = (1 << 24) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_green_offset = {
+static struct v4l2_ctrl_config xccm_green_offset = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_GREEN_OFFSET,
 	.name = "Color Correction: Green Offset",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
-	.min = -((1 << 24) - 1) ,
-	.max = (1 << 24) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_blue_offset = {
+static struct v4l2_ctrl_config xccm_blue_offset = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_BLUE_OFFSET,
 	.name = "Color Correction: Blue Offset",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
-	.min = -((1 << 24) - 1),
-	.max = (1 << 24) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_clip = {
+static struct v4l2_ctrl_config xccm_clip = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_CLIP,
 	.name = "Color Correction: Maximum Output",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
 	.min = 0,
-	.max = (1 << 24) - 1,
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xccm_clamp = {
+static struct v4l2_ctrl_config xccm_clamp = {
 	.ops = &xccm_ctrl_ops,
 	.id = V4L2_CID_XILINX_CCM_CLAMP,
 	.name = "Color Correction: Minimum Output",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
 	.min = 0,
-	.max = (1 << 24) - 1,
 	.step = 1,
 };
 
@@ -577,36 +536,57 @@ static int xccm_probe(struct platform_device *pdev)
 		return ret;
 
 	v4l2_ctrl_handler_init(&xccm->ctrl_handler, 14);
-	xccm->coeff11 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff11, NULL);
-	xccm->coeff12 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff12, NULL);
-	xccm->coeff13 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff13, NULL);
-	xccm->coeff21 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff21, NULL);
-	xccm->coeff22 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff22, NULL);
-	xccm->coeff23 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff23, NULL);
-	xccm->coeff31 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff31, NULL);
-	xccm->coeff32 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff32, NULL);
-	xccm->coeff33 = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-					     &xccm_coeff33, NULL);
 
-	xccm->red_offset = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-						&xccm_red_offset, NULL);
-	xccm->green_offset = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-						  &xccm_green_offset, NULL);
-	xccm->blue_offset = v4l2_ctrl_new_custom(&xccm->ctrl_handler,
-						 &xccm_blue_offset, NULL);
+	xccm_coeff11.def = xvip_read(&xccm->xvip, XCCM_K11);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff11, NULL);
 
-	xccm->clip = v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_clip,
-					  NULL);
-	xccm->clamp = v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_clamp,
-					   NULL);
+	xccm_coeff12.def = xvip_read(&xccm->xvip, XCCM_K12);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff12, NULL);
+
+	xccm_coeff13.def = xvip_read(&xccm->xvip, XCCM_K13);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff13, NULL);
+
+	xccm_coeff21.def = xvip_read(&xccm->xvip, XCCM_K21);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff21, NULL);
+
+	xccm_coeff22.def = xvip_read(&xccm->xvip, XCCM_K22);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff22, NULL);
+
+	xccm_coeff23.def = xvip_read(&xccm->xvip, XCCM_K23);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff23, NULL);
+
+	xccm_coeff31.def = xvip_read(&xccm->xvip, XCCM_K31);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff31, NULL);
+
+	xccm_coeff32.def = xvip_read(&xccm->xvip, XCCM_K32);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff32, NULL);
+
+	xccm_coeff33.def = xvip_read(&xccm->xvip, XCCM_K33);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_coeff33, NULL);
+
+	xccm_red_offset.min = -(2 << xccm->vip_format->width) - 1;
+	xccm_red_offset.max = (2 << xccm->vip_format->width) - 1;
+	xccm_red_offset.def = xvip_read(&xccm->xvip, XCCM_ROFFSET);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_red_offset, NULL);
+
+	xccm_green_offset.min = -(2 << xccm->vip_format->width) - 1;
+	xccm_green_offset.max = (2 << xccm->vip_format->width) - 1;
+	xccm_green_offset.def = xvip_read(&xccm->xvip, XCCM_GOFFSET);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_green_offset, NULL);
+
+	xccm_blue_offset.min = -(2 << xccm->vip_format->width) - 1;
+	xccm_blue_offset.max = (2 << xccm->vip_format->width) - 1;
+	xccm_blue_offset.def = xvip_read(&xccm->xvip, XCCM_BOFFSET);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_blue_offset, NULL);
+
+	xccm_clip.max = (2 << xccm->vip_format->width) - 1;
+	xccm_clip.def = xvip_read(&xccm->xvip, XCCM_CLIP);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_clip, NULL);
+
+	xccm_clamp.max = (2 << xccm->vip_format->width) - 1;
+	xccm_clamp.def = xvip_read(&xccm->xvip, XCCM_CLAMP);
+	v4l2_ctrl_new_custom(&xccm->ctrl_handler, &xccm_clamp, NULL);
+
 	if (xccm->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xccm->ctrl_handler.error;
