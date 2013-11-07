@@ -46,7 +46,6 @@
  * @vip_formats: Xilinx Video IP formats
  * @formats: V4L2 media bus formats
  * @ctrl_handler: control handler
- * @bayer: control for bayer grid starting point
  */
 struct xcfa_device {
 	struct xvip_device xvip;
@@ -54,7 +53,6 @@ struct xcfa_device {
 	struct v4l2_mbus_framefmt formats[2];
 	const struct xvip_video_format *vip_formats[2];
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *bayer;
 };
 
 static inline struct xcfa_device *to_cfa(struct v4l2_subdev *subdev)
@@ -428,8 +426,7 @@ static int xcfa_probe(struct platform_device *pdev)
 
 	v4l2_ctrl_handler_init(&xcfa->ctrl_handler, 1);
 	xcfa_bayer.def = xvip_read(&xcfa->xvip, XCFA_BAYER_PHASE);
-	xcfa->bayer = v4l2_ctrl_new_custom(&xcfa->ctrl_handler, &xcfa_bayer,
-					  NULL);
+	v4l2_ctrl_new_custom(&xcfa->ctrl_handler, &xcfa_bayer, NULL);
 	if (xcfa->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xcfa->ctrl_handler.error;
