@@ -57,38 +57,12 @@
  * @pads: media pads
  * @formats: V4L2 media bus formats at the sink and source pads
  * @ctrl_handler: control handler
- * @ymax: control for Luma max value
- * @ymin: control for Luma min value
- * @cbmax: control for Chroma Cb max value
- * @cbmin: control for Chroma Cb min value
- * @crmax: control for Chroma Cr max value
- * @crmin: control for Chroma Cr min value
- * @yoffset: control for Luma offset compensation
- * @cboffset: control for Chroma Cb offset compensation
- * @croffset: control for Chroma Cr offset compensation
- * @acoef: control for CA coefficient
- * @bcoef: control for CB coefficient
- * @ccoef: control for CC coefficient
- * @dcoef: control for CD coefficient
  */
 struct xrgb2yuv_device {
 	struct xvip_device xvip;
 	struct media_pad pads[2];
 	struct v4l2_mbus_framefmt formats[2];
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *ymax;
-	struct v4l2_ctrl *ymin;
-	struct v4l2_ctrl *cbmax;
-	struct v4l2_ctrl *cbmin;
-	struct v4l2_ctrl *crmax;
-	struct v4l2_ctrl *crmin;
-	struct v4l2_ctrl *yoffset;
-	struct v4l2_ctrl *cboffset;
-	struct v4l2_ctrl *croffset;
-	struct v4l2_ctrl *acoef;
-	struct v4l2_ctrl *bcoef;
-	struct v4l2_ctrl *ccoef;
-	struct v4l2_ctrl *dcoef;
 };
 
 static inline struct xrgb2yuv_device *to_rgb2yuv(struct v4l2_subdev *subdev)
@@ -362,8 +336,7 @@ static const struct v4l2_subdev_internal_ops xrgb2yuv_internal_ops = {
  * Control Configs
  */
 
-/* TODO */
-static const struct v4l2_ctrl_config xrgb2yuv_ymax = {
+static struct v4l2_ctrl_config xrgb2yuv_ymax = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_YMAX,
 	.name = "RGB to YUV: Maximum Y value",
@@ -373,7 +346,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_ymax = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_ymin = {
+static struct v4l2_ctrl_config xrgb2yuv_ymin = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_YMIN,
 	.name = "RGB to YUV: Minimum Y value",
@@ -383,7 +356,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_ymin = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_cbmax = {
+static struct v4l2_ctrl_config xrgb2yuv_cbmax = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CBMAX,
 	.name = "RGB to YUV: Maximum Cb value",
@@ -393,7 +366,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_cbmax = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_cbmin = {
+static struct v4l2_ctrl_config xrgb2yuv_cbmin = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CBMIN,
 	.name = "RGB to YUV: Minimum Cb value",
@@ -403,7 +376,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_cbmin = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_crmax = {
+static struct v4l2_ctrl_config xrgb2yuv_crmax = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CRMAX,
 	.name = "RGB to YUV: Maximum Cr value",
@@ -413,7 +386,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_crmax = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_crmin = {
+static struct v4l2_ctrl_config xrgb2yuv_crmin = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CRMIN,
 	.name = "RGB to YUV: Minimum Cr value",
@@ -423,7 +396,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_crmin = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_yoffset = {
+static struct v4l2_ctrl_config xrgb2yuv_yoffset = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_YOFFSET,
 	.name = "RGB to YUV: Luma offset",
@@ -433,7 +406,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_yoffset = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_cboffset = {
+static struct v4l2_ctrl_config xrgb2yuv_cboffset = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CBOFFSET,
 	.name = "RGB to YUV: Chroma Cb offset",
@@ -443,7 +416,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_cboffset = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_croffset = {
+static struct v4l2_ctrl_config xrgb2yuv_croffset = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CROFFSET,
 	.name = "RGB to YUV: Chroma Cr offset",
@@ -453,7 +426,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_croffset = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_acoef = {
+static struct v4l2_ctrl_config xrgb2yuv_acoef = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_ACOEF,
 	.name = "RGB to YUV: CA coefficient",
@@ -463,7 +436,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_acoef = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_bcoef = {
+static struct v4l2_ctrl_config xrgb2yuv_bcoef = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_BCOEF,
 	.name = "RGB to YUV: CB coefficient",
@@ -473,7 +446,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_bcoef = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_ccoef = {
+static struct v4l2_ctrl_config xrgb2yuv_ccoef = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_CCOEF,
 	.name = "RGB to YUV: CC coefficient",
@@ -483,7 +456,7 @@ static const struct v4l2_ctrl_config xrgb2yuv_ccoef = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xrgb2yuv_dcoef = {
+static struct v4l2_ctrl_config xrgb2yuv_dcoef = {
 	.ops = &xrgb2yuv_ctrl_ops,
 	.id = V4L2_CID_XILINX_RGB2YUV_DCOEF,
 	.name = "RGB to YUV: CD coefficient",
@@ -605,34 +578,36 @@ static int xrgb2yuv_probe(struct platform_device *pdev)
 		return ret;
 
 	v4l2_ctrl_handler_init(&xrgb2yuv->ctrl_handler, 13);
-	xrgb2yuv->ymax = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					      &xrgb2yuv_ymax, NULL);
-	xrgb2yuv->ymin = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					      &xrgb2yuv_ymin, NULL);
-	xrgb2yuv->crmax = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_crmax, NULL);
-	xrgb2yuv->crmin = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_crmin, NULL);
-	xrgb2yuv->cbmax = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_cbmax, NULL);
-	xrgb2yuv->cbmin = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_cbmin, NULL);
 
-	xrgb2yuv->yoffset = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-						 &xrgb2yuv_yoffset, NULL);
-	xrgb2yuv->cboffset = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-						  &xrgb2yuv_cboffset, NULL);
-	xrgb2yuv->croffset = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-						  &xrgb2yuv_croffset, NULL);
+	xrgb2yuv_ymax.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_YMAX);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_ymax, NULL);
+	xrgb2yuv_ymin.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_YMIN);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_ymin, NULL);
+	xrgb2yuv_crmax.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CRMAX);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_crmax, NULL);
+	xrgb2yuv_crmin.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CRMIN);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_crmin, NULL);
+	xrgb2yuv_cbmax.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CBMAX);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_cbmax, NULL);
+	xrgb2yuv_cbmin.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CBMIN);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_cbmin, NULL);
 
-	xrgb2yuv->acoef = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_acoef, NULL);
-	xrgb2yuv->bcoef = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_bcoef, NULL);
-	xrgb2yuv->ccoef = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_ccoef, NULL);
-	xrgb2yuv->dcoef = v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler,
-					       &xrgb2yuv_dcoef, NULL);
+	xrgb2yuv_yoffset.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_YOFFSET);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_yoffset, NULL);
+	xrgb2yuv_cboffset.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CBOFFSET);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_cboffset, NULL);
+	xrgb2yuv_croffset.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CROFFSET);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_croffset, NULL);
+
+	xrgb2yuv_acoef.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_ACOEF);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_acoef, NULL);
+	xrgb2yuv_bcoef.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_BCOEF);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_bcoef, NULL);
+	xrgb2yuv_ccoef.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_CCOEF);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_ccoef, NULL);
+	xrgb2yuv_dcoef.def = xvip_read(&xrgb2yuv->xvip, XRGB2YUV_DCOEF);
+	v4l2_ctrl_new_custom(&xrgb2yuv->ctrl_handler, &xrgb2yuv_dcoef, NULL);
+
 	if (xrgb2yuv->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xrgb2yuv->ctrl_handler.error;

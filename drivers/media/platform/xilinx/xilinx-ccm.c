@@ -47,8 +47,8 @@
 #define XCCM_K32				0x11c
 #define XCCM_K33				0x120
 #define XCCM_ROFFSET				0x124
-#define XCCM_GOFFSET			0x128
-#define XCCM_BOFFSET			0x12c
+#define XCCM_GOFFSET				0x128
+#define XCCM_BOFFSET				0x12c
 #define XCCM_CLIP				0x130
 #define XCCM_CLAMP				0x134
 
