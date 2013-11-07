@@ -27,17 +27,21 @@
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
-#define XCRESAMPLE_MIN_WIDTH				32
-#define XCRESAMPLE_DEF_WIDTH				1920
-#define XCRESAMPLE_MAX_WIDTH				7680
-#define XCRESAMPLE_MIN_HEIGHT				32
-#define XCRESAMPLE_DEF_HEIGHT				1080
-#define XCRESAMPLE_MAX_HEIGHT				7680
+#define XCRESAMPLE_MIN_WIDTH			32
+#define XCRESAMPLE_DEF_WIDTH			1920
+#define XCRESAMPLE_MAX_WIDTH			7680
+#define XCRESAMPLE_MIN_HEIGHT			32
+#define XCRESAMPLE_DEF_HEIGHT			1080
+#define XCRESAMPLE_MAX_HEIGHT			7680
 
-#define XCRESAMPLE_PAD_SINK				0
-#define XCRESAMPLE_PAD_SOURCE				1
+#define XCRESAMPLE_PAD_SINK			0
+#define XCRESAMPLE_PAD_SOURCE			1
 
-#define XCRESAMPLE_ENCODING				0x100
+#define XCRESAMPLE_ENCODING			0x100
+#define XCRESAMPLE_FIELD_OFFSET			7
+#define XCRESAMPLE_FIELD_MASK			(1 << XCRESAMPLE_FIELD_OFFSET)
+#define XCRESAMPLE_CHROMA_OFFSET		8
+#define XCRESAMPLE_CHROMA_MASK			(1 <<XCRESAMPLE_CHROMA_OFFSET)
 
 /**
  * struct xcresample_device - Xilinx CRESAMPLE device structure
@@ -46,8 +50,6 @@
  * @formats: V4L2 media bus formats at the sink and source pads
  * @vip_formats: Xilinx Video IP formats
  * @ctrl_handler: control handler
- * @field: control for encoding field parity
- * @chroma: control for encoding chroma parity
  */
 struct xcresample_device {
 	struct xvip_device xvip;
@@ -55,8 +57,6 @@ struct xcresample_device {
 	struct v4l2_mbus_framefmt formats[2];
 	const struct xvip_video_format *vip_formats[2];
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *field;
-	struct v4l2_ctrl *chroma;
 };
 
 static inline struct xcresample_device *to_cresample(struct v4l2_subdev *subdev)
@@ -251,12 +251,12 @@ static int xcresample_s_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_XILINX_CRESAMPLE_FIELD_PARITY:
 		reg = xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING);
-		reg |= (ctrl->val << 7);
+		reg |= (ctrl->val << XCRESAMPLE_FIELD_OFFSET);
 		xvip_write(&xcresample->xvip, XCRESAMPLE_ENCODING, reg);
 		return 0;
 	case V4L2_CID_XILINX_CRESAMPLE_CHROMA_PARITY:
 		reg = xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING);
-		reg |= (ctrl->val << 8);
+		reg |= (ctrl->val << XCRESAMPLE_CHROMA_OFFSET);
 		xvip_write(&xcresample->xvip, XCRESAMPLE_ENCODING, reg);
 		return 0;
 	}
@@ -305,25 +305,30 @@ static const struct v4l2_subdev_internal_ops xcresample_internal_ops = {
  * Control Configs
  */
 
-/* TODO */
-static const struct v4l2_ctrl_config xcresample_field = {
+static const char *const xcresample_parity_string[] = {
+	"Even",
+	"Odd",
+	NULL,
+};
+
+static struct v4l2_ctrl_config xcresample_field = {
 	.ops = &xcresample_ctrl_ops,
 	.id = V4L2_CID_XILINX_CRESAMPLE_FIELD_PARITY,
 	.name = "Chroma Resampler: Encoding Field Parity",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_MENU,
 	.min = 0,
 	.max = 1,
-	.step = 1,
+	.qmenu = xcresample_parity_string,
 };
 
-static const struct v4l2_ctrl_config xcresample_chroma = {
+static struct v4l2_ctrl_config xcresample_chroma = {
 	.ops = &xcresample_ctrl_ops,
 	.id = V4L2_CID_XILINX_CRESAMPLE_CHROMA_PARITY,
 	.name = "Chroma Resampler: Encoding Chroma Parity",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_MENU,
 	.min = 0,
 	.max = 1,
-	.step = 1,
+	.qmenu = xcresample_parity_string,
 };
 
 /*
@@ -464,10 +469,16 @@ static int xcresample_probe(struct platform_device *pdev)
 		return ret;
 
 	v4l2_ctrl_handler_init(&xcresample->ctrl_handler, 2);
-	xcresample->field = v4l2_ctrl_new_custom(&xcresample->ctrl_handler,
-						 &xcresample_field, NULL);
-	xcresample->chroma = v4l2_ctrl_new_custom(&xcresample->ctrl_handler,
-						  &xcresample_chroma, NULL);
+	xcresample_field.def =
+		(xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING) &
+		 XCRESAMPLE_FIELD_MASK) >> XCRESAMPLE_FIELD_OFFSET;
+	v4l2_ctrl_new_custom(&xcresample->ctrl_handler, &xcresample_field,
+			     NULL);
+	xcresample_chroma.def =
+		(xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING) &
+		 XCRESAMPLE_CHROMA_MASK) >> XCRESAMPLE_CHROMA_OFFSET;
+	v4l2_ctrl_new_custom(&xcresample->ctrl_handler, &xcresample_chroma,
+			     NULL);
 	if (xcresample->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xcresample->ctrl_handler.error;
