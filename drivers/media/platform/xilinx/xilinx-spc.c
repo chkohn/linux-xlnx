@@ -48,9 +48,6 @@
  * @vip_format: Xilinx Video IP format
  * @format: V4L2 media bus format at the source pad
  * @ctrl_handler: control handler
- * @temporal: control for temporal threshold for pixel correction
- * @spatial: control for spatial threshold for pixel correction
- * @pixel_age: control for pixel age threshold for pixel correction
  */
 struct xspc_device {
 	struct xvip_device xvip;
@@ -58,9 +55,6 @@ struct xspc_device {
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *temporal;
-	struct v4l2_ctrl *spatial;
-	struct v4l2_ctrl *pixel_age;
 };
 
 static inline struct xspc_device *to_spc(struct v4l2_subdev *subdev)
@@ -410,14 +404,11 @@ static int xspc_probe(struct platform_device *pdev)
 
 	v4l2_ctrl_handler_init(&xspc->ctrl_handler, 3);
 	xspc_temporal.def = xvip_read(&xspc->xvip, XSPC_THRESH_TEMPORAL_VAR);
-	xspc->temporal = v4l2_ctrl_new_custom(&xspc->ctrl_handler,
-					      &xspc_temporal, NULL);
+	v4l2_ctrl_new_custom(&xspc->ctrl_handler, &xspc_temporal, NULL);
 	xspc_spatial.def = xvip_read(&xspc->xvip, XSPC_THRESH_SPATIAL_VAR);
-	xspc->spatial = v4l2_ctrl_new_custom(&xspc->ctrl_handler,
-					     &xspc_spatial, NULL);
+	v4l2_ctrl_new_custom(&xspc->ctrl_handler, &xspc_spatial, NULL);
 	xspc_pixel_age.def = xvip_read(&xspc->xvip, XSPC_THRESH_PIXEL_AGE);
-	xspc->pixel_age = v4l2_ctrl_new_custom(&xspc->ctrl_handler,
-					       &xspc_pixel_age, NULL);
+	v4l2_ctrl_new_custom(&xspc->ctrl_handler, &xspc_pixel_age, NULL);
 	if (xspc->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xspc->ctrl_handler.error;
