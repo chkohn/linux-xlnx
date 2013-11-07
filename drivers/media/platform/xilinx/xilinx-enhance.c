@@ -48,9 +48,6 @@
  * @vip_format: Xilinx Video IP format
  * @format: V4L2 media bus format at the source pad
  * @ctrl_handler: control handler
- * @noise_threshold: control for noise threshold
- * @strength: control for enhance strength
- * @halo_suppress: control for halo suppress
  */
 struct xenhance_device {
 	struct xvip_device xvip;
@@ -58,9 +55,6 @@ struct xenhance_device {
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *noise_threshold;
-	struct v4l2_ctrl *strength;
-	struct v4l2_ctrl *halo_suppress;
 };
 
 static inline struct xenhance_device *to_enhance(struct v4l2_subdev *subdev)
@@ -89,8 +83,8 @@ static int xenhance_s_stream(struct v4l2_subdev *subdev, int enable)
 		   (height << XVIP_TIMING_ACTIVE_VSIZE_SHIFT) |
 		   (width << XVIP_TIMING_ACTIVE_HSIZE_SHIFT));
 
-	xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL, XVIP_CTRL_CONTROL_SW_ENABLE |
-		   XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL,
+		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
 
 	return 0;
 }
@@ -100,8 +94,8 @@ static int xenhance_s_stream(struct v4l2_subdev *subdev, int enable)
  */
 
 static int xenhance_enum_mbus_code(struct v4l2_subdev *subdev,
-			       struct v4l2_subdev_fh *fh,
-			       struct v4l2_subdev_mbus_code_enum *code)
+				   struct v4l2_subdev_fh *fh,
+				   struct v4l2_subdev_mbus_code_enum *code)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
 
@@ -114,8 +108,8 @@ static int xenhance_enum_mbus_code(struct v4l2_subdev *subdev,
 }
 
 static int xenhance_enum_frame_size(struct v4l2_subdev *subdev,
-				struct v4l2_subdev_fh *fh,
-				struct v4l2_subdev_frame_size_enum *fse)
+				    struct v4l2_subdev_fh *fh,
+				    struct v4l2_subdev_frame_size_enum *fse)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
 
@@ -132,8 +126,8 @@ static int xenhance_enum_frame_size(struct v4l2_subdev *subdev,
 
 static struct v4l2_mbus_framefmt *
 __xenhance_get_pad_format(struct xenhance_device *xenhance,
-		      struct v4l2_subdev_fh *fh,
-		      unsigned int pad, u32 which)
+			  struct v4l2_subdev_fh *fh,
+			  unsigned int pad, u32 which)
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
@@ -146,24 +140,26 @@ __xenhance_get_pad_format(struct xenhance_device *xenhance,
 }
 
 static int xenhance_get_format(struct v4l2_subdev *subdev,
-			   struct v4l2_subdev_fh *fh,
-			   struct v4l2_subdev_format *fmt)
+			       struct v4l2_subdev_fh *fh,
+			       struct v4l2_subdev_format *fmt)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
 
-	fmt->format = *__xenhance_get_pad_format(xenhance, fh, fmt->pad, fmt->which);
+	fmt->format = *__xenhance_get_pad_format(xenhance, fh, fmt->pad,
+						 fmt->which);
 
 	return 0;
 }
 
 static int xenhance_set_format(struct v4l2_subdev *subdev,
-			   struct v4l2_subdev_fh *fh,
-			   struct v4l2_subdev_format *fmt)
+			       struct v4l2_subdev_fh *fh,
+			       struct v4l2_subdev_format *fmt)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xenhance_get_pad_format(xenhance, fh, fmt->pad, fmt->which);
+	__format = __xenhance_get_pad_format(xenhance, fh, fmt->pad,
+					     fmt->which);
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XENHANCE_MIN_WIDTH, XENHANCE_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
@@ -202,8 +198,8 @@ static int xenhance_close(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 static int xenhance_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct xenhance_device *xenhance = container_of(ctrl->handler,
-						struct xenhance_device,
-						ctrl_handler);
+							struct xenhance_device,
+							ctrl_handler);
 
 	switch (ctrl->id) {
 	case V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD:
@@ -262,38 +258,36 @@ static const struct v4l2_subdev_internal_ops xenhance_internal_ops = {
  * Control Configs
  */
 
-/* TODO */
-static const struct v4l2_ctrl_config xenhance_noise_threshold = {
+static struct v4l2_ctrl_config xenhance_noise_threshold = {
 	.ops = &xenhance_ctrl_ops,
 	.id = V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD,
 	.name = "Image Enhancement: Noise Threshold",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
 	.min = 0,
-	.max = (1 << 24) - 1,
 	.step = 1,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
 };
 
-static const struct v4l2_ctrl_config xenhance_strengh = {
+static struct v4l2_ctrl_config xenhance_strength = {
 	.ops = &xenhance_ctrl_ops,
 	.id = V4L2_CID_XILINX_ENHANCE_STRENGTH,
 	.name = "Image Enhancement: Enhance Strength",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
 	.min = 0,
-	.max = (1 << 24) - 1,
+	.max = (1 << 15) - 1,
 	.step = 1,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
 };
 
-static const struct v4l2_ctrl_config xenhance_halo_suppress = {
+static struct v4l2_ctrl_config xenhance_halo_suppress = {
 	.ops = &xenhance_ctrl_ops,
 	.id = V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS,
 	.name = "Image Enhancement: Halo Suppress",
 	.type = V4L2_CTRL_TYPE_INTEGER,
-	/* TODO: min/max depend on the output width */
 	.min = 0,
 	.max = (1 << 15),
 	.step = 1,
+	.flags = V4L2_CTRL_FLAG_SLIDER,
 };
 
 /*
@@ -323,8 +317,8 @@ static int xenhance_pm_resume(struct device *dev)
 {
 	struct xenhance_device *xenhance = dev_get_drvdata(dev);
 
-	xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL, XVIP_CTRL_CONTROL_SW_ENABLE |
-		   XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL,
+		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
 
 	return 0;
 }
@@ -401,16 +395,19 @@ static int xenhance_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	v4l2_ctrl_handler_init(&xenhance->ctrl_handler, 14);
-	xenhance->noise_threshold =
-		v4l2_ctrl_new_custom(&xenhance->ctrl_handler,
-				     &xenhance_noise_threshold, NULL);
-	xenhance->strength =
-		v4l2_ctrl_new_custom(&xenhance->ctrl_handler,
-				     &xenhance_strengh, NULL);
-	xenhance->halo_suppress =
-		v4l2_ctrl_new_custom(&xenhance->ctrl_handler,
-				     &xenhance_halo_suppress, NULL);
+	v4l2_ctrl_handler_init(&xenhance->ctrl_handler, 3);
+	xenhance_noise_threshold.max = (2 << xenhance->vip_format->width) - 1;
+	xenhance_noise_threshold.def = xvip_read(&xenhance->xvip,
+						 XENHANCE_NOISE_THRESHOLD);
+	v4l2_ctrl_new_custom(&xenhance->ctrl_handler, &xenhance_noise_threshold,
+			     NULL);
+	xenhance_strength.def = xvip_read(&xenhance->xvip,
+					   XENHANCE_ENHANCE_STRENGTH);
+	v4l2_ctrl_new_custom(&xenhance->ctrl_handler, &xenhance_strength, NULL);
+	xenhance_halo_suppress.def = xvip_read(&xenhance->xvip,
+					       XENHANCE_HALO_SUPPRESS);
+	v4l2_ctrl_new_custom(&xenhance->ctrl_handler, &xenhance_halo_suppress,
+			     NULL);
 	if (xenhance->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xenhance->ctrl_handler.error;
