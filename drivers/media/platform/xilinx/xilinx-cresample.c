@@ -312,23 +312,23 @@ static const char *const xcresample_parity_string[] = {
 };
 
 static struct v4l2_ctrl_config xcresample_field = {
-	.ops = &xcresample_ctrl_ops,
-	.id = V4L2_CID_XILINX_CRESAMPLE_FIELD_PARITY,
-	.name = "Chroma Resampler: Encoding Field Parity",
-	.type = V4L2_CTRL_TYPE_MENU,
-	.min = 0,
-	.max = 1,
-	.qmenu = xcresample_parity_string,
+	.ops	= &xcresample_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CRESAMPLE_FIELD_PARITY,
+	.name	= "Chroma Resampler: Encoding Field Parity",
+	.type	= V4L2_CTRL_TYPE_MENU,
+	.min	= 0,
+	.max	= 1,
+	.qmenu	= xcresample_parity_string,
 };
 
 static struct v4l2_ctrl_config xcresample_chroma = {
-	.ops = &xcresample_ctrl_ops,
-	.id = V4L2_CID_XILINX_CRESAMPLE_CHROMA_PARITY,
-	.name = "Chroma Resampler: Encoding Chroma Parity",
-	.type = V4L2_CTRL_TYPE_MENU,
-	.min = 0,
-	.max = 1,
-	.qmenu = xcresample_parity_string,
+	.ops	= &xcresample_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CRESAMPLE_CHROMA_PARITY,
+	.name	= "Chroma Resampler: Encoding Chroma Parity",
+	.type	= V4L2_CTRL_TYPE_MENU,
+	.min	= 0,
+	.max	= 1,
+	.qmenu	= xcresample_parity_string,
 };
 
 /*
