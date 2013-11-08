@@ -259,35 +259,35 @@ static const struct v4l2_subdev_internal_ops xenhance_internal_ops = {
  */
 
 static struct v4l2_ctrl_config xenhance_noise_threshold = {
-	.ops = &xenhance_ctrl_ops,
-	.id = V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD,
-	.name = "Image Enhancement: Noise Threshold",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER,
+	.ops	= &xenhance_ctrl_ops,
+	.id	= V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD,
+	.name	= "Image Enhancement: Noise Threshold",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 static struct v4l2_ctrl_config xenhance_strength = {
-	.ops = &xenhance_ctrl_ops,
-	.id = V4L2_CID_XILINX_ENHANCE_STRENGTH,
-	.name = "Image Enhancement: Enhance Strength",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 15) - 1,
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER,
+	.ops	= &xenhance_ctrl_ops,
+	.id	= V4L2_CID_XILINX_ENHANCE_STRENGTH,
+	.name	= "Image Enhancement: Enhance Strength",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 15) - 1,
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 static struct v4l2_ctrl_config xenhance_halo_suppress = {
-	.ops = &xenhance_ctrl_ops,
-	.id = V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS,
-	.name = "Image Enhancement: Halo Suppress",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 15),
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER,
+	.ops	= &xenhance_ctrl_ops,
+	.id	= V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS,
+	.name	= "Image Enhancement: Halo Suppress",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 15),
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 /*
