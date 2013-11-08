@@ -58,19 +58,6 @@
  * @vip_format: Xilinx Video IP format
  * @format: V4L2 media bus format at the source pad
  * @ctrl_handler: control handler
- * @hmax0: control for position of the first vertical zone delimeter
- * @hmax1: control for position of the second vertical zone delimeter
- * @hmax2: control for position of the third vertical zone delimeter
- * @vmax0: control for position of the first horizontal zone delimeter
- * @vmax1: control for position of the second horizontal zone delimeter
- * @vmax2: control for position of the third horizontal zone delimeter
- * @hist_zoom_factor: control for histogram zoom
- * @rgb_hist_zone_en: control for RGB histogram zone enable
- * @ycc_hist_zone_en: control for YCC histogram zone enable
- * @zone_addr: control for zone readout select
- * @color_addr: control for color readout select
- * @hist_addr: control for histogram data address
- * @addr_valid: control for address validation
  */
 struct xstats_device {
 	struct xvip_device xvip;
@@ -78,19 +65,6 @@ struct xstats_device {
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *hmax0;
-	struct v4l2_ctrl *hmax1;
-	struct v4l2_ctrl *hmax2;
-	struct v4l2_ctrl *vmax0;
-	struct v4l2_ctrl *vmax1;
-	struct v4l2_ctrl *vmax2;
-	struct v4l2_ctrl *hist_zoom_factor;
-	struct v4l2_ctrl *rgb_hist_zone_en;
-	struct v4l2_ctrl *ycc_hist_zone_en;
-	struct v4l2_ctrl *zone_addr;
-	struct v4l2_ctrl *color_addr;
-	struct v4l2_ctrl *hist_addr;
-	struct v4l2_ctrl *addr_valid;
 };
 
 static inline struct xstats_device *to_stats(struct v4l2_subdev *subdev)
@@ -324,7 +298,7 @@ static const struct v4l2_subdev_internal_ops xstats_internal_ops = {
  * Control Configs
  */
 
-static const struct v4l2_ctrl_config xstats_hmax0 = {
+static struct v4l2_ctrl_config xstats_hmax0 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HMAX0,
 	.name = "Image Statistics: vertical zone delemeter 0",
@@ -334,7 +308,7 @@ static const struct v4l2_ctrl_config xstats_hmax0 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_hmax1 = {
+static struct v4l2_ctrl_config xstats_hmax1 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HMAX1,
 	.name = "Image Statistics: vertical zone delemeter 1",
@@ -344,7 +318,7 @@ static const struct v4l2_ctrl_config xstats_hmax1 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_hmax2 = {
+static struct v4l2_ctrl_config xstats_hmax2 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_VMAX2,
 	.name = "Image Statistics: vertical zone delemeter 2",
@@ -354,7 +328,7 @@ static const struct v4l2_ctrl_config xstats_hmax2 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_vmax0 = {
+static struct v4l2_ctrl_config xstats_vmax0 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_VMAX0,
 	.name = "Image Statistics: horizontal zone delemeter 0",
@@ -364,7 +338,7 @@ static const struct v4l2_ctrl_config xstats_vmax0 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_vmax1 = {
+static struct v4l2_ctrl_config xstats_vmax1 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_VMAX1,
 	.name = "Image Statistics: horizontal zone delemeter 1",
@@ -374,7 +348,7 @@ static const struct v4l2_ctrl_config xstats_vmax1 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_vmax2 = {
+static struct v4l2_ctrl_config xstats_vmax2 = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HMAX2,
 	.name = "Image Statistics: horizontal zone delemeter 2",
@@ -384,7 +358,7 @@ static const struct v4l2_ctrl_config xstats_vmax2 = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config xstats_hist_zoom_factor = {
+static struct v4l2_ctrl_config xstats_hist_zoom_factor = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HIST_ZOOM_FACTOR,
 	.name = "Image Statistics: Histogram Zomm Factor",
@@ -392,9 +366,10 @@ static const struct v4l2_ctrl_config xstats_hist_zoom_factor = {
 	.min = 0,
 	.max = (1 << 2) - 1,
 	.step = 1,
+	.def = 0,
 };
 
-static const struct v4l2_ctrl_config xstats_rgb_hist_zone_en = {
+static struct v4l2_ctrl_config xstats_rgb_hist_zone_en = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_RGB_HIST_ZONE_EN,
 	.name = "Image Statistics: RGB Histogram Zone Enable",
@@ -402,9 +377,10 @@ static const struct v4l2_ctrl_config xstats_rgb_hist_zone_en = {
 	.min = 0,
 	.max = (1 << 16) - 1,
 	.step = 1,
+	.def = 0xffff,
 };
 
-static const struct v4l2_ctrl_config xstats_ycc_hist_zone_en = {
+static struct v4l2_ctrl_config xstats_ycc_hist_zone_en = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_YCC_HIST_ZONE_EN,
 	.name = "Image Statistics: YCC Histogram Zone Enable",
@@ -412,9 +388,10 @@ static const struct v4l2_ctrl_config xstats_ycc_hist_zone_en = {
 	.min = 0,
 	.max = (1 << 16) - 1,
 	.step = 1,
+	.def = 0xffff,
 };
 
-static const struct v4l2_ctrl_config xstats_zone_addr = {
+static struct v4l2_ctrl_config xstats_zone_addr = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_ZONE_ADDR,
 	.name = "Image Statistics: Zone Readout Select",
@@ -422,9 +399,10 @@ static const struct v4l2_ctrl_config xstats_zone_addr = {
 	.min = 0,
 	.max = (1 << 4) - 1,
 	.step = 1,
+	.def = 0,
 };
 
-static const struct v4l2_ctrl_config xstats_color_addr = {
+static struct v4l2_ctrl_config xstats_color_addr = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_COLOR_ADDR,
 	.name = "Image Statistics: Color Readout Select",
@@ -432,20 +410,20 @@ static const struct v4l2_ctrl_config xstats_color_addr = {
 	.min = 0,
 	.max = (1 << 2) - 1,
 	.step = 1,
+	.def = 0,
 };
 
-static const struct v4l2_ctrl_config xstats_hist_addr = {
+static struct v4l2_ctrl_config xstats_hist_addr = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HIST_ADDR,
 	.name = "Image Statistics: Histogram Data Address",
 	.type = V4L2_CTRL_TYPE_INTEGER,
 	.min = 0,
-	/* TODO: depends on data width */
-	.max = (1 << 24) - 1,
 	.step = 1,
+	.def = 0,
 };
 
-static const struct v4l2_ctrl_config xstats_addr_valid = {
+static struct v4l2_ctrl_config xstats_addr_valid = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_ADDR_VALID,
 	.name = "Image Statistics: Address Validation",
@@ -453,6 +431,7 @@ static const struct v4l2_ctrl_config xstats_addr_valid = {
 	.min = false,
 	.max = true,
 	.step = 1,
+	.def = 0,
 };
 
 /*
@@ -561,35 +540,31 @@ static int xstats_probe(struct platform_device *pdev)
 		return ret;
 
 	v4l2_ctrl_handler_init(&xstats->ctrl_handler, 13);
-	xstats->hmax0 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_hmax0, NULL);
-	xstats->hmax1 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_hmax1, NULL);
-	xstats->hmax2 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_hmax2, NULL);
-	xstats->vmax0 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_vmax0, NULL);
-	xstats->vmax1 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_vmax1, NULL);
-	xstats->vmax2 = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-					     &xstats_vmax2, NULL);
-	xstats->hist_zoom_factor =
-		v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-				     &xstats_hist_zoom_factor, NULL);
-	xstats->rgb_hist_zone_en =
-		v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-				     &xstats_rgb_hist_zone_en, NULL);
-	xstats->ycc_hist_zone_en =
-		v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-				     &xstats_ycc_hist_zone_en, NULL);
-	xstats->zone_addr = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-						 &xstats_zone_addr, NULL);
-	xstats->color_addr = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-						  &xstats_color_addr, NULL);
-	xstats->hist_addr = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-						 &xstats_hist_addr, NULL);
-	xstats->addr_valid = v4l2_ctrl_new_custom(&xstats->ctrl_handler,
-						  &xstats_addr_valid, NULL);
+
+	xstats_hmax0.def = xvip_read(&xstats->xvip, XSTATS_HMAX0);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hmax0, NULL);
+	xstats_hmax1.def = xvip_read(&xstats->xvip, XSTATS_HMAX1);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hmax1, NULL);
+	xstats_hmax2.def = xvip_read(&xstats->xvip, XSTATS_HMAX2);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hmax2, NULL);
+	xstats_vmax0.def = xvip_read(&xstats->xvip, XSTATS_VMAX0);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_vmax0, NULL);
+	xstats_vmax1.def = xvip_read(&xstats->xvip, XSTATS_VMAX1);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_vmax1, NULL);
+	xstats_vmax2.def = xvip_read(&xstats->xvip, XSTATS_VMAX2);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_vmax2, NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hist_zoom_factor,
+			     NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_rgb_hist_zone_en,
+			     NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_ycc_hist_zone_en,
+			     NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_zone_addr, NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_color_addr, NULL);
+	xstats_hist_addr.max = (1 << xstats->vip_format->width) - 1;
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hist_addr, NULL);
+	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_addr_valid, NULL);
+
 	if (xstats->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xstats->ctrl_handler.error;
