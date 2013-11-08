@@ -298,13 +298,13 @@ static const char *const xcfa_bayer_menu_strings[] = {
 };
 
 static struct v4l2_ctrl_config xcfa_bayer = {
-	.ops = &xcfa_ctrl_ops,
-	.id = V4L2_CID_XILINX_CFA_BAYER,
-	.name = "Color Filter: Bayer",
-	.type = V4L2_CTRL_TYPE_MENU,
-	.min = 0,
-	.max = 3,
-	.qmenu = xcfa_bayer_menu_strings,
+	.ops	= &xcfa_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CFA_BAYER,
+	.name	= "Color Filter: Bayer",
+	.type	= V4L2_CTRL_TYPE_MENU,
+	.min	= 0,
+	.max	= 3,
+	.qmenu	= xcfa_bayer_menu_strings,
 };
 
 /*
