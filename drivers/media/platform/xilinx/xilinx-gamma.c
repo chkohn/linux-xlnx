@@ -253,21 +253,21 @@ static const struct v4l2_subdev_internal_ops xgamma_internal_ops = {
  */
 
 static const struct v4l2_ctrl_config xgamma_switch_lut = {
-	.ops = &xgamma_ctrl_ops,
-	.id = V4L2_CID_XILINX_GAMMA_SWITCH_LUT,
-	.name = "Gamma: Switch to the inactive LUT",
-	.type = V4L2_CTRL_TYPE_BUTTON,
+	.ops	= &xgamma_ctrl_ops,
+	.id	= V4L2_CID_XILINX_GAMMA_SWITCH_LUT,
+	.name	= "Gamma: Switch to the inactive LUT",
+	.type	= V4L2_CTRL_TYPE_BUTTON,
 };
 
 static const struct v4l2_ctrl_config xgamma_update_lut = {
-	.ops = &xgamma_ctrl_ops,
-	.id = V4L2_CID_XILINX_GAMMA_UPDATE_LUT,
-	.name = "Gamma: Update the inactive LUT",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 0x7fffffff,
-	.step = 1,
-	.def = 0,
+	.ops	= &xgamma_ctrl_ops,
+	.id	= V4L2_CID_XILINX_GAMMA_UPDATE_LUT,
+	.name	= "Gamma: Update the inactive LUT",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 0x7fffffff,
+	.step	= 1,
+	.def	= 0,
 };
 
 /*
