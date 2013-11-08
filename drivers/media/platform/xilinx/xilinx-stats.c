@@ -358,25 +358,33 @@ static struct v4l2_ctrl_config xstats_vmax2 = {
 	.step = 1,
 };
 
+static const char *const xstats_hist_zoom_factor_menu_strings[] = {
+	"1",
+	"2",
+	"4",
+	"8",
+	NULL,
+};
+
 static struct v4l2_ctrl_config xstats_hist_zoom_factor = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_HIST_ZOOM_FACTOR,
 	.name = "Image Statistics: Histogram Zomm Factor",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_MENU,
 	.min = 0,
 	.max = (1 << 2) - 1,
-	.step = 1,
 	.def = 0,
+	.qmenu = xstats_hist_zoom_factor_menu_strings,
 };
 
 static struct v4l2_ctrl_config xstats_rgb_hist_zone_en = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_RGB_HIST_ZONE_EN,
 	.name = "Image Statistics: RGB Histogram Zone Enable",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_BITMASK,
 	.min = 0,
-	.max = (1 << 16) - 1,
-	.step = 1,
+	.max = 0xffff,
+	.step = 0,
 	.def = 0xffff,
 };
 
@@ -384,10 +392,10 @@ static struct v4l2_ctrl_config xstats_ycc_hist_zone_en = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_YCC_HIST_ZONE_EN,
 	.name = "Image Statistics: YCC Histogram Zone Enable",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_BITMASK,
 	.min = 0,
-	.max = (1 << 16) - 1,
-	.step = 1,
+	.max = 0xffff,
+	.step = 0,
 	.def = 0xffff,
 };
 
@@ -402,15 +410,23 @@ static struct v4l2_ctrl_config xstats_zone_addr = {
 	.def = 0,
 };
 
+static const char *const xstats_color_readout_menu_strings[] = {
+	"Red",
+	"Green",
+	"None",
+	"Blue",
+	NULL,
+};
+
 static struct v4l2_ctrl_config xstats_color_addr = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_COLOR_ADDR,
 	.name = "Image Statistics: Color Readout Select",
-	.type = V4L2_CTRL_TYPE_INTEGER,
+	.type = V4L2_CTRL_TYPE_MENU,
 	.min = 0,
 	.max = (1 << 2) - 1,
-	.step = 1,
 	.def = 0,
+	.qmenu = xstats_color_readout_menu_strings,
 };
 
 static struct v4l2_ctrl_config xstats_hist_addr = {
@@ -427,11 +443,7 @@ static struct v4l2_ctrl_config xstats_addr_valid = {
 	.ops = &xstats_ctrl_ops,
 	.id = V4L2_CID_XILINX_STATS_ADDR_VALID,
 	.name = "Image Statistics: Address Validation",
-	.type = V4L2_CTRL_TYPE_BOOLEAN,
-	.min = false,
-	.max = true,
-	.step = 1,
-	.def = 0,
+	.type = V4L2_CTRL_TYPE_BUTTON,
 };
 
 /*
