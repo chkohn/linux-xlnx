@@ -255,36 +255,36 @@ static const struct v4l2_subdev_internal_ops xspc_internal_ops = {
  */
 
 static struct v4l2_ctrl_config xspc_temporal = {
-	.ops = &xspc_ctrl_ops,
-	.id = V4L2_CID_XILINX_SPC_TEMPORAL,
-	.name = "Pixel Correction: Temporal Variance Threshold",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 12) - 1,
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER, 
+	.ops	= &xspc_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SPC_TEMPORAL,
+	.name	= "Pixel Correction: Temporal Variance Threshold",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 12) - 1,
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 static struct v4l2_ctrl_config xspc_spatial = {
-	.ops = &xspc_ctrl_ops,
-	.id = V4L2_CID_XILINX_SPC_SPATIAL,
-	.name = "Pixel Correction: Spatial Variance Threshold",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 16) - 1,
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER, 
+	.ops	= &xspc_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SPC_SPATIAL,
+	.name	= "Pixel Correction: Spatial Variance Threshold",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 16) - 1,
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 static struct v4l2_ctrl_config xspc_pixel_age = {
-	.ops = &xspc_ctrl_ops,
-	.id = V4L2_CID_XILINX_SPC_PIXEL_AGE,
-	.name = "Pixel Correction: Pixel Age Threshold",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 16) - 1,
-	.step = 1,
-	.flags = V4L2_CTRL_FLAG_SLIDER, 
+	.ops	= &xspc_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SPC_PIXEL_AGE,
+	.name	= "Pixel Correction: Pixel Age Threshold",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 16) - 1,
+	.step	= 1,
+	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
 /*
