@@ -299,135 +299,135 @@ static const struct v4l2_subdev_internal_ops xccm_internal_ops = {
  */
 
 static struct v4l2_ctrl_config xccm_coeff11 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF11,
-	.name = "Color Correction: Coefficient 11",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF11,
+	.name	= "Color Correction: Coefficient 11",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff12 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF12,
-	.name = "Color Correction: Coefficient 12",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF12,
+	.name	= "Color Correction: Coefficient 12",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff13 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF13,
-	.name = "Color Correction: Coefficient 13",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF13,
+	.name	= "Color Correction: Coefficient 13",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff21 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF21,
-	.name = "Color Correction: Coefficient 21",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF21,
+	.name	= "Color Correction: Coefficient 21",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff22 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF22,
-	.name = "Color Correction: Coefficient 22",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF22,
+	.name	= "Color Correction: Coefficient 22",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff23 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF23,
-	.name = "Color Correction: Coefficient 23",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF23,
+	.name	= "Color Correction: Coefficient 23",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff31 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF31,
-	.name = "Color Correction: Coefficient 31",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF31,
+	.name	= "Color Correction: Coefficient 31",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff32 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF32,
-	.name = "Color Correction: Coefficient 32",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF32,
+	.name	= "Color Correction: Coefficient 32",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_coeff33 = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_COEFF33,
-	.name = "Color Correction: Coefficient 33",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 18) - 1,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_COEFF33,
+	.name	= "Color Correction: Coefficient 33",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 18) - 1,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_red_offset = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_RED_OFFSET,
-	.name = "Color Correction: Red Offset",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_RED_OFFSET,
+	.name	= "Color Correction: Red Offset",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_green_offset = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_GREEN_OFFSET,
-	.name = "Color Correction: Green Offset",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_GREEN_OFFSET,
+	.name	= "Color Correction: Green Offset",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_blue_offset = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_BLUE_OFFSET,
-	.name = "Color Correction: Blue Offset",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_BLUE_OFFSET,
+	.name	= "Color Correction: Blue Offset",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_clip = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_CLIP,
-	.name = "Color Correction: Maximum Output",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_CLIP,
+	.name	= "Color Correction: Maximum Output",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xccm_clamp = {
-	.ops = &xccm_ctrl_ops,
-	.id = V4L2_CID_XILINX_CCM_CLAMP,
-	.name = "Color Correction: Minimum Output",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.step = 1,
+	.ops	= &xccm_ctrl_ops,
+	.id	= V4L2_CID_XILINX_CCM_CLAMP,
+	.name	= "Color Correction: Minimum Output",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.step	= 1,
 };
 
 /*
