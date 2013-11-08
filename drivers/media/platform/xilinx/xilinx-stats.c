@@ -299,63 +299,63 @@ static const struct v4l2_subdev_internal_ops xstats_internal_ops = {
  */
 
 static struct v4l2_ctrl_config xstats_hmax0 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_HMAX0,
-	.name = "Image Statistics: vertical zone delemeter 0",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_HMAX0,
+	.name	= "Image Statistics: vertical zone delemeter 0",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xstats_hmax1 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_HMAX1,
-	.name = "Image Statistics: vertical zone delemeter 1",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_HMAX1,
+	.name	= "Image Statistics: vertical zone delemeter 1",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xstats_hmax2 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_VMAX2,
-	.name = "Image Statistics: vertical zone delemeter 2",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_VMAX2,
+	.name	= "Image Statistics: vertical zone delemeter 2",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xstats_vmax0 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_VMAX0,
-	.name = "Image Statistics: horizontal zone delemeter 0",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_VMAX0,
+	.name	= "Image Statistics: horizontal zone delemeter 0",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xstats_vmax1 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_VMAX1,
-	.name = "Image Statistics: horizontal zone delemeter 1",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_VMAX1,
+	.name	= "Image Statistics: horizontal zone delemeter 1",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static struct v4l2_ctrl_config xstats_vmax2 = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_HMAX2,
-	.name = "Image Statistics: horizontal zone delemeter 2",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = 7680,
-	.step = 1,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_HMAX2,
+	.name	= "Image Statistics: horizontal zone delemeter 2",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= 7680,
+	.step	= 1,
 };
 
 static const char *const xstats_hist_zoom_factor_menu_strings[] = {
@@ -367,47 +367,47 @@ static const char *const xstats_hist_zoom_factor_menu_strings[] = {
 };
 
 static struct v4l2_ctrl_config xstats_hist_zoom_factor = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_HIST_ZOOM_FACTOR,
-	.name = "Image Statistics: Histogram Zomm Factor",
-	.type = V4L2_CTRL_TYPE_MENU,
-	.min = 0,
-	.max = (1 << 2) - 1,
-	.def = 0,
-	.qmenu = xstats_hist_zoom_factor_menu_strings,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_HIST_ZOOM_FACTOR,
+	.name	= "Image Statistics: Histogram Zomm Factor",
+	.type	= V4L2_CTRL_TYPE_MENU,
+	.min	= 0,
+	.max	= (1 << 2) - 1,
+	.def	= 0,
+	.qmenu	= xstats_hist_zoom_factor_menu_strings,
 };
 
 static struct v4l2_ctrl_config xstats_rgb_hist_zone_en = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_RGB_HIST_ZONE_EN,
-	.name = "Image Statistics: RGB Histogram Zone Enable",
-	.type = V4L2_CTRL_TYPE_BITMASK,
-	.min = 0,
-	.max = 0xffff,
-	.step = 0,
-	.def = 0xffff,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_RGB_HIST_ZONE_EN,
+	.name	= "Image Statistics: RGB Histogram Zone Enable",
+	.type	= V4L2_CTRL_TYPE_BITMASK,
+	.min	= 0,
+	.max	= 0xffff,
+	.step	= 0,
+	.def	= 0xffff,
 };
 
 static struct v4l2_ctrl_config xstats_ycc_hist_zone_en = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_YCC_HIST_ZONE_EN,
-	.name = "Image Statistics: YCC Histogram Zone Enable",
-	.type = V4L2_CTRL_TYPE_BITMASK,
-	.min = 0,
-	.max = 0xffff,
-	.step = 0,
-	.def = 0xffff,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_YCC_HIST_ZONE_EN,
+	.name	= "Image Statistics: YCC Histogram Zone Enable",
+	.type	= V4L2_CTRL_TYPE_BITMASK,
+	.min	= 0,
+	.max	= 0xffff,
+	.step	= 0,
+	.def	= 0xffff,
 };
 
 static struct v4l2_ctrl_config xstats_zone_addr = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_ZONE_ADDR,
-	.name = "Image Statistics: Zone Readout Select",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.max = (1 << 4) - 1,
-	.step = 1,
-	.def = 0,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_ZONE_ADDR,
+	.name	= "Image Statistics: Zone Readout Select",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= (1 << 4) - 1,
+	.step	= 1,
+	.def	= 0,
 };
 
 static const char *const xstats_color_readout_menu_strings[] = {
@@ -419,31 +419,31 @@ static const char *const xstats_color_readout_menu_strings[] = {
 };
 
 static struct v4l2_ctrl_config xstats_color_addr = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_COLOR_ADDR,
-	.name = "Image Statistics: Color Readout Select",
-	.type = V4L2_CTRL_TYPE_MENU,
-	.min = 0,
-	.max = (1 << 2) - 1,
-	.def = 0,
-	.qmenu = xstats_color_readout_menu_strings,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_COLOR_ADDR,
+	.name	= "Image Statistics: Color Readout Select",
+	.type	= V4L2_CTRL_TYPE_MENU,
+	.min	= 0,
+	.max	= (1 << 2) - 1,
+	.def	= 0,
+	.qmenu	= xstats_color_readout_menu_strings,
 };
 
 static struct v4l2_ctrl_config xstats_hist_addr = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_HIST_ADDR,
-	.name = "Image Statistics: Histogram Data Address",
-	.type = V4L2_CTRL_TYPE_INTEGER,
-	.min = 0,
-	.step = 1,
-	.def = 0,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_HIST_ADDR,
+	.name	= "Image Statistics: Histogram Data Address",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.step	= 1,
+	.def	= 0,
 };
 
 static struct v4l2_ctrl_config xstats_addr_valid = {
-	.ops = &xstats_ctrl_ops,
-	.id = V4L2_CID_XILINX_STATS_ADDR_VALID,
-	.name = "Image Statistics: Address Validation",
-	.type = V4L2_CTRL_TYPE_BUTTON,
+	.ops	= &xstats_ctrl_ops,
+	.id	= V4L2_CID_XILINX_STATS_ADDR_VALID,
+	.name	= "Image Statistics: Address Validation",
+	.type	= V4L2_CTRL_TYPE_BUTTON,
 };
 
 /*
@@ -565,6 +565,7 @@ static int xstats_probe(struct platform_device *pdev)
 	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_vmax1, NULL);
 	xstats_vmax2.def = xvip_read(&xstats->xvip, XSTATS_VMAX2);
 	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_vmax2, NULL);
+
 	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_hist_zoom_factor,
 			     NULL);
 	v4l2_ctrl_new_custom(&xstats->ctrl_handler, &xstats_rgb_hist_zone_en,
