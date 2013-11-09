@@ -37,25 +37,25 @@
 
 #define XTPG_PATTERN_CONTROL			0x0100
 #define XTPG_PATTERN_MASK			0xf
-#define XTPG_CROSS_HAIRS_OFFSET			4
-#define XTPG_CROSS_HAIRS_MASK			(0x1 << XTPG_CROSS_HAIRS_OFFSET)
-#define XTPG_MOVING_BOX_OFFSET			5
-#define XTPG_MOVING_BOX_MASK			(0x1 << XTPG_MOVING_BOX_OFFSET)
-#define XTPG_COLOR_MASK_OFFSET			6
-#define XTPG_COLOR_MASK_MASK			(0xf << XTPG_COLOR_MASK_OFFSET)
-#define XTPG_STUCK_PIXEL_OFFSET			9
-#define XTPG_STUCK_PIXEL_MASK			(0x1 << XTPG_STUCK_PIXEL_OFFSET)
-#define XTPG_NOISE_OFFSET			10
-#define XTPG_NOISE_MASK				(0x1 << XTPG_NOISE_OFFSET)
-#define XTPG_MOTION_OFFSET			12
-#define XTPG_MOTION_MASK			(0x1 << XTPG_MOTION_OFFSET)
+#define XTPG_CROSS_HAIRS_SHIFT			4
+#define XTPG_CROSS_HAIRS_MASK			(0x1 << XTPG_CROSS_HAIRS_SHIFT)
+#define XTPG_MOVING_BOX_SHIFT			5
+#define XTPG_MOVING_BOX_MASK			(0x1 << XTPG_MOVING_BOX_SHIFT)
+#define XTPG_COLOR_MASK_SHIFT			6
+#define XTPG_COLOR_MASK_MASK			(0xf << XTPG_COLOR_MASK_SHIFT)
+#define XTPG_STUCK_PIXEL_SHIFT			9
+#define XTPG_STUCK_PIXEL_MASK			(0x1 << XTPG_STUCK_PIXEL_SHIFT)
+#define XTPG_NOISE_SHIFT			10
+#define XTPG_NOISE_MASK				(0x1 << XTPG_NOISE_SHIFT)
+#define XTPG_MOTION_SHIFT			12
+#define XTPG_MOTION_MASK			(0x1 << XTPG_MOTION_SHIFT)
 #define XTPG_MOTION_SPEED			0x0104
 #define XTPG_CROSS_HAIRS			0x0108
-#define XTPG_CROSS_HAIR_COLUMN_OFFSET		16
+#define XTPG_CROSS_HAIR_COLUMN_SHIFT		16
 #define XTPG_CROSS_HAIR_POS_MASK		0xfff
 #define XTPG_ZPLATE_HOR_CONTROL			0x010c
 #define XTPG_ZPLATE_VER_CONTROL			0x0110
-#define XTPG_ZPLATE_SPEED_OFFSET		16
+#define XTPG_ZPLATE_SPEED_SHIFT		16
 #define XTPG_ZPLATE_MASK			0xffff
 #define XTPG_BOX_SIZE				0x0114
 #define XTPG_BOX_COLOR				0x0118
@@ -243,37 +243,37 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_CROSS_HAIRS_MASK) |
-			   (ctrl->val << XTPG_CROSS_HAIRS_OFFSET));
+			   (ctrl->val << XTPG_CROSS_HAIRS_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_MOVING_BOX:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_MOVING_BOX_MASK) |
-			   (ctrl->val << XTPG_MOVING_BOX_OFFSET));
+			   (ctrl->val << XTPG_MOVING_BOX_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_COLOR_MASK:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_COLOR_MASK_MASK) |
-			   (ctrl->val << XTPG_COLOR_MASK_OFFSET));
+			   (ctrl->val << XTPG_COLOR_MASK_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_STUCK_PIXEL:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_STUCK_PIXEL_MASK) |
-			   (ctrl->val << XTPG_STUCK_PIXEL_OFFSET));
+			   (ctrl->val << XTPG_STUCK_PIXEL_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_NOISE:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_NOISE_MASK) |
-			   (ctrl->val << XTPG_NOISE_OFFSET));
+			   (ctrl->val << XTPG_NOISE_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_MOTION:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 			   (reg & ~XTPG_MOTION_MASK) |
-			   (ctrl->val << XTPG_MOTION_OFFSET));
+			   (ctrl->val << XTPG_MOTION_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_MOTION_SPEED:
 		xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, ctrl->val);
@@ -287,7 +287,7 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 		reg = xvip_read(&xtpg->xvip, XTPG_CROSS_HAIRS);
 		xvip_write(&xtpg->xvip, XTPG_CROSS_HAIRS,
 			   (reg & XTPG_CROSS_HAIR_POS_MASK) |
-			   (ctrl->val << XTPG_CROSS_HAIR_COLUMN_OFFSET));
+			   (ctrl->val << XTPG_CROSS_HAIR_COLUMN_SHIFT));
 		return 0;
 	case V4L2_CID_XILINX_TPG_ZPLATE_HOR_START:
 		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL);
@@ -298,7 +298,7 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL,
 			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val <<
-			   XTPG_ZPLATE_SPEED_OFFSET);
+			   XTPG_ZPLATE_SPEED_SHIFT);
 		return 0;
 	case V4L2_CID_XILINX_TPG_ZPLATE_VER_START:
 		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL);
@@ -309,7 +309,7 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 		reg = xvip_read(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL);
 		xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL,
 			   (reg & ~XTPG_ZPLATE_MASK) | ctrl->val <<
-			   XTPG_ZPLATE_SPEED_OFFSET);
+			   XTPG_ZPLATE_SPEED_SHIFT);
 		return 0;
 	case V4L2_CID_XILINX_TPG_BOX_SIZE:
 		xvip_write(&xtpg->xvip, XTPG_BOX_SIZE, ctrl->val);
