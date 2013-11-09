@@ -87,9 +87,9 @@ static int xrgb2yuv_s_stream(struct v4l2_subdev *subdev, int enable)
 		return 0;
 	}
 
-	xvip_write(&xrgb2yuv->xvip, XVIP_TIMING_ACTIVE_SIZE,
-		   (height << XVIP_TIMING_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_TIMING_ACTIVE_HSIZE_SHIFT));
+	xvip_write(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE,
+		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
+		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
 
 	xvip_write(&xrgb2yuv->xvip, XVIP_CTRL_CONTROL,
 		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
