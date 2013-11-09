@@ -222,14 +222,13 @@ static void xrgb2yuv_init_formats(struct v4l2_subdev *subdev,
 			 XVIP_ACTIVE_VSIZE_MASK) >>
 			 XVIP_ACTIVE_VSIZE_SHIFT;
 
+	/* rgb2yuv has fixed input/output formats */
 	format.pad = XRGB2YUV_PAD_SINK;
-	/* FIXME: */
 	format.format.code = V4L2_MBUS_FMT_RBG888_1X24;
 
 	xrgb2yuv_set_format(subdev, fh, &format);
 
 	format.pad = XRGB2YUV_PAD_SOURCE;
-	/* FIXME: */
 	format.format.code = V4L2_MBUS_FMT_VUY888_1X24;
 
 	xrgb2yuv_set_format(subdev, fh, &format);
