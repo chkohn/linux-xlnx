@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XCFA_MIN_WIDTH				32
-#define XCFA_DEF_WIDTH				1920
 #define XCFA_MAX_WIDTH				7680
 #define XCFA_MIN_HEIGHT				32
-#define XCFA_DEF_HEIGHT				1080
 #define XCFA_MAX_HEIGHT				7680
 
 #define XCFA_PAD_SINK				0
@@ -207,8 +205,11 @@ static void xcfa_init_formats(struct v4l2_subdev *subdev,
 	memset(&format, 0, sizeof(format));
 
 	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = XCFA_DEF_WIDTH;
-	format.format.height = XCFA_DEF_HEIGHT;
+	format.format.width = xvip_read(&xcfa->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xcfa->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
 
 	format.pad = XCFA_PAD_SINK;
 	format.format.code = xcfa->vip_formats[XCFA_PAD_SINK]->code;
