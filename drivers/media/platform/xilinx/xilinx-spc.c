@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XSPC_MIN_WIDTH				32
-#define XSPC_DEF_WIDTH				1920
 #define XSPC_MAX_WIDTH				7680
 #define XSPC_MIN_HEIGHT				32
-#define XSPC_DEF_HEIGHT				1080
 #define XSPC_MAX_HEIGHT				7680
 
 #define XSPC_PAD_SINK				0
@@ -180,8 +178,11 @@ static int xspc_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	format = v4l2_subdev_get_try_format(fh, 0);
 
 	format->code = xspc->vip_format->code;
-	format->width = XSPC_DEF_WIDTH;
-	format->height = XSPC_DEF_HEIGHT;
+	format->width = xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format->height = (xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 	format->field = V4L2_FIELD_NONE;
 	format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -373,8 +374,11 @@ static int xspc_probe(struct platform_device *pdev)
 		return ret;
 
 	xspc->format.code = xspc->vip_format->code;
-	xspc->format.width = XSPC_DEF_WIDTH;
-	xspc->format.height = XSPC_DEF_HEIGHT;
+	xspc->format.width = xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+			     XVIP_ACTIVE_HSIZE_MASK;
+	xspc->format.height = (xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+			       XVIP_ACTIVE_VSIZE_MASK) >>
+			      XVIP_ACTIVE_VSIZE_SHIFT;
 	xspc->format.field = V4L2_FIELD_NONE;
 	xspc->format.colorspace = V4L2_COLORSPACE_SRGB;
 
