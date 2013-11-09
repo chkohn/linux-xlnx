@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XCRESAMPLE_MIN_WIDTH			32
-#define XCRESAMPLE_DEF_WIDTH			1920
 #define XCRESAMPLE_MAX_WIDTH			7680
 #define XCRESAMPLE_MIN_HEIGHT			32
-#define XCRESAMPLE_DEF_HEIGHT			1080
 #define XCRESAMPLE_MAX_HEIGHT			7680
 
 #define XCRESAMPLE_PAD_SINK			0
@@ -212,8 +210,11 @@ static void xcresample_init_formats(struct v4l2_subdev *subdev,
 	memset(&format, 0, sizeof(format));
 
 	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = XCRESAMPLE_DEF_WIDTH;
-	format.format.height = XCRESAMPLE_DEF_HEIGHT;
+	format.format.width = xvip_read(&xcresample->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xcresample->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
 
 	format.pad = XCRESAMPLE_PAD_SINK;
 	format.format.code = xcresample->vip_formats[XCRESAMPLE_PAD_SINK]->code;
