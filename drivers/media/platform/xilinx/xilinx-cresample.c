@@ -38,10 +38,10 @@
 #define XCRESAMPLE_PAD_SOURCE			1
 
 #define XCRESAMPLE_ENCODING			0x100
-#define XCRESAMPLE_FIELD_OFFSET			7
-#define XCRESAMPLE_FIELD_MASK			(1 << XCRESAMPLE_FIELD_OFFSET)
-#define XCRESAMPLE_CHROMA_OFFSET		8
-#define XCRESAMPLE_CHROMA_MASK			(1 <<XCRESAMPLE_CHROMA_OFFSET)
+#define XCRESAMPLE_FIELD_SHIFT			7
+#define XCRESAMPLE_FIELD_MASK			(1 << XCRESAMPLE_FIELD_SHIFT)
+#define XCRESAMPLE_CHROMA_SHIFT		8
+#define XCRESAMPLE_CHROMA_MASK			(1 <<XCRESAMPLE_CHROMA_SHIFT)
 
 /**
  * struct xcresample_device - Xilinx CRESAMPLE device structure
@@ -251,12 +251,12 @@ static int xcresample_s_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_XILINX_CRESAMPLE_FIELD_PARITY:
 		reg = xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING);
-		reg |= (ctrl->val << XCRESAMPLE_FIELD_OFFSET);
+		reg |= (ctrl->val << XCRESAMPLE_FIELD_SHIFT);
 		xvip_write(&xcresample->xvip, XCRESAMPLE_ENCODING, reg);
 		return 0;
 	case V4L2_CID_XILINX_CRESAMPLE_CHROMA_PARITY:
 		reg = xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING);
-		reg |= (ctrl->val << XCRESAMPLE_CHROMA_OFFSET);
+		reg |= (ctrl->val << XCRESAMPLE_CHROMA_SHIFT);
 		xvip_write(&xcresample->xvip, XCRESAMPLE_ENCODING, reg);
 		return 0;
 	}
@@ -471,12 +471,12 @@ static int xcresample_probe(struct platform_device *pdev)
 	v4l2_ctrl_handler_init(&xcresample->ctrl_handler, 2);
 	xcresample_field.def =
 		(xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING) &
-		 XCRESAMPLE_FIELD_MASK) >> XCRESAMPLE_FIELD_OFFSET;
+		 XCRESAMPLE_FIELD_MASK) >> XCRESAMPLE_FIELD_SHIFT;
 	v4l2_ctrl_new_custom(&xcresample->ctrl_handler, &xcresample_field,
 			     NULL);
 	xcresample_chroma.def =
 		(xvip_read(&xcresample->xvip, XCRESAMPLE_ENCODING) &
-		 XCRESAMPLE_CHROMA_MASK) >> XCRESAMPLE_CHROMA_OFFSET;
+		 XCRESAMPLE_CHROMA_MASK) >> XCRESAMPLE_CHROMA_SHIFT;
 	v4l2_ctrl_new_custom(&xcresample->ctrl_handler, &xcresample_chroma,
 			     NULL);
 	if (xcresample->ctrl_handler.error) {
