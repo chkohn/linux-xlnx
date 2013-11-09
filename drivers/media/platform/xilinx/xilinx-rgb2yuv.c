@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XRGB2YUV_MIN_WIDTH				32
-#define XRGB2YUV_DEF_WIDTH				1920
 #define XRGB2YUV_MAX_WIDTH				7680
 #define XRGB2YUV_MIN_HEIGHT				32
-#define XRGB2YUV_DEF_HEIGHT				1080
 #define XRGB2YUV_MAX_HEIGHT				7680
 
 #define XRGB2YUV_PAD_SINK				0
@@ -212,13 +210,17 @@ static int xrgb2yuv_set_format(struct v4l2_subdev *subdev,
 static void xrgb2yuv_init_formats(struct v4l2_subdev *subdev,
 				  struct v4l2_subdev_fh *fh)
 {
+	struct xrgb2yuv_device *xrgb2yuv = to_rgb2yuv(subdev);
 	struct v4l2_subdev_format format;
 
 	memset(&format, 0, sizeof(format));
 
 	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = XRGB2YUV_DEF_WIDTH;
-	format.format.height = XRGB2YUV_DEF_HEIGHT;
+	format.format.width = xvip_read(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 
 	format.pad = XRGB2YUV_PAD_SINK;
 	/* FIXME: */
