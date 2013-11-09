@@ -23,10 +23,8 @@
 #include "xilinx-vip.h"
 
 #define XTPG_MIN_WIDTH				32
-#define XTPG_DEF_WIDTH				1920
 #define XTPG_MAX_WIDTH				7680
 #define XTPG_MIN_HEIGHT				32
-#define XTPG_DEF_HEIGHT				1080
 #define XTPG_MAX_HEIGHT				7680
 
 #define XTPG_PAD_SINK				0
@@ -213,8 +211,11 @@ static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	format = v4l2_subdev_get_try_format(fh, 0);
 
 	format->code = xtpg->vip_format->code;
-	format->width = XTPG_DEF_WIDTH;
-	format->height = XTPG_DEF_HEIGHT;
+	format->width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format->height = (xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 	format->field = V4L2_FIELD_NONE;
 	format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -656,16 +657,19 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	xtpg->format.code = xtpg->vip_format->code;
-	xtpg->format.width = XTPG_DEF_WIDTH;
-	xtpg->format.height = XTPG_DEF_HEIGHT;
-	xtpg->format.field = V4L2_FIELD_NONE;
-	xtpg->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (xtpg->xvip.iomem == NULL)
 		return -ENODEV;
+
+	xtpg->format.code = xtpg->vip_format->code;
+	xtpg->format.width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+			     XVIP_ACTIVE_HSIZE_MASK;
+	xtpg->format.height = (xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+			       XVIP_ACTIVE_VSIZE_MASK) >>
+			      XVIP_ACTIVE_VSIZE_SHIFT;
+	xtpg->format.field = V4L2_FIELD_NONE;
+	xtpg->format.colorspace = V4L2_COLORSPACE_SRGB;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
