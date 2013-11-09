@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XCCM_MIN_WIDTH				32
-#define XCCM_DEF_WIDTH				1920
 #define XCCM_MAX_WIDTH				7680
 #define XCCM_MIN_HEIGHT				32
-#define XCCM_DEF_HEIGHT				1080
 #define XCCM_MAX_HEIGHT				7680
 
 #define XCCM_PAD_SINK				0
@@ -191,8 +189,11 @@ static int xccm_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	format = v4l2_subdev_get_try_format(fh, 0);
 
 	format->code = xccm->vip_format->code;
-	format->width = XCCM_DEF_WIDTH;
-	format->height = XCCM_DEF_HEIGHT;
+	format->width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format->height = (xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 	format->field = V4L2_FIELD_NONE;
 	format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -506,8 +507,11 @@ static int xccm_probe(struct platform_device *pdev)
 		return ret;
 
 	xccm->format.code = xccm->vip_format->code;
-	xccm->format.width = XCCM_DEF_WIDTH;
-	xccm->format.height = XCCM_DEF_HEIGHT;
+	xccm->format.width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+			     XVIP_ACTIVE_HSIZE_MASK;
+	xccm->format.height = (xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+			       XVIP_ACTIVE_VSIZE_MASK) >>
+			      XVIP_ACTIVE_VSIZE_SHIFT;
 	xccm->format.field = V4L2_FIELD_NONE;
 	xccm->format.colorspace = V4L2_COLORSPACE_SRGB;
 
