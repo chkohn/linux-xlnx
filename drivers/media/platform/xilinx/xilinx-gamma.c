@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XGAMMA_MIN_WIDTH				32
-#define XGAMMA_DEF_WIDTH				1920
 #define XGAMMA_MAX_WIDTH				7680
 #define XGAMMA_MIN_HEIGHT				32
-#define XGAMMA_DEF_HEIGHT				1080
 #define XGAMMA_MAX_HEIGHT				7680
 
 #define XGAMMA_PAD_SINK					0
@@ -180,8 +178,11 @@ static int xgamma_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	format = v4l2_subdev_get_try_format(fh, 0);
 
 	format->code = xgamma->vip_format->code;
-	format->width = XGAMMA_DEF_WIDTH;
-	format->height = XGAMMA_DEF_HEIGHT;
+	format->width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format->height = (xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 	format->field = V4L2_FIELD_NONE;
 	format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -346,8 +347,11 @@ static int xgamma_probe(struct platform_device *pdev)
 		return ret;
 
 	xgamma->format.code = xgamma->vip_format->code;
-	xgamma->format.width = XGAMMA_DEF_WIDTH;
-	xgamma->format.height = XGAMMA_DEF_HEIGHT;
+	xgamma->format.width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+			       XVIP_ACTIVE_HSIZE_MASK;
+	xgamma->format.height = (xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+				 XVIP_ACTIVE_VSIZE_MASK) >>
+				XVIP_ACTIVE_VSIZE_SHIFT;
 	xgamma->format.field = V4L2_FIELD_NONE;
 	xgamma->format.colorspace = V4L2_COLORSPACE_SRGB;
 
