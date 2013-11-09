@@ -28,10 +28,8 @@
 #include "xilinx-vip.h"
 
 #define XENHANCE_MIN_WIDTH				32
-#define XENHANCE_DEF_WIDTH				1920
 #define XENHANCE_MAX_WIDTH				7680
 #define XENHANCE_MIN_HEIGHT				32
-#define XENHANCE_DEF_HEIGHT				1080
 #define XENHANCE_MAX_HEIGHT				7680
 
 #define XENHANCE_PAD_SINK				0
@@ -182,8 +180,11 @@ static int xenhance_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	format = v4l2_subdev_get_try_format(fh, 0);
 
 	format->code = xenhance->vip_format->code;
-	format->width = XENHANCE_DEF_WIDTH;
-	format->height = XENHANCE_DEF_HEIGHT;
+	format->width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+			XVIP_ACTIVE_HSIZE_MASK;
+	format->height = (xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+			 XVIP_ACTIVE_VSIZE_MASK) >>
+			 XVIP_ACTIVE_VSIZE_SHIFT;
 	format->field = V4L2_FIELD_NONE;
 	format->colorspace = V4L2_COLORSPACE_SRGB;
 
@@ -366,8 +367,12 @@ static int xenhance_probe(struct platform_device *pdev)
 		return ret;
 
 	xenhance->format.code = xenhance->vip_format->code;
-	xenhance->format.width = XENHANCE_DEF_WIDTH;
-	xenhance->format.height = XENHANCE_DEF_HEIGHT;
+	xenhance->format.width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+				 XVIP_ACTIVE_HSIZE_MASK;
+	xenhance->format.height =
+		(xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+		 XVIP_ACTIVE_VSIZE_MASK) >>
+		XVIP_ACTIVE_VSIZE_SHIFT;
 	xenhance->format.field = V4L2_FIELD_NONE;
 	xenhance->format.colorspace = V4L2_COLORSPACE_SRGB;
 
