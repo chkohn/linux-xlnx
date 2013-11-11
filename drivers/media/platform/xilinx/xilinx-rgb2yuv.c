@@ -232,6 +232,8 @@ static void xrgb2yuv_init_formats(struct v4l2_subdev *subdev,
 	format.format.height = (xvip_read(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE) &
 			 XVIP_ACTIVE_VSIZE_MASK) >>
 			 XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
 
 	format.format.code = V4L2_MBUS_FMT_RBG888_1X24;
 
