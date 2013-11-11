@@ -27,8 +27,8 @@
 #define XTPG_MIN_HEIGHT				32
 #define XTPG_MAX_HEIGHT				7680
 
-#define XTPG_PAD_SINK				0
-#define XTPG_PAD_SOURCE				1
+#define XTPG_PAD_SOURCE				0
+#define XTPG_PAD_SINK				1
 
 #define XTPG_CTRL_STATUS_SLAVE_ERROR		(1 << 16)
 #define XTPG_CTRL_IRQ_SLAVE_ERROR		(1 << 16)
@@ -202,21 +202,44 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xtpg_init_formats - Initialize formats on all pads
+ * @subdev: tpgper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xtpg_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xtpg_device *xtpg = to_tpg(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xtpg->vip_format->code;
-	format->width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	if (xtpg->passthrough) {
+		format.pad = XTPG_PAD_SINK;
+		xtpg_set_format(subdev, fh, &format);
+	}
+
+	format.pad = XTPG_PAD_SOURCE;
+	xtpg_set_format(subdev, fh, &format);
+}
+
+static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xtpg_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -661,15 +684,6 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (xtpg->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xtpg->format.code = xtpg->vip_format->code;
-	xtpg->format.width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
-			     XVIP_ACTIVE_HSIZE_MASK;
-	xtpg->format.height = (xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
-			       XVIP_ACTIVE_VSIZE_MASK) >>
-			      XVIP_ACTIVE_VSIZE_SHIFT;
-	xtpg->format.field = V4L2_FIELD_NONE;
-	xtpg->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
 	v4l2_subdev_init(subdev, &xtpg_ops);
@@ -678,6 +692,8 @@ static int xtpg_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xtpg);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xtpg_init_formats(subdev, NULL);
 
 	xtpg->pads[XTPG_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xtpg->pads[XTPG_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
