@@ -654,6 +654,11 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
+	if (xtpg->xvip.iomem == NULL)
+		return -ENODEV;
+
 	xtpg->format.code = xtpg->vip_format->code;
 	xtpg->format.width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
 			     XVIP_ACTIVE_HSIZE_MASK;
@@ -662,11 +667,6 @@ static int xtpg_probe(struct platform_device *pdev)
 			      XVIP_ACTIVE_VSIZE_SHIFT;
 	xtpg->format.field = V4L2_FIELD_NONE;
 	xtpg->format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
-	if (xtpg->xvip.iomem == NULL)
-		return -ENODEV;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
