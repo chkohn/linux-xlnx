@@ -366,6 +366,14 @@ static int xenhance_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (res == NULL)
+		return -ENODEV;
+
+	xenhance->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
+	if (xenhance->xvip.iomem == NULL)
+		return -ENODEV;
+
 	xenhance->format.code = xenhance->vip_format->code;
 	xenhance->format.width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
 				 XVIP_ACTIVE_HSIZE_MASK;
@@ -375,14 +383,6 @@ static int xenhance_probe(struct platform_device *pdev)
 		XVIP_ACTIVE_VSIZE_SHIFT;
 	xenhance->format.field = V4L2_FIELD_NONE;
 	xenhance->format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (res == NULL)
-		return -ENODEV;
-
-	xenhance->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
-	if (xenhance->xvip.iomem == NULL)
-		return -ENODEV;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xenhance->xvip.subdev;
