@@ -193,21 +193,44 @@ static int xstats_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xstats_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xstats_init_formats - Initialize formats on all pads
+ * @subdev: statsper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xstats_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xstats_device *xstats = to_stats(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xstats->vip_format->code;
-	format->width = xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XSTATS_PAD_SINK;
+
+	xstats_set_format(subdev, fh, &format);
+
+	format.pad = XSTATS_PAD_SOURCE;
+
+	xstats_set_format(subdev, fh, &format);
+}
+
+static int xstats_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xstats_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -542,15 +565,6 @@ static int xstats_probe(struct platform_device *pdev)
 	if (xstats->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xstats->format.code = xstats->vip_format->code;
-	xstats->format.width = xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
-			       XVIP_ACTIVE_HSIZE_MASK;
-	xstats->format.height = (xvip_read(&xstats->xvip, XVIP_ACTIVE_SIZE) &
-				 XVIP_ACTIVE_VSIZE_MASK) >>
-				XVIP_ACTIVE_VSIZE_SHIFT;
-	xstats->format.field = V4L2_FIELD_NONE;
-	xstats->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xstats->xvip.subdev;
 	v4l2_subdev_init(subdev, &xstats_ops);
@@ -559,6 +573,8 @@ static int xstats_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xstats);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xstats_init_formats(subdev, NULL);
 
 	xstats->pads[XSTATS_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xstats->pads[XSTATS_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
