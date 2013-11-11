@@ -182,21 +182,44 @@ static int xgamma_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xgamma_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xgamma_init_formats - Initialize formats on all pads
+ * @subdev: gammaper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xgamma_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xgamma_device *xgamma = to_gamma(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xgamma->vip_format->code;
-	format->width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XGAMMA_PAD_SINK;
+
+	xgamma_set_format(subdev, fh, &format);
+
+	format.pad = XGAMMA_PAD_SOURCE;
+
+	xgamma_set_format(subdev, fh, &format);
+}
+
+static int xgamma_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xgamma_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -366,15 +389,6 @@ static int xgamma_probe(struct platform_device *pdev)
 	if (xgamma->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xgamma->format.code = xgamma->vip_format->code;
-	xgamma->format.width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
-			       XVIP_ACTIVE_HSIZE_MASK;
-	xgamma->format.height = (xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
-				 XVIP_ACTIVE_VSIZE_MASK) >>
-				XVIP_ACTIVE_VSIZE_SHIFT;
-	xgamma->format.field = V4L2_FIELD_NONE;
-	xgamma->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xgamma->xvip.subdev;
 	v4l2_subdev_init(subdev, &xgamma_ops);
@@ -383,6 +397,8 @@ static int xgamma_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xgamma);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xgamma_init_formats(subdev, NULL);
 
 	xgamma->pads[XGAMMA_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xgamma->pads[XGAMMA_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
