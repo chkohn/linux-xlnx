@@ -167,12 +167,22 @@ static int xccm_set_format(struct v4l2_subdev *subdev,
 	struct v4l2_mbus_framefmt *__format;
 
 	__format = __xccm_get_pad_format(xccm, fh, fmt->pad, fmt->which);
+
+	if (fmt->pad == XCCM_PAD_SOURCE) {
+		fmt->format = *__format;
+		return 0;
+	}
+
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XCCM_MIN_WIDTH, XCCM_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
 				   XCCM_MIN_HEIGHT, XCCM_MAX_HEIGHT);
 
 	fmt->format = *__format;
+
+	/* Propagate the format to the source pad */
+	__format = __xccm_get_pad_format(xccm, fh, XCCM_PAD_SOURCE, fmt->which);
+	*__format = fmt->format;
 
 	return 0;
 }
