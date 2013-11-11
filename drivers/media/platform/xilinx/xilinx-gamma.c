@@ -346,6 +346,14 @@ static int xgamma_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (res == NULL)
+		return -ENODEV;
+
+	xgamma->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
+	if (xgamma->xvip.iomem == NULL)
+		return -ENODEV;
+
 	xgamma->format.code = xgamma->vip_format->code;
 	xgamma->format.width = xvip_read(&xgamma->xvip, XVIP_ACTIVE_SIZE) &
 			       XVIP_ACTIVE_HSIZE_MASK;
@@ -354,14 +362,6 @@ static int xgamma_probe(struct platform_device *pdev)
 				XVIP_ACTIVE_VSIZE_SHIFT;
 	xgamma->format.field = V4L2_FIELD_NONE;
 	xgamma->format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (res == NULL)
-		return -ENODEV;
-
-	xgamma->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
-	if (xgamma->xvip.iomem == NULL)
-		return -ENODEV;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xgamma->xvip.subdev;
