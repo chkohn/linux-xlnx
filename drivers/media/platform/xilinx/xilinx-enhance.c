@@ -184,21 +184,44 @@ static int xenhance_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xenhance_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xenhance_init_formats - Initialize formats on all pads
+ * @subdev: enhanceper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xenhance_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xenhance->vip_format->code;
-	format->width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XENHANCE_PAD_SINK;
+
+	xenhance_set_format(subdev, fh, &format);
+
+	format.pad = XENHANCE_PAD_SOURCE;
+
+	xenhance_set_format(subdev, fh, &format);
+}
+
+static int xenhance_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xenhance_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -404,6 +427,8 @@ static int xenhance_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xenhance);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xenhance_init_formats(subdev, NULL);
 
 	xenhance->pads[XENHANCE_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xenhance->pads[XENHANCE_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
