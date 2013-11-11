@@ -506,6 +506,14 @@ static int xccm_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if (res == NULL)
+		return -ENODEV;
+
+	xccm->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
+	if (xccm->xvip.iomem == NULL)
+		return -ENODEV;
+
 	xccm->format.code = xccm->vip_format->code;
 	xccm->format.width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
 			     XVIP_ACTIVE_HSIZE_MASK;
@@ -514,14 +522,6 @@ static int xccm_probe(struct platform_device *pdev)
 			      XVIP_ACTIVE_VSIZE_SHIFT;
 	xccm->format.field = V4L2_FIELD_NONE;
 	xccm->format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (res == NULL)
-		return -ENODEV;
-
-	xccm->xvip.iomem = devm_request_and_ioremap(&pdev->dev, res);
-	if (xccm->xvip.iomem == NULL)
-		return -ENODEV;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xccm->xvip.subdev;
