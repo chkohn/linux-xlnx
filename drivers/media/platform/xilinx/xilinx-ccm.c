@@ -173,6 +173,7 @@ static int xccm_set_format(struct v4l2_subdev *subdev,
 		return 0;
 	}
 
+	__format->code = xccm->vip_format->code;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XCCM_MIN_WIDTH, XCCM_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
@@ -191,21 +192,44 @@ static int xccm_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xccm_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xccm_init_formats - Initialize formats on all pads
+ * @subdev: ccmper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xccm_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xccm_device *xccm = to_ccm(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xccm->vip_format->code;
-	format->width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XCCM_PAD_SINK;
+
+	xccm_set_format(subdev, fh, &format);
+
+	format.pad = XCCM_PAD_SOURCE;
+
+	xccm_set_format(subdev, fh, &format);
+}
+
+static int xccm_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xccm_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -524,15 +548,6 @@ static int xccm_probe(struct platform_device *pdev)
 	if (xccm->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xccm->format.code = xccm->vip_format->code;
-	xccm->format.width = xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
-			     XVIP_ACTIVE_HSIZE_MASK;
-	xccm->format.height = (xvip_read(&xccm->xvip, XVIP_ACTIVE_SIZE) &
-			       XVIP_ACTIVE_VSIZE_MASK) >>
-			      XVIP_ACTIVE_VSIZE_SHIFT;
-	xccm->format.field = V4L2_FIELD_NONE;
-	xccm->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xccm->xvip.subdev;
 	v4l2_subdev_init(subdev, &xccm_ops);
@@ -541,6 +556,8 @@ static int xccm_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xccm);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xccm_init_formats(subdev, NULL);
 
 	xccm->pads[XCCM_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xccm->pads[XCCM_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
