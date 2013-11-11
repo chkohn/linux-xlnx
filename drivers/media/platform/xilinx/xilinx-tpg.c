@@ -10,10 +10,10 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/device.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
 #include <linux/v4l2-controls.h>
 
 #include <media/v4l2-async.h>
@@ -237,11 +237,29 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xtpg_init_format - Initialize formats on all pads
+ * @subdev: tpg V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xtpg_init_format(struct v4l2_subdev *subdev,
+			     struct v4l2_subdev_fh *fh)
 {
 	struct xtpg_device *xtpg = to_tpg(subdev);
+	u32 which;
 
-	*v4l2_subdev_get_try_format(fh, 0) = xtpg->default_format;
+	which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+
+	*__xtpg_get_pad_format(xtpg, fh, 0, which) = xtpg->default_format;
+}
+
+static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xtpg_init_format(subdev, fh);
 
 	return 0;
 }
@@ -683,15 +701,6 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (xtpg->xvip.iomem == NULL)
 		return -ENODEV;
 
-	/* Initialize the default format */
-	xtpg->default_format.code = xtpg->vip_format->code;
-	xtpg->default_format.field = V4L2_FIELD_NONE;
-	xtpg->default_format.colorspace = V4L2_COLORSPACE_SRGB;
-	xvip_get_frame_size(&xtpg->xvip, &xtpg->default_format.width,
-			    &xtpg->default_format.height);
-
-	xtpg->format = xtpg->default_format;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
 	v4l2_subdev_init(subdev, &xtpg_ops);
@@ -700,6 +709,22 @@ static int xtpg_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xtpg);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	/* Initialize the default format */
+	xtpg->default_format.code = xtpg->vip_format->code;
+	xtpg->default_format.field = V4L2_FIELD_NONE;
+	xtpg->default_format.colorspace = V4L2_COLORSPACE_SRGB;
+	xvip_get_frame_size(&xtpg->xvip, &xtpg->default_format.width,
+			    &xtpg->default_format.height);
+
+	/* Initialize the default format */
+	xtpg->default_format.code = xtpg->vip_format->code;
+	xtpg->default_format.field = V4L2_FIELD_NONE;
+	xtpg->default_format.colorspace = V4L2_COLORSPACE_SRGB;
+	xvip_get_frame_size(&xtpg->xvip, &xtpg->default_format.width,
+			    &xtpg->default_format.height);
+
+	xtpg_init_format(subdev, NULL);
 
 	xtpg->pad.flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xtpg_media_ops;
