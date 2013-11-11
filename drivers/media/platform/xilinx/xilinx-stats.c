@@ -167,12 +167,24 @@ static int xstats_set_format(struct v4l2_subdev *subdev,
 	struct v4l2_mbus_framefmt *__format;
 
 	__format = __xstats_get_pad_format(xstats, fh, fmt->pad, fmt->which);
+
+	if (fmt->pad == XSTATS_PAD_SOURCE) {
+		fmt->format = *__format;
+		return 0;
+	}
+
+	__format->code = xstats->vip_format->code;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XSTATS_MIN_WIDTH, XSTATS_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
 				   XSTATS_MIN_HEIGHT, XSTATS_MAX_HEIGHT);
 
 	fmt->format = *__format;
+
+	/* Propagate the format to the source pad. */
+	__format = __xstats_get_pad_format(xstats, fh, XSTATS_PAD_SOURCE,
+					   fmt->which);
+	*__format = fmt->format;
 
 	return 0;
 }
