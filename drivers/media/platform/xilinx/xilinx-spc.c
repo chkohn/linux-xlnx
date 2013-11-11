@@ -149,19 +149,30 @@ static int xspc_get_format(struct v4l2_subdev *subdev,
 }
 
 static int xspc_set_format(struct v4l2_subdev *subdev,
-				struct v4l2_subdev_fh *fh,
-				struct v4l2_subdev_format *fmt)
+			   struct v4l2_subdev_fh *fh,
+			   struct v4l2_subdev_format *fmt)
 {
 	struct xspc_device *xspc = to_spc(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
 	__format = __xspc_get_pad_format(xspc, fh, fmt->pad, fmt->which);
+
+	if (fmt->pad == XSPC_PAD_SOURCE) {
+		fmt->format = *__format;
+		return 0;
+	}
+
+	__format->code = xspc->vip_format->code;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XSPC_MIN_WIDTH, XSPC_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
 				   XSPC_MIN_HEIGHT, XSPC_MAX_HEIGHT);
 
 	fmt->format = *__format;
+
+	/* Propagate the format to the source pad. */
+	__format = __xspc_get_pad_format(xspc, fh, XSPC_PAD_SOURCE, fmt->which);
+	*__format = fmt->format;
 
 	return 0;
 }
