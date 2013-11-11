@@ -181,21 +181,44 @@ static int xspc_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-static int xspc_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+/**
+ * xspc_init_formats - Initialize formats on all pads
+ * @subdev: spcper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xspc_init_formats(struct v4l2_subdev *subdev,
+			      struct v4l2_subdev_fh *fh)
 {
 	struct xspc_device *xspc = to_spc(subdev);
-	struct v4l2_mbus_framefmt *format;
+	struct v4l2_subdev_format format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
+	memset(&format, 0, sizeof(format));
 
-	format->code = xspc->vip_format->code;
-	format->width = xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format->height = (xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+	format.format.width = xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+			      XVIP_ACTIVE_HSIZE_MASK;
+	format.format.height = (xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
+				XVIP_ACTIVE_VSIZE_MASK) >>
+			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XSPC_PAD_SINK;
+
+	xspc_set_format(subdev, fh, &format);
+
+	format.pad = XSPC_PAD_SOURCE;
+
+	xspc_set_format(subdev, fh, &format);
+}
+
+static int xspc_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
+{
+	xspc_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -392,15 +415,6 @@ static int xspc_probe(struct platform_device *pdev)
 	if (xspc->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xspc->format.code = xspc->vip_format->code;
-	xspc->format.width = xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
-			     XVIP_ACTIVE_HSIZE_MASK;
-	xspc->format.height = (xvip_read(&xspc->xvip, XVIP_ACTIVE_SIZE) &
-			       XVIP_ACTIVE_VSIZE_MASK) >>
-			      XVIP_ACTIVE_VSIZE_SHIFT;
-	xspc->format.field = V4L2_FIELD_NONE;
-	xspc->format.colorspace = V4L2_COLORSPACE_SRGB;
-
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xspc->xvip.subdev;
 	v4l2_subdev_init(subdev, &xspc_ops);
@@ -409,6 +423,8 @@ static int xspc_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xspc);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xspc_init_formats(subdev, NULL);
 
 	xspc->pads[XSPC_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xspc->pads[XSPC_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
