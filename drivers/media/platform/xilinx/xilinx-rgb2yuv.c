@@ -181,17 +181,28 @@ static int xrgb2yuv_set_format(struct v4l2_subdev *subdev,
 	__format = __xrgb2yuv_get_pad_format(xrgb2yuv, fh, fmt->pad,
 					     fmt->which);
 
-	__format->code = fmt->format.code;
+	if (fmt->pad == XRGB2YUV_PAD_SOURCE) {
+		fmt->format = *__format;
+		return 0;
+	}
+
+	__format->code = V4L2_MBUS_FMT_RBG888_1X24;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XRGB2YUV_MIN_WIDTH, XRGB2YUV_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
 				   XRGB2YUV_MIN_HEIGHT, XRGB2YUV_MAX_HEIGHT);
-	__format->field = V4L2_FIELD_NONE;
-	__format->colorspace = V4L2_COLORSPACE_SRGB;
 
 	fmt->format = *__format;
 
+	/* Propagate the format to the source pad. */
+	__format = __xrgb2yuv_get_pad_format(xrgb2yuv, fh, XRGB2YUV_PAD_SOURCE,
+					     fmt->which);
+	__format->code = V4L2_MBUS_FMT_VUY888_1X24;
+	__format->width = fmt->format.width;
+	__format->height = fmt->format.height;
+
 	return 0;
+
 }
 
 /*
@@ -222,14 +233,11 @@ static void xrgb2yuv_init_formats(struct v4l2_subdev *subdev,
 			 XVIP_ACTIVE_VSIZE_MASK) >>
 			 XVIP_ACTIVE_VSIZE_SHIFT;
 
-	/* rgb2yuv has fixed input/output formats */
-	format.pad = XRGB2YUV_PAD_SINK;
 	format.format.code = V4L2_MBUS_FMT_RBG888_1X24;
 
 	xrgb2yuv_set_format(subdev, fh, &format);
 
 	format.pad = XRGB2YUV_PAD_SOURCE;
-	format.format.code = V4L2_MBUS_FMT_VUY888_1X24;
 
 	xrgb2yuv_set_format(subdev, fh, &format);
 }
