@@ -227,6 +227,8 @@ static void xcresample_init_formats(struct v4l2_subdev *subdev,
 	format.format.height = (xvip_read(&xcresample->xvip, XVIP_ACTIVE_SIZE) &
 				XVIP_ACTIVE_VSIZE_MASK) >>
 			       XVIP_ACTIVE_VSIZE_SHIFT;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
 
 	format.pad = XCRESAMPLE_PAD_SINK;
 
