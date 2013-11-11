@@ -175,15 +175,27 @@ static int xcresample_set_format(struct v4l2_subdev *subdev,
 	__format = __xcresample_get_pad_format(xcresample, fh, fmt->pad,
 					       fmt->which);
 
-	__format->code = fmt->format.code;
+	if (fmt->pad == XCRESAMPLE_PAD_SOURCE) {
+		fmt->format = *__format;
+		return 0;
+	}
+
+	__format->code = xcresample->vip_formats[XCRESAMPLE_PAD_SINK]->code;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
 				  XCRESAMPLE_MIN_WIDTH, XCRESAMPLE_MAX_WIDTH);
 	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XCRESAMPLE_MIN_HEIGHT, XCRESAMPLE_MAX_HEIGHT);
-	__format->field = V4L2_FIELD_NONE;
-	__format->colorspace = V4L2_COLORSPACE_SRGB;
+				   XCRESAMPLE_MIN_HEIGHT,
+				   XCRESAMPLE_MAX_HEIGHT);
 
 	fmt->format = *__format;
+
+	/* Propagate the format to the source pad. */
+	__format = __xcresample_get_pad_format(xcresample, fh,
+					       XCRESAMPLE_PAD_SOURCE,
+					       fmt->which);
+	__format->code = xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE]->code;
+	__format->width = fmt->format.width;
+	__format->height = fmt->format.height;
 
 	return 0;
 }
@@ -217,13 +229,10 @@ static void xcresample_init_formats(struct v4l2_subdev *subdev,
 			       XVIP_ACTIVE_VSIZE_SHIFT;
 
 	format.pad = XCRESAMPLE_PAD_SINK;
-	format.format.code = xcresample->vip_formats[XCRESAMPLE_PAD_SINK]->code;
 
 	xcresample_set_format(subdev, fh, &format);
 
 	format.pad = XCRESAMPLE_PAD_SOURCE;
-	format.format.code =
-		xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE]->code;
 
 	xcresample_set_format(subdev, fh, &format);
 }
