@@ -15,10 +15,10 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/device.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
 
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
@@ -38,7 +38,7 @@
 #define XCRESAMPLE_ENCODING			0x100
 #define XCRESAMPLE_FIELD_SHIFT			7
 #define XCRESAMPLE_FIELD_MASK			(1 << XCRESAMPLE_FIELD_SHIFT)
-#define XCRESAMPLE_CHROMA_SHIFT		8
+#define XCRESAMPLE_CHROMA_SHIFT			8
 #define XCRESAMPLE_CHROMA_MASK			(1 <<XCRESAMPLE_CHROMA_SHIFT)
 
 /**
