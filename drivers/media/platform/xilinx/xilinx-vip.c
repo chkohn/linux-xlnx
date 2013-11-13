@@ -24,6 +24,8 @@ static const struct xvip_video_format xvip_video_formats[] = {
 	{ "rbg", 8, 3, V4L2_MBUS_FMT_RBG888_1X24, 0 },
 	{ "xrgb", 8, 4, V4L2_MBUS_FMT_RGB888_1X32_PADHI, V4L2_PIX_FMT_BGR32 },
 	{ "yuv422", 8, 2, V4L2_MBUS_FMT_UYVY8_1X16, V4L2_PIX_FMT_YUYV },
+	{ "yuv444", 8, 3, V4L2_MBUS_FMT_VUY888_1X24, V4L2_PIX_FMT_YUV444 },
+	{ "bayer", 8, 1, V4L2_MBUS_FMT_SRGGB8_1X8, V4L2_PIX_FMT_SGRBG8 },
 };
 
 /**
@@ -72,6 +74,29 @@ const struct xvip_video_format *xvip_get_format_by_fourcc(u32 fourcc)
 EXPORT_SYMBOL_GPL(xvip_get_format_by_fourcc);
 
 /**
+ * xvip_get_format - Retrieve format information for name and width
+ * @name: the format name string
+ * @width: the format width in bits per component
+ *
+ * Return: a pointer to the format information structure corresponding to the
+ * format name and width, or %NULL if no corresponding format can be found.
+ */
+const struct xvip_video_format *xvip_get_format(const char *name, u32 width)
+{
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(xvip_video_formats); ++i) {
+		const struct xvip_video_format *format = &xvip_video_formats[i];
+
+		if (strcmp(format->name, name) == 0 && format->width == width)
+			return format;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL_GPL(xvip_get_format);
+
+/**
  * xvip_of_get_format - Parse a device tree node and return format information
  * @node: the device tree node
  *
@@ -85,7 +110,6 @@ EXPORT_SYMBOL_GPL(xvip_get_format_by_fourcc);
 const struct xvip_video_format *xvip_of_get_format(struct device_node *node)
 {
 	const char *name;
-	unsigned int i;
 	u32 width;
 	int ret;
 
@@ -97,13 +121,6 @@ const struct xvip_video_format *xvip_of_get_format(struct device_node *node)
 	if (ret < 0)
 		return NULL;
 
-	for (i = 0; i < ARRAY_SIZE(xvip_video_formats); ++i) {
-		const struct xvip_video_format *format = &xvip_video_formats[i];
-
-		if (strcmp(format->name, name) == 0 && format->width == width)
-			return format;
-	}
-
-	return NULL;
+	return xvip_get_format(name, width);
 }
 EXPORT_SYMBOL_GPL(xvip_of_get_format);
