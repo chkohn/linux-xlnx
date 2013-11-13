@@ -344,10 +344,11 @@ __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 	 * line value is zero, the module doesn't support user configurable line
 	 * sizes. Override the requested value with the minimum in that case.
 	 */
+
+	pix->bytesperline = info->bpp * pix->width;
+	bpl = rounddown(pix->bytesperline, dma->align);
 	min_bpl = pix->width * info->bpp;
 	max_bpl = rounddown(XVIP_DMA_MAX_WIDTH, dma->align);
-	bpl = rounddown(pix->bytesperline, dma->align);
-
 	pix->bytesperline = clamp(bpl, min_bpl, max_bpl);
 	pix->sizeimage = pix->bytesperline * pix->height;
 
