@@ -97,6 +97,7 @@ struct xvip_video_format {
 
 const struct xvip_video_format *xvip_get_format_by_code(unsigned int code);
 const struct xvip_video_format *xvip_get_format_by_fourcc(u32 fourcc);
+const struct xvip_video_format *xvip_get_format(const char *name, u32 width);
 const struct xvip_video_format *xvip_of_get_format(struct device_node *node);
 
 static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
