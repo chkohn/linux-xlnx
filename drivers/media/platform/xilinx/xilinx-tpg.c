@@ -27,6 +27,9 @@
 #define XTPG_DEF_HEIGHT				1080
 #define XTPG_MAX_HEIGHT				7680
 
+#define XTPG_PAD_SINK				0
+#define XTPG_PAD_SOURCE				1
+
 #define XTPG_CTRL_STATUS_SLAVE_ERROR		(1 << 16)
 #define XTPG_CTRL_IRQ_SLAVE_ERROR		(1 << 16)
 
@@ -42,17 +45,20 @@
 
 /**
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
- * @pad: media pad
+ * @pads: media pads
  * @xvip: Xilinx Video IP device
- * @format: active V4L2 media bus format at the source pad
+ * @format: active V4L2 media bus format
  * @vip_format: format information corresponding to the active format
+ * @passthrough: passthrough flag
  */
 struct xtpg_device {
 	struct xvip_device xvip;
-	struct media_pad pad;
+	struct media_pad pads[2];
 
 	struct v4l2_mbus_framefmt format;
 	const struct xvip_video_format *vip_format;
+
+	bool passthrough;
 };
 
 static inline struct xtpg_device *to_tpg(struct v4l2_subdev *subdev)
@@ -251,6 +257,8 @@ static int xtpg_parse_of(struct xtpg_device *xtpg)
 		return -EINVAL;
 	}
 
+	xtpg->passthrough = of_property_read_bool(node, "xlnx,tpg-passthrough");
+
 	return 0;
 }
 
@@ -292,9 +300,15 @@ static int xtpg_probe(struct platform_device *pdev)
 	v4l2_set_subdevdata(subdev, xtpg);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
-	xtpg->pad.flags = MEDIA_PAD_FL_SOURCE;
+	xtpg->pads[XTPG_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
+	xtpg->pads[XTPG_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xtpg_media_ops;
-	ret = media_entity_init(&subdev->entity, 1, &xtpg->pad, 0);
+
+	if (xtpg->passthrough)
+		ret = media_entity_init(&subdev->entity, 2, xtpg->pads, 0);
+	else
+		ret = media_entity_init(&subdev->entity, 1,
+					&xtpg->pads[XTPG_PAD_SOURCE], 0);
 	if (ret < 0)
 		return ret;
 
