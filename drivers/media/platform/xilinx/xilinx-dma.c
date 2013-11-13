@@ -310,7 +310,6 @@ __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 	const struct xvip_video_format *info;
 	unsigned int min_width;
 	unsigned int max_width;
-	unsigned int min_bpl;
 	unsigned int max_bpl;
 	unsigned int width;
 	unsigned int align;
@@ -340,15 +339,17 @@ __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 	pix->height = clamp(pix->height, XVIP_DMA_MIN_HEIGHT,
 			    XVIP_DMA_MAX_HEIGHT);
 
-	/* Clamp the requested bytes per line value. If the maximum bytes per
-	 * line value is zero, the module doesn't support user configurable line
-	 * sizes. Override the requested value with the minimum in that case.
+	/* Calculate the bytes per line vale based on the requested width,
+	 * bytes-per-pixel, and align information. This limits flexibility
+	 * of configuring bytes per line values, which could come from other
+	 * video devices.
 	 */
-	min_bpl = pix->width * info->bpp;
+
+	pix->bytesperline = pix->width * info->bpp;
 	max_bpl = rounddown(XVIP_DMA_MAX_WIDTH, dma->align);
 	bpl = rounddown(pix->bytesperline, dma->align);
 
-	pix->bytesperline = clamp(bpl, min_bpl, max_bpl);
+	pix->bytesperline = min(bpl, max_bpl);
 	pix->sizeimage = pix->bytesperline * pix->height;
 
 	if (fmtinfo)
