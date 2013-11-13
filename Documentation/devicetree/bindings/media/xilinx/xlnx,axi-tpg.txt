@@ -10,8 +10,12 @@ Required properties:
 - xlnx,axi-video-format, xlnx,axi-video-width: Video format and width, as
   defined in video.txt.
 
+- xlnx,tpg-passthrough: This boolean property specifies if TPG is set to
+  passthrough mode.
+
 - port: Video port, using the DT bindings defined in ../video-interfaces.txt.
-  The TPG has a single output port numbered 0.
+  In non-passthrough mode, the TPG has a single output port numbered 0.
+  In passthrough mode, the TPG has an input port (0) and an output port (1).
 
 Example:
 
