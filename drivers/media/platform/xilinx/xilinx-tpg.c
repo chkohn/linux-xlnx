@@ -16,8 +16,10 @@
 #include <linux/slab.h>
 
 #include <media/v4l2-async.h>
+#include <media/v4l2-ctrls.h>
 #include <media/v4l2-subdev.h>
 
+#include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
 #define XTPG_MIN_WIDTH				32
@@ -34,6 +36,19 @@
 #define XTPG_CTRL_IRQ_SLAVE_ERROR		(1 << 16)
 
 #define XTPG_PATTERN_CONTROL			0x0100
+#define XTPG_PATTERN_MASK			0xf
+#define XTPG_CROSS_HAIRS_OFFSET			4
+#define XTPG_CROSS_HAIRS_MASK			(0x1 << XTPG_CROSS_HAIRS_OFFSET)
+#define XTPG_MOVING_BOX_OFFSET			5
+#define XTPG_MOVING_BOX_MASK			(0x1 << XTPG_MOVING_BOX_OFFSET)
+#define XTPG_COLOR_MASK_OFFSET			6
+#define XTPG_COLOR_MASK_MASK			(0xf << XTPG_COLOR_MASK_OFFSET)
+#define XTPG_STUCK_PIXEL_OFFSET			9
+#define XTPG_STUCK_PIXEL_MASK			(0x1 << XTPG_STUCK_PIXEL_OFFSET)
+#define XTPG_NOISE_OFFSET			10
+#define XTPG_NOISE_MASK				(0x1 << XTPG_NOISE_OFFSET)
+#define XTPG_MOTION_OFFSET			12
+#define XTPG_MOTION_MASK			(0x1 << XTPG_MOTION_OFFSET)
 #define XTPG_MOTION_SPEED			0x0104
 #define XTPG_CROSS_HAIRS			0x0108
 #define XTPG_ZPLATE_HOR_CONTROL			0x010c
@@ -50,6 +65,7 @@
  * @format: active V4L2 media bus format
  * @vip_format: format information corresponding to the active format
  * @passthrough: passthrough flag
+ * @ctrl_handler: control handler
  */
 struct xtpg_device {
 	struct xvip_device xvip;
@@ -59,6 +75,8 @@ struct xtpg_device {
 	const struct xvip_video_format *vip_format;
 
 	bool passthrough;
+
+	struct v4l2_ctrl_handler ctrl_handler;
 };
 
 static inline struct xtpg_device *to_tpg(struct v4l2_subdev *subdev)
@@ -91,7 +109,6 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 		   (height << XVIP_TIMING_ACTIVE_VSIZE_SHIFT) |
 		   (width << XVIP_TIMING_ACTIVE_HSIZE_SHIFT));
 
-	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL, 0x00001029);
 	xvip_write(&xtpg->xvip, XTPG_MOTION_SPEED, 1);
 	xvip_write(&xtpg->xvip, XTPG_ZPLATE_HOR_CONTROL, (74 * 1920) / width);
 	xvip_write(&xtpg->xvip, XTPG_ZPLATE_VER_CONTROL, (3 * 1080) / height);
@@ -210,6 +227,65 @@ static int xtpg_close(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 
+static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct xtpg_device *xtpg = container_of(ctrl->handler,
+						struct xtpg_device,
+						ctrl_handler);
+	u32 reg;
+
+	switch (ctrl->id) {
+	case V4L2_CID_XILINX_TPG_PATTERN:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_PATTERN_MASK) | ctrl->val);
+		return 0;
+	case V4L2_CID_XILINX_TPG_CROSS_HAIRS:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_CROSS_HAIRS_MASK) |
+			   (ctrl->val << XTPG_CROSS_HAIRS_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_MOVING_BOX:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_MOVING_BOX_MASK) |
+			   (ctrl->val << XTPG_MOVING_BOX_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_COLOR_MASK:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_COLOR_MASK_MASK) |
+			   (ctrl->val << XTPG_COLOR_MASK_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_STUCK_PIXEL:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_STUCK_PIXEL_MASK) |
+			   (ctrl->val << XTPG_STUCK_PIXEL_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_NOISE:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_NOISE_MASK) |
+			   (ctrl->val << XTPG_NOISE_OFFSET));
+		return 0;
+	case V4L2_CID_XILINX_TPG_MOTION:
+		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+			   (reg & ~XTPG_MOTION_MASK) |
+			   (ctrl->val << XTPG_MOTION_OFFSET));
+		return 0;
+
+	}
+
+	return -EINVAL;
+}
+
+static const struct v4l2_ctrl_ops xtpg_ctrl_ops = {
+	.s_ctrl	= xtpg_s_ctrl,
+};
+
 static struct v4l2_subdev_core_ops xtpg_core_ops = {
 };
 
@@ -233,6 +309,99 @@ static struct v4l2_subdev_ops xtpg_ops = {
 static const struct v4l2_subdev_internal_ops xtpg_internal_ops = {
 	.open = xtpg_open,
 	.close = xtpg_close,
+};
+
+/*
+ * Control Config
+ */
+
+static const char *const xtpg_pattern_strings[] = {
+	"Passthrough",
+	"Horizontal Ramp",
+	"Vertical Ramp",
+	"Temporal Ramp",
+	"Solid Red",
+	"Solid Green",
+	"Solid Blue",
+	"Solid Black",
+	"Solid White",
+	"Color Bars",
+	"Zone Plate",
+	"Tartan Color Bars",
+	"Cross Hatch",
+	"None",
+	"Vertical/Horizontal Ramps",
+	"Black/White Checker Board",
+	NULL,
+};
+
+static struct v4l2_ctrl_config xtpg_pattern = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_PATTERN,
+	.name = "Test Pattern: Pattern",
+	.type = V4L2_CTRL_TYPE_MENU,
+	.min = 0,
+	.max = 15,
+	.qmenu = xtpg_pattern_strings,
+};
+
+static struct v4l2_ctrl_config xtpg_cross_hairs = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_CROSS_HAIRS,
+	.name = "Test Pattern: Cross Hairs",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = false,
+	.max = true,
+	.step = 1,
+};
+
+static struct v4l2_ctrl_config xtpg_moving_box = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_MOVING_BOX,
+	.name = "Test Pattern: Moving Box",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = false,
+	.max = true,
+	.step = 1,
+};
+
+static struct v4l2_ctrl_config xtpg_color_mask = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_COLOR_MASK,
+	.name = "Test Pattern: Color Mask",
+	.type = V4L2_CTRL_TYPE_BITMASK,
+	.min = 0,
+	.max = 0xf,
+};
+
+static struct v4l2_ctrl_config xtpg_stuck_pixel = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_STUCK_PIXEL,
+	.name = "Test Pattern: Stuck Pixel",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = false,
+	.max = true,
+	.step = 1,
+};
+
+static struct v4l2_ctrl_config xtpg_noise = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_NOISE,
+	.name = "Test Pattern: Noise",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = false,
+	.max = true,
+	.step = 1,
+};
+
+static struct v4l2_ctrl_config xtpg_motion = {
+	.ops = &xtpg_ctrl_ops,
+	.id = V4L2_CID_XILINX_TPG_MOTION,
+	.name = "Test Pattern: Motion",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = false,
+	.max = true,
+	.step = 1,
 };
 
 /* -----------------------------------------------------------------------------
@@ -312,6 +481,44 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 5);
+	xtpg_pattern.def = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+				     XTPG_PATTERN_MASK;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_pattern, NULL);
+
+	xtpg_cross_hairs.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+				XTPG_CROSS_HAIRS_MASK) >>
+			       XTPG_CROSS_HAIRS_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hairs, NULL);
+
+	xtpg_moving_box.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+			       XTPG_MOVING_BOX_MASK) >> XTPG_MOVING_BOX_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_moving_box, NULL);
+
+	xtpg_color_mask.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+			       XTPG_COLOR_MASK_MASK) >> XTPG_COLOR_MASK_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_color_mask, NULL);
+
+	xtpg_stuck_pixel.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+				XTPG_STUCK_PIXEL_MASK) >>
+			       XTPG_STUCK_PIXEL_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_stuck_pixel, NULL);
+
+	xtpg_noise.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+			  XTPG_NOISE_MASK) >>  XTPG_NOISE_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_noise, NULL);
+
+	xtpg_motion.def = (xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL) &
+			  XTPG_MOTION_MASK) >>  XTPG_MOTION_OFFSET;
+	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_motion, NULL);
+
+	if (xtpg->ctrl_handler.error) {
+		dev_err(&pdev->dev, "failed to add controls\n");
+		ret = xtpg->ctrl_handler.error;
+		goto error;
+	}
+	subdev->ctrl_handler = &xtpg->ctrl_handler;
+
 	platform_set_drvdata(pdev, xtpg);
 
 	version = xvip_read(&xtpg->xvip, XVIP_CTRL_VERSION);
@@ -333,6 +540,7 @@ static int xtpg_probe(struct platform_device *pdev)
 	return 0;
 
 error:
+	v4l2_ctrl_handler_free(&xtpg->ctrl_handler);
 	media_entity_cleanup(&subdev->entity);
 	return ret;
 }
@@ -343,6 +551,7 @@ static int xtpg_remove(struct platform_device *pdev)
 	struct v4l2_subdev *subdev = &xtpg->xvip.subdev;
 
 	v4l2_async_unregister_subdev(subdev);
+	v4l2_ctrl_handler_free(&xtpg->ctrl_handler);
 	media_entity_cleanup(&subdev->entity);
 
 	return 0;
