@@ -7,7 +7,8 @@ Required properties:
 
 - reg: Physical base address and length of the registers set for the device.
 
-- xlnx,axi-video-width: Video pixel component width, as defined in video.txt.
+- xlnx,axi-input/output-video-format, xlnx,axi-video-width: Video format and
+  width, as defined in video.txt
 
 - ports: Video ports, using the DT bindings defined in ../video-interfaces.txt.
   The rgb2yuv as an input port (0) and and output port (1).
