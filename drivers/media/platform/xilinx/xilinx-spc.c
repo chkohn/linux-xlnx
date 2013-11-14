@@ -381,18 +381,9 @@ static int xspc_pm_resume(struct device *dev)
 static int xspc_parse_of(struct xspc_device *xspc)
 {
 	struct device_node *node = xspc->xvip.dev->of_node;
-	u32 width;
-	int ret;
 
 	/* Parse the DT properties. */
-	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
-	if (ret < 0) {
-		dev_dbg(xspc->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-video-width");
-		return -EINVAL;
-	}
-
-	xspc->vip_format = xvip_get_format("bayer", width);
+	xspc->vip_format = xvip_of_get_format(node);
 	if (xspc->vip_format == NULL) {
 		dev_err(xspc->xvip.dev, "invalid format in DT");
 		return -EINVAL;
