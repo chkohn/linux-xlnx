@@ -409,7 +409,7 @@ static int xcresample_parse_of(struct xcresample_device *xcresample)
 			"xlnx,axi-input-video-format");
 		return -EINVAL;
 	}
-	
+
 	xcresample->vip_formats[XCRESAMPLE_PAD_SINK] = xvip_get_format(name,
 								       width);
 	if (xcresample->vip_formats[XCRESAMPLE_PAD_SINK] == NULL) {
@@ -424,7 +424,6 @@ static int xcresample_parse_of(struct xcresample_device *xcresample)
 			"xlnx,axi-output-video-format");
 		return -EINVAL;
 	}
-	
 
 	xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE] = xvip_get_format(name,
 									 width);
