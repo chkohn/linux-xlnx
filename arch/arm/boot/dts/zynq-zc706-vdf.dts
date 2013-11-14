@@ -708,6 +708,8 @@
 			compatible = "xlnx,axi-rgb2yuv";
 			reg = <0x43c70000 0x10000>;
 
+			xlnx,axi-input-video-format = "rbg";
+			xlnx,axi-output-video-format = "yuv444";
 			xlnx,axi-video-width = <8>;
 
 			ports {
