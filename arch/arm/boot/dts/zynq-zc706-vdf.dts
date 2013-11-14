@@ -577,6 +577,7 @@
 			compatible = "xlnx,axi-spc";
 			reg = <0x43c00000 0x10000>;
 
+			xlnx,axi-video-format = "bayer";
 			xlnx,axi-video-width = <8>;
 
 			ports {
