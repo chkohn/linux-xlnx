@@ -54,12 +54,14 @@
  * @xvip: Xilinx Video IP device
  * @pads: media pads
  * @formats: V4L2 media bus formats at the sink and source pads
+ * @vip_formats: Xilinx Video IP formats
  * @ctrl_handler: control handler
  */
 struct xrgb2yuv_device {
 	struct xvip_device xvip;
 	struct media_pad pads[2];
 	struct v4l2_mbus_framefmt formats[2];
+	const struct xvip_video_format *vip_formats[2];
 	struct v4l2_ctrl_handler ctrl_handler;
 };
 
@@ -524,6 +526,7 @@ static int xrgb2yuv_pm_resume(struct device *dev)
 static int xrgb2yuv_parse_of(struct xrgb2yuv_device *xrgb2yuv)
 {
 	struct device_node *node = xrgb2yuv->xvip.dev->of_node;
+	const char *name;
 	u32 width;
 	int ret;
 
@@ -534,10 +537,34 @@ static int xrgb2yuv_parse_of(struct xrgb2yuv_device *xrgb2yuv)
 			"xlnx,axi-video-width");
 		return -EINVAL;
 	}
-	
-	/* FIXME: if the input width is not 8 bit, error for now */
-	if (width != 8) {
-		dev_dbg(xrgb2yuv->xvip.dev, "xlnx,axi-video width is not 8\n");
+
+	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
+				      &name);
+	if (ret < 0) {
+		dev_dbg(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
+			"xlnx,axi-input-video-format");
+		return -EINVAL;
+	}
+
+	xrgb2yuv->vip_formats[XRGB2YUV_PAD_SINK] = xvip_get_format(name,
+								   width);
+	if (xrgb2yuv->vip_formats[XRGB2YUV_PAD_SINK] == NULL) {
+		dev_err(xrgb2yuv->xvip.dev, "invalid format in DT");
+		return -EINVAL;
+	}
+
+	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
+				      &name);
+	if (ret < 0) {
+		dev_dbg(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
+			"xlnx,axi-output-video-format");
+		return -EINVAL;
+	}
+
+	xrgb2yuv->vip_formats[XRGB2YUV_PAD_SOURCE] = xvip_get_format(name,
+								     width);
+	if (xrgb2yuv->vip_formats[XRGB2YUV_PAD_SOURCE] == NULL) {
+		dev_err(xrgb2yuv->xvip.dev, "invalid format in DT");
 		return -EINVAL;
 	}
 
