@@ -34,6 +34,7 @@
  * @entity: media entity, from the corresponding V4L2 subdev or video device
  * @asd: subdev asynchronous registration information
  * @subdev: V4L2 subdev (valid for all entities by DMA channels)
+ * @id: entity ID
  */
 struct xvip_pipeline_entity {
 	struct list_head list;
@@ -42,6 +43,7 @@ struct xvip_pipeline_entity {
 
 	struct v4l2_async_subdev asd;
 	struct v4l2_subdev *subdev;
+	unsigned int id;
 };
 
 /* -----------------------------------------------------------------------------
@@ -298,6 +300,7 @@ static int xvipp_pipeline_notify_bound(struct v4l2_async_notifier *notifier,
 		}
 
 		dev_dbg(xvipp->dev, "subdev %s bound\n", subdev->name);
+		subdev->grp_id = entity->id;
 		entity->entity = &subdev->entity;
 		entity->subdev = subdev;
 		return 0;
@@ -351,7 +354,7 @@ static int xvipp_pipeline_parse_one(struct xvip_pipeline *xvipp,
 		entity->asd.match_type = V4L2_ASYNC_MATCH_OF;
 		entity->asd.match.of.node = remote;
 		list_add_tail(&entity->list, &xvipp->entities);
-		xvipp->num_subdevs++;
+		entity->id = xvipp->num_subdevs++;
 	}
 
 	of_node_put(ep);
