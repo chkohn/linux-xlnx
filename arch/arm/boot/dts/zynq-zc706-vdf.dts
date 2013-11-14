@@ -603,6 +603,8 @@
 			compatible = "xlnx,axi-cfa";
 			reg = <0x43c10000 0x10000>;
 
+			xlnx,axi-input-video-format = "bayer";
+			xlnx,axi-output-video-format = "rbg";
 			xlnx,axi-video-width = <8>;
 
 			ports {
