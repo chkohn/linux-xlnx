@@ -17,7 +17,10 @@ The following properties are common to all Xilinx video IP cores.
 - xlnx,axi-(input/output-)video-format: This property represents a video
   format transmitted on an AXI bus between video IP cores. How the format
   relates to the IP core is decribed in the IP core bindings documentation.
-  The following formats are supported.
+  If input and output formats are identical, xlnx,axi-video-format can be
+  used for both. Otherwise, each format should be specified using
+  xlnx,axi-input-video-format and xlnx,axi-output-video-format. The following
+  formats are supported.
 
 	rbg
 	xrgb
