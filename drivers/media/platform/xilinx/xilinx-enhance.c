@@ -109,15 +109,27 @@ static int xenhance_enum_frame_size(struct v4l2_subdev *subdev,
 				    struct v4l2_subdev_fh *fh,
 				    struct v4l2_subdev_frame_size_enum *fse)
 {
-	struct xenhance_device *xenhance = to_enhance(subdev);
+	struct v4l2_mbus_framefmt *format;
 
-	if (fse->index || fse->code != xenhance->vip_format->code)
+	format = v4l2_subdev_get_try_format(fh, fse->pad);
+
+	if (fse->index || fse->code != format->code)
 		return -EINVAL;
 
-	fse->min_width = XENHANCE_MIN_WIDTH;
-	fse->max_width = XENHANCE_MAX_WIDTH;
-	fse->min_height = XENHANCE_MIN_HEIGHT;
-	fse->max_height = XENHANCE_MAX_HEIGHT;
+	if (fse->pad == XENHANCE_PAD_SINK) {
+		fse->min_width = XENHANCE_MIN_WIDTH;
+		fse->max_width = XENHANCE_MAX_WIDTH;
+		fse->min_height = XENHANCE_MIN_HEIGHT;
+		fse->max_height = XENHANCE_MAX_HEIGHT;
+	} else {
+		/* The size on the source pad is fixed and always identical to
+		 * the size on the sink pad.
+		 */
+		fse->min_width = format->width;
+		fse->max_width = format->width;
+		fse->min_height = format->height;
+		fse->max_height = format->height;
+	}
 
 	return 0;
 }
