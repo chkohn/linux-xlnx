@@ -120,17 +120,30 @@ static int xccm_enum_frame_size(struct v4l2_subdev *subdev,
 				struct v4l2_subdev_fh *fh,
 				struct v4l2_subdev_frame_size_enum *fse)
 {
-	struct xccm_device *xccm = to_ccm(subdev);
+	struct v4l2_mbus_framefmt *format;
 
-	if (fse->index || fse->code != xccm->vip_format->code)
+	format = v4l2_subdev_get_try_format(fh, fse->pad);
+
+	if (fse->index || fse->code != format->code)
 		return -EINVAL;
 
-	fse->min_width = XCCM_MIN_WIDTH;
-	fse->max_width = XCCM_MAX_WIDTH;
-	fse->min_height = XCCM_MIN_HEIGHT;
-	fse->max_height = XCCM_MAX_HEIGHT;
+	if (fse->pad == XCCM_PAD_SINK) {
+		fse->min_width = XCCM_MIN_WIDTH;
+		fse->max_width = XCCM_MAX_WIDTH;
+		fse->min_height = XCCM_MIN_HEIGHT;
+		fse->max_height = XCCM_MAX_HEIGHT;
+	} else {
+		/* The size on the source pad is fixed and always identical to
+		 * the size on the sink pad.
+		 */
+		fse->min_width = format->width;
+		fse->max_width = format->width;
+		fse->min_height = format->height;
+		fse->max_height = format->height;
+	}
 
 	return 0;
+
 }
 
 static struct v4l2_mbus_framefmt *
