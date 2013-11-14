@@ -126,7 +126,7 @@ static int xcresample_enum_frame_size(struct v4l2_subdev *subdev,
 		fse->min_height = XCRESAMPLE_MIN_HEIGHT;
 		fse->max_height = XCRESAMPLE_MAX_HEIGHT;
 	} else {
-		/* The size on the source pad are fixed and always identical to
+		/* The size on the source pad is fixed and always identical to
 		 * the size on the sink pad.
 		 */
 		fse->min_width = format->width;
