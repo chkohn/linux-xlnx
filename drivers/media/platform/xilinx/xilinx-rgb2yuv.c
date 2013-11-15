@@ -533,32 +533,32 @@ static int xrgb2yuv_parse_of(struct xrgb2yuv_device *xrgb2yuv)
 	/* Parse the DT properties. */
 	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
 	if (ret < 0) {
-		dev_dbg(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
+		dev_err(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-video-width");
-		return -EINVAL;
+		return ret;
 	}
 
 	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
 				      &name);
 	if (ret < 0) {
-		dev_dbg(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
+		dev_err(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-input-video-format");
-		return -EINVAL;
+		return ret;
 	}
 
 	xrgb2yuv->vip_formats[XRGB2YUV_PAD_SINK] = xvip_get_format(name,
 								   width);
 	if (xrgb2yuv->vip_formats[XRGB2YUV_PAD_SINK] == NULL) {
 		dev_err(xrgb2yuv->xvip.dev, "invalid format in DT");
-		return -EINVAL;
+		return ret;
 	}
 
 	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
 				      &name);
 	if (ret < 0) {
-		dev_dbg(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
+		dev_err(xrgb2yuv->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-output-video-format");
-		return -EINVAL;
+		return ret;
 	}
 
 	xrgb2yuv->vip_formats[XRGB2YUV_PAD_SOURCE] = xvip_get_format(name,
