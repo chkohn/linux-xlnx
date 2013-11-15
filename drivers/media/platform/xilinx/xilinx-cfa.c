@@ -362,45 +362,12 @@ static int xcfa_pm_resume(struct device *dev)
 static int xcfa_parse_of(struct xcfa_device *xcfa)
 {
 	struct device_node *node = xcfa->xvip.dev->of_node;
-	const char *name;
-	u32 width;
 	int ret;
 
-	/* Parse the DT properties. */
-	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
-	if (ret < 0) {
-		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-video-width");
-		return ret;
-	}
-
-	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
-				      &name);
-	if (ret < 0) {
-		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-input-video-format");
-		return ret;
-	}
-
-	xcfa->vip_formats[XCFA_PAD_SINK] = xvip_get_format(name, width);
-	if (xcfa->vip_formats[XCFA_PAD_SINK] == NULL) {
-		dev_err(xcfa->xvip.dev, "invalid format in DT");
-		return -EINVAL;
-	}
-
-	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
-				      &name);
-	if (ret < 0) {
-		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-output-video-format");
-		return ret;
-	}
-
-	xcfa->vip_formats[XCFA_PAD_SOURCE] = xvip_get_format(name, width);
-	if (xcfa->vip_formats[XCFA_PAD_SOURCE] == NULL) {
-		dev_err(xcfa->xvip.dev, "invalid format in DT");
-		return -EINVAL;
-	}
+	ret = xvip_of_get_formats(node, &xcfa->vip_formats[XCFA_PAD_SINK],
+				  &xcfa->vip_formats[XCFA_PAD_SOURCE]);
+	if (ret < 0)
+ 		dev_err(xcfa->xvip.dev, "invalid format in DT");
 
 	return 0;
 }
