@@ -369,17 +369,17 @@ static int xcfa_parse_of(struct xcfa_device *xcfa)
 	/* Parse the DT properties. */
 	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
 	if (ret < 0) {
-		dev_dbg(xcfa->xvip.dev, "unable to parse %s property\n",
+		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-video-width");
-		return -EINVAL;
+		return ret;
 	}
 
 	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
 				      &name);
 	if (ret < 0) {
-		dev_dbg(xcfa->xvip.dev, "unable to parse %s property\n",
+		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-input-video-format");
-		return -EINVAL;
+		return ret;
 	}
 
 	xcfa->vip_formats[XCFA_PAD_SINK] = xvip_get_format(name, width);
@@ -391,9 +391,9 @@ static int xcfa_parse_of(struct xcfa_device *xcfa)
 	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
 				      &name);
 	if (ret < 0) {
-		dev_dbg(xcfa->xvip.dev, "unable to parse %s property\n",
+		dev_err(xcfa->xvip.dev, "unable to parse %s property\n",
 			"xlnx,axi-output-video-format");
-		return -EINVAL;
+		return ret;
 	}
 
 	xcfa->vip_formats[XCFA_PAD_SOURCE] = xvip_get_format(name, width);
