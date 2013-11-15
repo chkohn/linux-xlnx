@@ -390,49 +390,15 @@ static int xcresample_pm_resume(struct device *dev)
 static int xcresample_parse_of(struct xcresample_device *xcresample)
 {
 	struct device_node *node = xcresample->xvip.dev->of_node;
-	const char *name;
-	u32 width;
 	int ret;
 
-	/* Parse the DT properties. */
-	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
-	if (ret < 0) {
-		dev_err(xcresample->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-video-width");
-		return ret;
-	}
+	ret = xvip_of_get_formats(node,
+			&xcresample->vip_formats[XCRESAMPLE_PAD_SINK],
+			&xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE]);
+	if (ret < 0)
+ 		dev_err(xcresample->xvip.dev, "invalid format in DT");
 
-	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
-				      &name);
-	if (ret < 0) {
-		dev_err(xcresample->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-input-video-format");
-		return ret;
-	}
-
-	xcresample->vip_formats[XCRESAMPLE_PAD_SINK] = xvip_get_format(name,
-								       width);
-	if (xcresample->vip_formats[XCRESAMPLE_PAD_SINK] == NULL) {
-		dev_err(xcresample->xvip.dev, "invalid format in DT");
-		return -EINVAL;
-	}
-
-	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
-				      &name);
-	if (ret < 0) {
-		dev_err(xcresample->xvip.dev, "unable to parse %s property\n",
-			"xlnx,axi-output-video-format");
-		return ret;
-	}
-
-	xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE] = xvip_get_format(name,
-									 width);
-	if (xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE] == NULL) {
-		dev_err(xcresample->xvip.dev, "invalid format in DT");
-		return -EINVAL;
-	}
-
-	return 0;
+	return ret;
 }
 
 static int xcresample_probe(struct platform_device *pdev)
