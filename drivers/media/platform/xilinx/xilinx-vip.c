@@ -124,3 +124,51 @@ const struct xvip_video_format *xvip_of_get_format(struct device_node *node)
 	return xvip_get_format(name, width);
 }
 EXPORT_SYMBOL_GPL(xvip_of_get_format);
+
+/**
+ * xvip_of_get_formats - Parse a device tree node and return format information
+ * @node: the device tree node
+ * @input_format: the returning input format
+ * @output_format: the returning output format
+ *
+ * Read the xlnx,axi-video-input-format, xlnx,axi-video-output-format,  and
+ * xlnx,axi-video-width properties from the device tree @node passed as
+ * an argument and return the corresponding format information through
+ * the passed arguments input_format and output_format.
+ *
+ * Return: 0 if the format is found, and the return code if no corresponding
+ * format can be found.
+ */
+int xvip_of_get_formats(struct device_node *node,
+			const struct xvip_video_format **input_format,
+			const struct xvip_video_format **output_format)
+{
+	const char *name;
+	u32 width;
+	int ret;
+
+	ret = of_property_read_u32(node, "xlnx,axi-video-width", &width);
+	if (ret < 0)
+		return ret;
+
+	ret = of_property_read_string(node, "xlnx,axi-input-video-format",
+				      &name);
+	if (ret < 0)
+		return ret;
+
+	*input_format = xvip_get_format(name, width);
+	if (*input_format == NULL)
+		return -EINVAL;
+
+	ret = of_property_read_string(node, "xlnx,axi-output-video-format",
+				      &name);
+	if (ret < 0)
+		return ret;
+
+	*output_format = xvip_get_format(name, width);
+	if (*output_format == NULL)
+		return -EINVAL;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(xvip_of_get_formats);
