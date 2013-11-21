@@ -1,0 +1,64 @@
+Xilinx Scaler (SCALER)
+------------------------------------
+
+Required properties:
+
+- compatible: Must be "xlnx,axi-scaler".
+
+- reg: Physical base address and length of the registers set for the device.
+
+- xlnx,num-hori-taps, xlnx,num-vert-taps: The number of horizontal and vertical
+  taps for scaling filter(range: 2 - 12).
+
+- xlnx,max-num-phases: The maximum number of phases for scaling filter
+  (range: 2 - 64).
+
+- xlnx,separate-yc-coef, xlnx,separate-hv-coef: The boolean flag to specify
+  if coefficients are shared between between Luma(Y) and Chroma(C) or between
+  horizontal and vertical filters.
+
+- ports: Video ports, using the DT bindings defined in ../video-interfaces.txt.
+  The scaler has an input port (0) and an output port (1).
+
+Required port properties:
+
+- xlnx,axi-video-format, xlnx,axi-video-width: Video format and width, as
+  defined in video.txt.
+
+Example:
+
+	axi_scaler_0: axi_scaler {
+		compatible = "xlnx,axi-scaler";
+		reg = <0x43c30000 0x10000>;
+
+		xlnx,num-hori-taps = <12>;
+		xlnx,num-vert-taps = <12>;
+		xlnx,max-num-phases = <4>;
+		xlnx,separate-hv-coef;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				xlnx,axi-video-format = "yuv422";
+				xlnx,axi-video-width = <8>;
+
+				scaler0_in: endpoint {
+					remote-endpoint = <&cresample0_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+
+				xlnx,axi-video-format = "yuv422";
+				xlnx,axi-video-width = <8>;
+
+				scaler0_out: endpoint {
+					remote-endpoint = <&vcap0_in>;
+				};
+			};
+		};
+	};

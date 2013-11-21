@@ -49,6 +49,12 @@ config VIDEO_XILINX_RGB2YUV
 	---help---
 	   Driver for the Xilinx Video RGB to YUV Convertor
 
+config VIDEO_XILINX_SCALER
+	tristate "Xilinx Video Scaler"
+	depends on VIDEO_XILINX
+	---help---
+	   Driver for the Xilinx Video Scaler
+
 config VIDEO_XILINX_SOBEL
 	tristate "Xilinx Video Sobel Filter"
 	depends on VIDEO_XILINX
