@@ -692,5 +692,5 @@ static struct platform_driver xstats_driver = {
 
 module_platform_driver(xstats_driver);
 
-MODULE_DESCRIPTION("Xilinx STATS Driver");
+MODULE_DESCRIPTION("Xilinx Image Statistics Driver");
 MODULE_LICENSE("GPL v2");
