@@ -512,5 +512,5 @@ static struct platform_driver xspc_driver = {
 
 module_platform_driver(xspc_driver);
 
-MODULE_DESCRIPTION("Xilinx SPC Driver");
+MODULE_DESCRIPTION("Xilinx Defective(Stuck) Pixel Correction Driver");
 MODULE_LICENSE("GPL v2");
