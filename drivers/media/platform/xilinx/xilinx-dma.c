@@ -69,6 +69,7 @@ static int xvip_dma_verify_format(struct xvip_dma *dma)
 		return -EINVAL;
 
 	fmt.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+	fmt.pad = 1;
 	ret = v4l2_subdev_call(subdev, pad, get_fmt, NULL, &fmt);
 	if (ret < 0)
 		return ret == -ENOIOCTLCMD ? -EINVAL : ret;
@@ -349,6 +350,7 @@ __xvip_dma_try_format(struct xvip_dma *dma, struct v4l2_pix_format *pix,
 	bpl = rounddown(pix->bytesperline, dma->align);
 	min_bpl = pix->width * info->bpp;
 	max_bpl = rounddown(XVIP_DMA_MAX_WIDTH, dma->align);
+	pix->bytesperline = clamp(bpl, min_bpl, max_bpl);
 
 	if (fmtinfo)
 		*fmtinfo = info;
