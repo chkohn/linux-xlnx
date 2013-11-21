@@ -11,7 +11,7 @@ Required properties:
   width, as defined in video.txt
 
 - ports: Video ports, using the DT bindings defined in ../video-interfaces.txt.
-  The cfa as an input port (0) and and output port (1).
+  The cfa has an input port (0) and an output port (1).
 
 Example:
 
