@@ -63,8 +63,8 @@
 
 /**
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
- * @pads: media pads
  * @xvip: Xilinx Video IP device
+ * @pads: media pads
  * @format: active V4L2 media bus format
  * @vip_format: format information corresponding to the active format
  * @passthrough: passthrough flag
@@ -73,12 +73,9 @@
 struct xtpg_device {
 	struct xvip_device xvip;
 	struct media_pad pads[2];
-
 	struct v4l2_mbus_framefmt format;
 	const struct xvip_video_format *vip_format;
-
 	bool passthrough;
-
 	struct v4l2_ctrl_handler ctrl_handler;
 };
 
