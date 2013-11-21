@@ -491,5 +491,5 @@ static struct platform_driver xgamma_driver = {
 
 module_platform_driver(xgamma_driver);
 
-MODULE_DESCRIPTION("Xilinx GAMMA Driver");
+MODULE_DESCRIPTION("Xilinx Gamma Correction Driver");
 MODULE_LICENSE("GPL v2");
