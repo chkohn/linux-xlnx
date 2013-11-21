@@ -11,7 +11,7 @@ Required properties:
   defined in video.txt.
 
 - ports: Video ports, using the DT bindings defined in ../video-interfaces.txt.
-  The gamma as an input port (0) and and output port (1).
+  The gamma has an input port (0) and an output port (1).
 
 Example:
 
