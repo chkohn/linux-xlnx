@@ -700,5 +700,5 @@ static struct platform_driver xccm_driver = {
 
 module_platform_driver(xccm_driver);
 
-MODULE_DESCRIPTION("Xilinx CCM Driver");
+MODULE_DESCRIPTION("Xilinx Color Correction Matrix Driver");
 MODULE_LICENSE("GPL v2");
