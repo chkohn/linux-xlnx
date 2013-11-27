@@ -456,7 +456,6 @@
 				interrupt-parent = <&ps7_scugic_0>;
 				interrupts = <0 57 4>;
 				xlnx,datawidth = <0x40>;
-				xlnx,include-dre;
 				xlnx,device-id = <1>;
 			};
 		};
