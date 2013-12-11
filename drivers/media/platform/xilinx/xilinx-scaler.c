@@ -16,6 +16,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/fixp-arith.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -54,12 +55,23 @@
  * @pads: media pads
  * @vip_format: Xilinx Video IP format
  * @formats: V4L2 media bus formats at the sink and source pads
+ * @num_of_vert_tap: number of vertical taps
+ * @num_hori_taps: number of vertical taps
+ * @num_vert_taps: number of vertical taps
+ * @max_num_phases: maximum number of phases
+ * @separate_yc_coef: separate coefficients for Luma(y) and Chroma(c)
+ * @separate_hv_coef: separate coefficients for Horizontal(h) and Vertical(v)
  */
 struct xscaler_device {
 	struct xvip_device xvip;
 	struct media_pad pads[2];
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt formats[2];
+	u32 num_hori_taps;
+	u32 num_vert_taps;
+	u32 max_num_phases;
+	bool separate_yc_coef;
+	bool separate_hv_coef;
 };
 
 static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
@@ -70,6 +82,97 @@ static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
 /*
  * V4L2 Subdevice Video Operations
  */
+
+static inline fixp_t lanczos(fixp_t x, fixp_t a)
+{
+	fixp_t pi;
+	fixp_t numerator;
+	fixp_t denominator;
+	fixp_t temp;
+
+	if (x < -a || x > a) {
+		return 0;
+	} else if (x == 0) {
+		return 1;
+	} else {
+		/* a * sin(pi * x) * sin(pi * x / a) / (pi * pi * x * x) */
+		pi = (fixp_new(31459) << FRAC_N) / fixp_new(10000);
+
+		if (x < 0)
+			x = -x;
+
+		/* sin(pi * x) */
+		temp = fixp_mult(fixp_new(180), x);
+		temp = fixp_sin(temp >> FRAC_N);
+
+		/* a * sin(pi * x) */
+		numerator = fixp_mult(temp , a);
+
+		/* sin(pi * x / a) */
+		temp = (fixp_mult(fixp_new(180), x) << FRAC_N) / a;
+		temp = fixp_sin(temp >> FRAC_N);
+
+		/* a * sin(pi * x) * sin(pi * x / a) */
+		numerator = fixp_mult(temp, numerator);
+
+		/* pi * pi * x * x */
+		denominator = fixp_mult(pi, pi);
+		temp = fixp_mult(x, x);
+		denominator = fixp_mult(temp, denominator);
+
+		return ((numerator << FRAC_N) / denominator);
+	}
+}
+
+/**
+ * xscaler_gen_coefs - generate the coefficient table
+ * @taps: maximum coefficient tap index
+ */
+static inline int xscaler_gen_coefs(struct xscaler_device *xscaler, s16 taps)
+{
+	fixp_t *coef;
+	fixp_t sum;
+	fixp_t dy;
+	u32 coef_val;
+	s16 phases = (s16)xscaler->max_num_phases;
+	s16 i;
+	s16 j;
+
+	coef = kcalloc(phases, sizeof(*coef), GFP_KERNEL);
+	if (!coef)
+		return -ENOMEM;
+
+	for (i = 0; i < phases; i++) {
+		dy = ((fixp_new(i) << FRAC_N) / fixp_new(phases));
+
+		/* Generate Lanczos coefficients */
+		for (j = 0; j < taps; j++) {
+			coef[j] = lanczos(fixp_new(j - (taps >> 1)) + dy,
+					  fixp_new(taps >> 1));
+			sum += coef[j];
+		}
+
+		/* Program coefficients */
+		for (j = 0; j < taps; j += 2) {
+			/* Normalize and multiply coefficients */
+			coef_val = (((coef[j] << FRAC_N) << (FRAC_N - 2)) /
+				    sum) & 0xffff;
+			if (j < taps)
+				coef_val |= ((((coef[j + 1] << FRAC_N) <<
+					      (FRAC_N - 2)) / sum) & 0xffff) <<
+					    16;
+
+			xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
+				   coef_val);
+		}
+
+		sum = 0;
+	}
+
+	kfree(coef);
+
+	return 0;
+}
 
 static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 {
@@ -93,13 +196,11 @@ static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 	xvip_write(&xscaler->xvip, XSCALER_SOURCE_SIZE,
 		   (in_height << XSCALER_SIZE_SHIFT) | in_width);
 
-	/* FIXME: set aperture same as width/height for now */
-	/* FIXME: use size mask for now */
+	/* TODO: aperture is fixed to input width/height for now */
 	xvip_write(&xscaler->xvip, XSCALER_HAPERTURE,
 		   ((in_width - 1) << XSCALER_APERTURE_SHIFT));
 	xvip_write(&xscaler->xvip, XSCALER_VAPERTURE,
 		   ((in_height - 1) << XSCALER_APERTURE_SHIFT));
-
 
 	out_width = xscaler->formats[XSCALER_PAD_SOURCE].width &
 		   XSCALER_SIZE_MASK;
@@ -260,6 +361,7 @@ static const struct media_entity_operations xscaler_media_ops = {
 static int xscaler_parse_of(struct xscaler_device *xscaler)
 {
 	struct device_node *node = xscaler->xvip.dev->of_node;
+	int ret;
 
 	xscaler->vip_format = xvip_of_get_format(node);
 	if (xscaler->vip_format == NULL) {
@@ -267,172 +369,29 @@ static int xscaler_parse_of(struct xscaler_device *xscaler)
 		return -EINVAL;
 	}
 
+	ret = of_property_read_u32(node, "xlnx,num-hori-taps",
+				   &xscaler->num_hori_taps);
+	if (ret < 0)
+		return ret;
+
+	ret = of_property_read_u32(node, "xlnx,num-vert-taps",
+				   &xscaler->num_vert_taps);
+	if (ret < 0)
+		return ret;
+
+	ret = of_property_read_u32(node, "xlnx,max-num-phases",
+				   &xscaler->max_num_phases);
+	if (ret < 0)
+		return ret;
+
+	xscaler->separate_yc_coef =
+		of_property_read_bool(node, "xlnx,separate-yc-coef");
+
+	xscaler->separate_hv_coef =
+		of_property_read_bool(node, "xlnx,separate-hv-coef");
+
 	return 0;
 }
-
-/* FIXME: temp coeff. taps = 4, phases = 4 */
-static int16_t xscaler_coef[] = {
-	0, 0, 0, 0, -104, 1018, 15364, 106, 0, 0, 0, 0,
-	0, 0, 0, 0, -115, 1256, 15164, 79, 0, 0, 0, 0,
-	0, 0, 0, 0, -125, 1494, 14962, 53, 0, 0, 0, 0,
-	0, 0, 0, 0, -135, 1731, 14759, 29, 0, 0, 0, 0,
-	0, 0, 0, 0, -145, 1968, 14555, 6, 0, 0, 0, 0,
-	0, 0, 0, 0, -155, 2205, 14349, -16, 0, 0, 0, 0,
-	0, 0, 0, 0, -164, 2442, 14143, -37, 0, 0, 0, 0,
-	0, 0, 0, 0, -173, 2679, 13935, -57, 0, 0, 0, 0,
-	0, 0, 0, 0, -182, 2915, 13726, -75, 0, 0, 0, 0,
-	0, 0, 0, 0, -191, 3151, 13517, -93, 0, 0, 0, 0,
-	0, 0, 0, 0, -199, 3386, 13306, -110, 0, 0, 0, 0,
-	0, 0, 0, 0, -206, 3622, 13094, -125, 0, 0, 0, 0,
-	0, 0, 0, 0, -214, 3857, 12882, -140, 0, 0, 0, 0,
-	0, 0, 0, 0, -221, 4091, 12668, -154, 0, 0, 0, 0,
-	0, 0, 0, 0, -228, 4326, 12454, -167, 0, 0, 0, 0,
-	0, 0, 0, 0, -234, 4560, 12238, -180, 0, 0, 0, 0,
-	0, 0, 0, 0, -240, 4793, 12022, -191, 0, 0, 0, 0,
-	0, 0, 0, 0, -246, 5026, 11806, -202, 0, 0, 0, 0,
-	0, 0, 0, 0, -251, 5259, 11588, -212, 0, 0, 0, 0,
-	0, 0, 0, 0, -256, 5491, 11370, -221, 0, 0, 0, 0,
-	0, 0, 0, 0, -261, 5723, 11151, -230, 0, 0, 0, 0,
-	0, 0, 0, 0, -265, 5955, 10931, -237, 0, 0, 0, 0,
-	0, 0, 0, 0, -269, 6186, 10711, -245, 0, 0, 0, 0,
-	0, 0, 0, 0, -272, 6417, 10490, -251, 0, 0, 0, 0,
-	0, 0, 0, 0, -275, 6648, 10268, -257, 0, 0, 0, 0,
-	0, 0, 0, 0, -277, 6877, 10046, -262, 0, 0, 0, 0,
-	0, 0, 0, 0, -279, 7107, 9823, -267, 0, 0, 0, 0,
-	0, 0, 0, 0, -281, 7336, 9600, -271, 0, 0, 0, 0,
-	0, 0, 0, 0, -282, 7565, 9376, -274, 0, 0, 0, 0,
-	0, 0, 0, 0, -283, 7793, 9151, -277, 0, 0, 0, 0,
-	0, 0, 0, 0, -283, 8020, 8926, -279, 0, 0, 0, 0,
-	0, 0, 0, 0, -283, 8248, 8700, -281, 0, 0, 0, 0,
-	0, 0, 0, 0, -282, 8474, 8474, -282, 0, 0, 0, 0,
-	0, 0, 0, 0, -281, 8700, 8248, -283, 0, 0, 0, 0,
-	0, 0, 0, 0, -279, 8926, 8020, -283, 0, 0, 0, 0,
-	0, 0, 0, 0, -277, 9151, 7793, -283, 0, 0, 0, 0,
-	0, 0, 0, 0, -274, 9376, 7565, -282, 0, 0, 0, 0,
-	0, 0, 0, 0, -271, 9600, 7336, -281, 0, 0, 0, 0,
-	0, 0, 0, 0, -267, 9823, 7107, -279, 0, 0, 0, 0,
-	0, 0, 0, 0, -262, 10046, 6877, -277, 0, 0, 0, 0,
-	0, 0, 0, 0, -257, 10268, 6648, -275, 0, 0, 0, 0,
-	0, 0, 0, 0, -251, 10490, 6417, -272, 0, 0, 0, 0,
-	0, 0, 0, 0, -245, 10711, 6186, -269, 0, 0, 0, 0,
-	0, 0, 0, 0, -237, 10931, 5955, -265, 0, 0, 0, 0,
-	0, 0, 0, 0, -230, 11151, 5723, -261, 0, 0, 0, 0,
-	0, 0, 0, 0, -221, 11370, 5491, -256, 0, 0, 0, 0,
-	0, 0, 0, 0, -212, 11588, 5259, -251, 0, 0, 0, 0,
-	0, 0, 0, 0, -202, 11806, 5026, -246, 0, 0, 0, 0,
-	0, 0, 0, 0, -191, 12022, 4793, -240, 0, 0, 0, 0,
-	0, 0, 0, 0, -180, 12238, 4560, -234, 0, 0, 0, 0,
-	0, 0, 0, 0, -167, 12454, 4326, -228, 0, 0, 0, 0,
-	0, 0, 0, 0, -154, 12668, 4091, -221, 0, 0, 0, 0,
-	0, 0, 0, 0, -140, 12882, 3857, -214, 0, 0, 0, 0,
-	0, 0, 0, 0, -125, 13094, 3622, -206, 0, 0, 0, 0,
-	0, 0, 0, 0, -110, 13306, 3386, -199, 0, 0, 0, 0,
-	0, 0, 0, 0, -93, 13517, 3151, -191, 0, 0, 0, 0,
-	0, 0, 0, 0, -75, 13726, 2915, -182, 0, 0, 0, 0,
-	0, 0, 0, 0, -57, 13935, 2679, -173, 0, 0, 0, 0,
-	0, 0, 0, 0, -37, 14143, 2442, -164, 0, 0, 0, 0,
-	0, 0, 0, 0, -16, 14349, 2205, -155, 0, 0, 0, 0,
-	0, 0, 0, 0, 6, 14555, 1968, -145, 0, 0, 0, 0,
-	0, 0, 0, 0, 29, 14759, 1731, -135, 0, 0, 0, 0,
-	0, 0, 0, 0, 53, 14962, 1494, -125, 0, 0, 0, 0,
-	0, 0, 0, 0, 79, 15164, 1256, -115, 0, 0, 0, 0
-
-};
-
-static int16_t xscaler_coef23[] = {
-	0, -141, 402, 0, -1940, 4527, 10949, 3881, -1397, 0, 176, -74,      // 0
-	-2, -139, 411, -35, -1916, 4679, 10936, 3743, -1410, 20, 172, -75,  // 1
-	-5, -136, 419, -71, -1889, 4830, 10919, 3606, -1421, 40, 168, -76,  // 2
-	-7, -133, 427, -107, -1859, 4981, 10898, 3469, -1431, 60, 163, -77, // 3
-	-9, -130, 434, -143, -1828, 5131, 10875, 3333, -1439, 79, 159, -77, // 4
-	-12, -127, 441, -179, -1794, 5282, 10847, 3197, -1446, 98, 154, -78,// 5
-	-14, -124, 448, -215, -1757, 5431, 10817, 3063, -1450, 117, 149, -79, // 6
-	-16, -121, 454, -252, -1719, 5580, 10782, 2929, -1454, 135, 144, -79, // 7
-	-19, -117, 460, -288, -1678, 5729, 10745, 2796, -1455, 153, 139, -80, // 8
-	-21, -114, 465, -325, -1634, 5876, 10704, 2664, -1455, 170, 133, -80, // 9
-	-23, -110, 470, -361, -1588, 6023, 10660, 2533, -1454, 188, 128, -80, // 10
-	-26, -106, 474, -398, -1540, 6169, 10612, 2403, -1451, 204, 123, -81, // 11
-	-28, -102, 478, -434, -1490, 6314, 10561, 2274, -1447, 221, 117, -81, // 12
-	-30, -98, 482, -471, -1437, 6458, 10507, 2146, -1441, 237, 112, -81,  // 13
-	-32, -94, 485, -507, -1382, 6601, 10449, 2019, -1434, 252, 106, -81,  // 14
-	-34, -89, 487, -543, -1324, 6743, 10389, 1894, -1425, 268, 100, -80,  // 15
-	-37, -85, 489, -579, -1264, 6883, 10325, 1770, -1416, 282, 95, -80,   // 16
-	-39, -80, 491, -615, -1202, 7022, 10258, 1647, -1404, 297, 89, -80,   // 17
-	-41, -75, 492, -650, -1138, 7160, 10188, 1526, -1392, 310, 83, -79,   // 18
-	-43, -71, 493, -685, -1071, 7296, 10114, 1406, -1378, 324, 77, -79, 
-	-48, -59, 492, -766, -906, 7608, 9932, 1133, -1341, 353, 63, -78,  // 20
-	-48, -59, 492, -766, -906, 7608, 9932, 1133, -1341, 353, 63, -78,  // 21
-	-48, -59, 492, -766, -906, 7608, 9932, 1133, -1341, 353, 63, -78,  // 22
-	-48, -59, 492, -766, -906, 7608, 9932, 1133, -1341, 353, 63, -78,  // 23
-	/////////////////////////////////////////////////////////////////////////////////
-
-	-53, -45, 488, -855, -703, 7954, 9704, 830, -1291, 383, 47, -75,
-	-55, -40, 485, -888, -622, 8080, 9613, 720, -1271, 394, 41, -74,
-	-56, -34, 482, -920, -540, 8204, 9520, 612, -1249, 404, 36, -73,
-	-58, -29, 478, -951, -455, 8326, 9424, 505, -1226, 413, 30, -72,
-	-60, -23, 474, -982, -368, 8446, 9325, 400, -1203, 422, 24, -71,
-	-61, -17, 469, -1012, -279, 8564, 9224, 297, -1178, 430, 18, -70,
-	-63, -12, 464, -1042, -188, 8680, 9120, 196, -1152, 438, 12, -69,
-	-65, -6, 459, -1071, -95, 8793, 9013, 97, -1126, 445, 6, -67,
-	-66, 0, 452, -1099, 0, 8904, 8904, 0, -1099, 452, 0, -66,
-	-67, 6, 445, -1126, 97, 9013, 8793, -95, -1071, 459, -6, -65,
-	-69, 12, 438, -1152, 196, 9120, 8680, -188, -1042, 464, -12, -63,
-	-70, 18, 430, -1178, 297, 9224, 8564, -279, -1012, 469, -17, -61,
-	-71, 24, 422, -1203, 400, 9325, 8446, -368, -982, 474, -23, -60,
-	-72, 30, 413, -1226, 505, 9424, 8326, -455, -951, 478, -29, -58,
-	-73, 36, 404, -1249, 612, 9520, 8204, -540, -920, 482, -34, -56,
-	-74, 41, 394, -1271, 720, 9613, 8080, -622, -888, 485, -40, -55,
-	-75, 47, 383, -1291, 830, 9704, 7954, -703, -855, 488, -45, -53,
-	-78, 63, 353, -1341, 1133, 9932, 7608, -906, -766, 492, -59, -48,
-	-78, 63, 353, -1341, 1133, 9932, 7608, -906, -766, 492, -59, -48,
-	-78, 63, 353, -1341, 1133, 9932, 7608, -906, -766, 492, -59, -48,
-	-78, 63, 353, -1341, 1133, 9932, 7608, -906, -766, 492, -59, -48,
-	/////////////////////////////////////////////////////////////////////////////////
-
-	-79, 77, 324, -1378, 1406, 10114, 7296, -1071, -685, 493, -71, -43,
-	-79, 83, 310, -1392, 1526, 10188, 7160, -1138, -650, 492, -75, -41,
-	-80, 89, 297, -1404, 1647, 10258, 7022, -1202, -615, 491, -80, -39,
-	-80, 95, 282, -1416, 1770, 10325, 6883, -1264, -579, 489, -85, -37,
-	-80, 100, 268, -1425, 1894, 10389, 6743, -1324, -543, 487, -89, -34,
-	-81, 106, 252, -1434, 2019, 10449, 6601, -1382, -507, 485, -94, -32,
-	-81, 112, 237, -1441, 2146, 10507, 6458, -1437, -471, 482, -98, -30,
-	-81, 117, 221, -1447, 2274, 10561, 6314, -1490, -434, 478, -102, -28,
-	-81, 123, 204, -1451, 2403, 10612, 6169, -1540, -398, 474, -106, -26,
-	-80, 128, 188, -1454, 2533, 10660, 6023, -1588, -361, 470, -110, -23,
-	-80, 133, 170, -1455, 2664, 10704, 5876, -1634, -325, 465, -114, -21,
-	-80, 139, 153, -1455, 2796, 10745, 5729, -1678, -288, 460, -117, -19,
-	-79, 144, 135, -1454, 2929, 10782, 5580, -1719, -252, 454, -121, -16,
-	-79, 149, 117, -1450, 3063, 10817, 5431, -1757, -215, 448, -124, -14,
-	-78, 154, 98, -1446, 3197, 10847, 5282, -1794, -179, 441, -127, -12,
-	-77, 159, 79, -1439, 3333, 10875, 5131, -1828, -143, 434, -130, -9,
-	-77, 163, 60, -1431, 3469, 10898, 4981, -1859, -107, 427, -133, -7,
-	-76, 168, 40, -1421, 3606, 10919, 4830, -1889, -71, 419, -136, -5,
-	-75, 172, 20, -1410, 3743, 10936, 4679, -1916, -35, 411, -139, -2
-
-};
-
-static int16_t xscaler_coef23_t[] = {
-	/* bin # 16; num_taps = 12; num_phases = 4 */
-	-65, 135, -328, 596, -855, 1017, 15357, 872, -616, 343, -144, 71,
-	-69, 167, -488, 1120, -2280, 5514, 13831, -1815, 476, -83, -9, 19,
-	-36, 113, -403, 1116, -2804, 10206, 10206, -2804, 1116, -403, 113, -36,
-	19, -9, -83, 476, -1815, 13831, 5514, -2280, 1120, -488, 167, -69
-};
-
-static int16_t xscaler_coef00[] = {
-	/* bin # 16; num_taps = 12; num_phases = 4 */
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 
-};
-
-static int16_t xscaler_coef0[] = {
-	0, 0, 0, 0, 0, 0, 16384, 0, 0, 0, 0, 0,
-	-52, 120, -346, 818, -1787, 4863, 14590, -2501, 1000, -399, 134, -57,
-	-76, 178, -522, 1269, -2938, 10281, 10281, -2938, 1269, -522, 178, -76,
-	-57, 134, -399, 1000, -2501, 14590, 4863, -1787, 818, -346, 120, -52
-};
 
 static int xscaler_probe(struct platform_device *pdev)
 {
@@ -440,7 +399,6 @@ static int xscaler_probe(struct platform_device *pdev)
 	struct xscaler_device *xscaler;
 	struct resource *res;
 	u32 version;
-	unsigned int i;
 	int ret;
 
 	xscaler = devm_kzalloc(&pdev->dev, sizeof(*xscaler), GFP_KERNEL);
@@ -477,48 +435,6 @@ static int xscaler_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, xscaler);
 
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef0) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-#if 0
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-
-	for (i = 0; i < ARRAY_SIZE(xscaler_coef00) / 2; i += 2)
-		xvip_write(&xscaler->xvip, XSCALER_COEF_DATA_IN,
-			   xscaler_coef0[i + 1] << XSCALER_COEF_DATA_IN_SHIFT |
-			   xscaler_coef0[i]);
-#endif
-
 	version = xvip_read(&xscaler->xvip, XVIP_CTRL_VERSION);
 
 	dev_info(&pdev->dev, "device found, version %u.%02x%x\n",
@@ -528,6 +444,29 @@ static int xscaler_probe(struct platform_device *pdev)
 		  XVIP_CTRL_VERSION_MINOR_SHIFT),
 		 ((version & XVIP_CTRL_VERSION_REVISION_MASK) >>
 		  XVIP_CTRL_VERSION_REVISION_SHIFT));
+
+	ret = xscaler_gen_coefs(xscaler, (s16)xscaler->num_hori_taps);
+	if (ret < 0)
+		goto error;
+
+	if (xscaler->separate_hv_coef) {
+		ret = xscaler_gen_coefs(xscaler, (s16)xscaler->num_vert_taps);
+		if (ret < 0)
+			goto error;
+	}
+
+	if (xscaler->separate_yc_coef) {
+		ret = xscaler_gen_coefs(xscaler, (s16)xscaler->num_hori_taps);
+		if (ret < 0)
+			goto error;
+
+		if (xscaler->separate_hv_coef) {
+			ret = xscaler_gen_coefs(xscaler,
+						(s16)xscaler->num_vert_taps);
+			if (ret < 0)
+				goto error;
+		}
+	}
 
 	ret = v4l2_async_register_subdev(subdev);
 	if (ret < 0) {
