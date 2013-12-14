@@ -110,6 +110,14 @@ config CLK_PPC_CORENET
 	  This adds the clock driver support for Freescale PowerPC corenet
 	  platforms using common clock framework.
 
+config COMMON_CLK_CDCE913
+	tristate "Clock driver for TI CDCE913"
+	depends on I2C
+	select REGMAP_I2C
+	select RATIONAL
+	---help---
+	  This driver supports TI CDCE 913 programmable clock generators.
+
 endmenu
 
 source "drivers/clk/mvebu/Kconfig"

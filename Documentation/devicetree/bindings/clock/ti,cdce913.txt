@@ -1,0 +1,32 @@
+Binding for Texas Instruments CDCE(L)913 programmable I2C clock generators.
+
+Reference
+This binding uses the common clock binding[1]. Details about the devices can be
+found in the data sheet[2].
+
+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+[2] CDCE(L)913 Data Sheet: http://www.ti.com/lit/ds/symlink/cdce913.pdf
+
+Required properties:
+ - compatible: One of "ti,cdce913", "ti,cdcel913"
+ - reg: I2C device address.
+ - #clock-cells: From common clock bindings: Shall be 1.
+
+Optional properties:
+ - clock-output-names: From common clock bindings.
+ - clock-frequency: Tuple of requested output frequencies <Y1, Y2, Y3>
+ - ti,s0: State of the S0 config pin. Shall be 0 or 1.
+ - ti,crystal-load-capacity: Value for the internal capacitor. Valid values
+   range from 0 to 20 (inclusive).
+ - ti,input-clock-type: Type of input clock. One of 'xtal, 'VCXO', 'LVCMOS'
+
+Example:
+	cdce913@65 {
+	        #clock-cells = <1>;
+	        clocks = <&xtal>;
+		clock-frequency = <25000000>, <50000000>, <100000000>;
+	        compatible = "ti,cdce913";
+	        reg = <0x65>;
+	        ti,s0 = <1>;
+	        ti,input-clock-type = "xtal";
+	};
