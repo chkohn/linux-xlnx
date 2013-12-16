@@ -129,6 +129,8 @@ EXPORT_SYMBOL_GPL(xvip_of_get_format);
 /**
  * xvip_of_get_formats - Parse a device tree node and return format information
  * @node: the device tree node
+ * @input_format: the returning input format
+ * @output_format: the returning output format
  *
  * Read the xlnx,axi-video-input-format, xlnx,axi-video-output-format,  and
  * xlnx,axi-video-width properties from the device tree @node passed as
