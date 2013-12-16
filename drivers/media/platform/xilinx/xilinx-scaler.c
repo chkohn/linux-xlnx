@@ -55,7 +55,6 @@
  * @pads: media pads
  * @vip_format: Xilinx Video IP format
  * @formats: V4L2 media bus formats at the sink and source pads
- * @num_of_vert_tap: number of vertical taps
  * @num_hori_taps: number of vertical taps
  * @num_vert_taps: number of vertical taps
  * @max_num_phases: maximum number of phases
@@ -126,6 +125,7 @@ static inline fixp_t lanczos(fixp_t x, fixp_t a)
 
 /**
  * xscaler_gen_coefs - generate the coefficient table
+ * @xscaler: scaler device
  * @taps: maximum coefficient tap index
  */
 static inline int xscaler_gen_coefs(struct xscaler_device *xscaler, s16 taps)
