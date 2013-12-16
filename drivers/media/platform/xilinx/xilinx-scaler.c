@@ -311,8 +311,49 @@ static int xscaler_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
+/**
+ * xscaler_init_formats - Initialize formats on all pads
+ * @subdev: scalerper V4L2 subdevice
+ * @fh: V4L2 subdev file handle
+ *
+ * Initialize all pad formats with default values. If fh is not NULL, try
+ * formats are initialized on the file handle. Otherwise active formats are
+ * initialized on the device.
+ */
+static void xscaler_init_formats(struct v4l2_subdev *subdev,
+				 struct v4l2_subdev_fh *fh)
+{
+	struct xscaler_device *xscaler = to_scaler(subdev);
+	struct v4l2_subdev_format format;
+	u32 size;
+
+	memset(&format, 0, sizeof(format));
+
+	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+
+	size = xvip_read(&xscaler->xvip, XSCALER_SOURCE_SIZE);
+	format.format.width = size & XSCALER_SIZE_MASK;
+	format.format.height = (size >> XSCALER_SIZE_SHIFT) & XSCALER_SIZE_MASK;
+	format.format.field = V4L2_FIELD_NONE;
+	format.format.colorspace = V4L2_COLORSPACE_SRGB;
+
+	format.pad = XSCALER_PAD_SINK;
+
+	xscaler_set_format(subdev, fh, &format);
+
+	size = xvip_read(&xscaler->xvip, XSCALER_OUTPUT_SIZE);
+	format.format.width = size & XSCALER_SIZE_MASK;
+	format.format.height = (size >> XSCALER_SIZE_SHIFT) & XSCALER_SIZE_MASK;
+
+	format.pad = XSCALER_PAD_SOURCE;
+
+	xscaler_set_format(subdev, fh, &format);
+}
+
 static int xscaler_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 {
+	xscaler_init_formats(subdev, fh);
+
 	return 0;
 }
 
@@ -424,6 +465,8 @@ static int xscaler_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xscaler);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+
+	xscaler_init_formats(subdev, NULL);
 
 	xscaler->pads[XSCALER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	xscaler->pads[XSCALER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
