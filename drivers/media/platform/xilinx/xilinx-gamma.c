@@ -204,7 +204,7 @@ static int xgamma_set_format(struct v4l2_subdev *subdev,
  * initialized on the device.
  */
 static void xgamma_init_formats(struct v4l2_subdev *subdev,
-			      struct v4l2_subdev_fh *fh)
+				struct v4l2_subdev_fh *fh)
 {
 	struct xgamma_device *xgamma = to_gamma(subdev);
 	struct v4l2_subdev_format format;
