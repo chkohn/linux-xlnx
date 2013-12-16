@@ -273,6 +273,7 @@ dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb \
 			zynq-zc770-xm012.dtb \
 			zynq-zc770-xm013.dtb \
 	zynq-zc706.dtb \
+	zynq-zc706-imageon.dtb \
 	zynq-zed.dtb
 
 targets += dtbs

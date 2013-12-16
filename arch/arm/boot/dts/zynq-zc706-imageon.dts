@@ -1,0 +1,52 @@
+#include "zynq-zc706.dts"
+
+/ {
+	model = "Xilinx Zynq - FMC Imageon";
+
+	aliases {
+		i2c1 = &ps7_i2c_1;
+	};
+
+	xtal: xtal@fmc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+	};
+
+	ps7_axi_interconnect_0: amba@0 {
+		ps7_i2c_1: ps7-i2c@e0005000 {
+			compatible = "xlnx,ps7-i2c-1.00.a";
+			clocks = <&clkc 39>;
+			reg = <0xE0005000 0x1000>;
+			interrupts = <0 48 4>;
+			interrupt-parent = <&ps7_scugic_0>;
+			bus-id = <1>;
+			i2c-clk = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+			i2cswitch@70 {
+			        compatible = "nxp,pca9546";
+			        #address-cells = <1>;
+			        #size-cells = <0>;
+			        reg = <0x70>;
+
+			        i2c@3 {
+			                #address-cells = <1>;
+			                #size-cells = <0>;
+			                reg = <3>;
+
+			                cdce913@65 {
+						#clock-cells = <1>;
+						clocks = <&xtal>;
+						clock-frequency = <25000000>, <50000000>, <100000000>;
+			                        compatible = "ti,cdce913";
+			                        reg = <0x65>;
+						ti,s0 = <1>;
+						ti,input-clock-type = "xtal";
+			                };
+			        };
+			};
+		};
+	};
+};
