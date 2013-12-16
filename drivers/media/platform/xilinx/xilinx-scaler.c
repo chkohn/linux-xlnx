@@ -29,9 +29,9 @@
 #include "xilinx-vip.h"
 
 #define XSCALER_MIN_WIDTH			32
-#define XSCALER_MAX_WIDTH			7680
+#define XSCALER_MAX_WIDTH			4096
 #define XSCALER_MIN_HEIGHT			32
-#define XSCALER_MAX_HEIGHT			7680
+#define XSCALER_MAX_HEIGHT			4096
 
 #define XSCALER_PAD_SINK			0
 #define XSCALER_PAD_SOURCE			1
