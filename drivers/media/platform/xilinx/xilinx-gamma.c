@@ -47,8 +47,6 @@
  * @vip_format: Xilinx Video IP format
  * @format: V4L2 media bus format at the source pad
  * @ctrl_handler: control handler
- * @switch_lut: control to switch to the inactive LUT
- * @update_lut: control to write a new value(0xffff) to the addr(0xffff000)
  */
 struct xgamma_device {
 	struct xvip_device xvip;
@@ -56,8 +54,6 @@ struct xgamma_device {
 	const struct xvip_video_format *vip_format;
 	struct v4l2_mbus_framefmt format;
 	struct v4l2_ctrl_handler ctrl_handler;
-	struct v4l2_ctrl *switch_lut;
-	struct v4l2_ctrl *update_lut;
 };
 
 static inline struct xgamma_device *to_gamma(struct v4l2_subdev *subdev)
@@ -257,15 +253,11 @@ static const struct v4l2_subdev_internal_ops xgamma_internal_ops = {
  * Control Configs
  */
 
-/* TODO */
 static const struct v4l2_ctrl_config xgamma_switch_lut = {
 	.ops = &xgamma_ctrl_ops,
 	.id = V4L2_CID_XILINX_GAMMA_SWITCH_LUT,
 	.name = "Gamma: Switch to the inactive LUT",
-	.type = V4L2_CTRL_TYPE_BOOLEAN,
-	.min = false,
-	.max = true,
-	.step = 1,
+	.type = V4L2_CTRL_TYPE_BUTTON,
 };
 
 static const struct v4l2_ctrl_config xgamma_update_lut = {
@@ -276,6 +268,7 @@ static const struct v4l2_ctrl_config xgamma_update_lut = {
 	.min = 0,
 	.max = 0x7fffffff,
 	.step = 1,
+	.def = 0,
 };
 
 /*
@@ -383,11 +376,9 @@ static int xgamma_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	v4l2_ctrl_handler_init(&xgamma->ctrl_handler, 1);
-	xgamma->switch_lut = v4l2_ctrl_new_custom(&xgamma->ctrl_handler,
-						  &xgamma_switch_lut, NULL);
-	xgamma->update_lut = v4l2_ctrl_new_custom(&xgamma->ctrl_handler,
-						  &xgamma_update_lut, NULL);
+	v4l2_ctrl_handler_init(&xgamma->ctrl_handler, 2);
+	v4l2_ctrl_new_custom(&xgamma->ctrl_handler, &xgamma_switch_lut, NULL);
+	v4l2_ctrl_new_custom(&xgamma->ctrl_handler, &xgamma_update_lut, NULL);
 	if (xgamma->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xgamma->ctrl_handler.error;
