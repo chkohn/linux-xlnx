@@ -286,6 +286,46 @@ struct clk_divider {
 	spinlock_t	*lock;
 };
 
+/**
+ * struct clk_i2c_divider - adjustable divider clock
+ *
+ * @hw:		handle between common and hardware-specific interfaces
+ * @regmap:	Regmap to access device
+ * @reg:	register containing the divider
+ * @shift:	shift to the divider bit field
+ * @width:	width of the divider bit field
+ * @table:	array of value/divider pairs, last entry should have div = 0
+ *
+ * Clock with an adjustable divider affecting its output frequency.  Implements
+ * .recalc_rate, .set_rate and .round_rate
+ *
+ * Flags:
+ * CLK_DIVIDER_ONE_BASED - by default the divisor is the value read from the
+ * 	register plus one.  If CLK_DIVIDER_ONE_BASED is set then the divider is
+ * 	the raw value read from the register, with the value of zero considered
+ *	invalid, unless CLK_DIVIDER_ALLOW_ZERO is set.
+ * CLK_DIVIDER_POWER_OF_TWO - clock divisor is 2 raised to the value read from
+ * 	the hardware register
+ * CLK_DIVIDER_ALLOW_ZERO - Allow zero divisors.  For dividers which have
+ *	CLK_DIVIDER_ONE_BASED set, it is possible to end up with a zero divisor.
+ *	Some hardware implementations gracefully handle this case and allow a
+ *	zero divisor by not modifying their input clock
+ *	(divide by one / bypass).
+ * CLK_DIVIDER_HIWORD_MASK - The divider settings are only in lower 16-bit
+ *   of this register, and mask of divider bits are in higher 16-bit of this
+ *   register.  While setting the divider bits, higher 16-bit should also be
+ *   updated to indicate changing divider bits.
+ */
+struct clk_i2c_divider {
+	struct clk_hw	hw;
+	struct regmap	*regmap;
+	unsigned int	reg;
+	u8		shift;
+	u8		width;
+	u8		flags;
+	const struct clk_div_table	*table;
+};
+
 #define CLK_DIVIDER_ONE_BASED		BIT(0)
 #define CLK_DIVIDER_POWER_OF_TWO	BIT(1)
 #define CLK_DIVIDER_ALLOW_ZERO		BIT(2)
@@ -331,6 +371,37 @@ struct clk_mux {
 	u8		shift;
 	u8		flags;
 	spinlock_t	*lock;
+};
+
+/**
+ * struct clk_i2c_mux - multiplexer clock
+ *
+ * @hw:		handle between common and hardware-specific interfaces
+ * @regmap:	regmap handle for the device
+ * @reg:	register controlling multiplexer
+ * @shift:	shift to multiplexer bit field
+ * @width:	width of mutliplexer bit field
+ * @flags:	hardware-specific flags
+ *
+ * Clock with multiple selectable parents.  Implements .get_parent, .set_parent
+ * and .recalc_rate
+ *
+ * Flags:
+ * CLK_MUX_INDEX_ONE - register index starts at 1, not 0
+ * CLK_MUX_INDEX_BIT - register index is a single bit (power of two)
+ * CLK_MUX_HIWORD_MASK - The mux settings are only in lower 16-bit of this
+ *   register, and mask of mux bits are in higher 16-bit of this register.
+ *   While setting the mux bits, higher 16-bit should also be updated to
+ *   indicate changing mux bits.
+ */
+struct clk_i2c_mux {
+	struct clk_hw	hw;
+	struct regmap	*regmap;
+	unsigned int	reg;
+	u32		*table;
+	u32		mask;
+	u8		shift;
+	u8		flags;
 };
 
 #define CLK_MUX_INDEX_ONE		BIT(0)
@@ -520,6 +591,30 @@ static inline void clk_writel(u32 val, u32 __iomem *reg)
 {
 	writel(val, reg);
 }
+
+#ifdef CONFIG_COMMON_CLK_I2C
+#include <linux/regmap.h>
+u8 clk_i2c_readb(struct regmap *regmap, unsigned int reg);
+void clk_i2c_writeb(u8 val, struct regmap *regmap, unsigned int reg);
+
+struct clk *clk_i2c_register_mux(struct device *dev, const char *name,
+		const char **parent_names, u8 num_parents, unsigned long flags,
+		struct regmap *regmap, unsigned int reg, u8 shift, u8 width,
+		u8 clk_mux_flags);
+
+struct clk *clk_i2c_register_mux_table(struct device *dev, const char *name,
+		const char **parent_names, u8 num_parents, unsigned long flags,
+		struct regmap *regmap, unsigned int reg, u8 shift, u32 mask,
+		u8 clk_mux_flags, u32 *table);
+struct clk *clk_i2c_register_divider(struct device *dev, const char *name,       
+                const char *parent_name, unsigned long flags,                    
+                struct regmap *regmap, unsigned int reg, u8 shift, u8 width,     
+                u8 clk_divider_flags);
+struct clk *clk_i2c_register_divider_table(struct device *dev, const char *name, 
+                const char *parent_name, unsigned long flags,                    
+                struct regmap *regmap, unsigned int reg, u8 shift, u8 width,      
+                u8 clk_divider_flags, const struct clk_div_table *table);
+#endif /* CONFIG_COMMON_CLK_I2C */
 
 #endif /* CONFIG_COMMON_CLK */
 #endif /* CLK_PROVIDER_H */
