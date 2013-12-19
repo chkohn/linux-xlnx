@@ -27,14 +27,6 @@
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
-#define XCFA_MIN_WIDTH				32
-#define XCFA_MAX_WIDTH				7680
-#define XCFA_MIN_HEIGHT				32
-#define XCFA_MAX_HEIGHT				7680
-
-#define XCFA_PAD_SINK				0
-#define XCFA_PAD_SOURCE				1
-
 #define XCFA_BAYER_PHASE			0x100
 
 /**
@@ -65,22 +57,17 @@ static inline struct xcfa_device *to_cfa(struct v4l2_subdev *subdev)
 static int xcfa_s_stream(struct v4l2_subdev *subdev, int enable)
 {
 	struct xcfa_device *xcfa = to_cfa(subdev);
-	const u32 width = xcfa->formats[XCFA_PAD_SINK].width;
-	const u32 height = xcfa->formats[XCFA_PAD_SINK].height;
+	const u32 width = xcfa->formats[XVIP_PAD_SINK].width;
+	const u32 height = xcfa->formats[XVIP_PAD_SINK].height;
 
 	if (!enable) {
-		xvip_write(&xcfa->xvip, XVIP_CTRL_CONTROL,
-			   XVIP_CTRL_CONTROL_SW_RESET);
-		xvip_write(&xcfa->xvip, XVIP_CTRL_CONTROL, 0);
+		xvip_stop(&xcfa->xvip);
 		return 0;
 	}
 
-	xvip_write(&xcfa->xvip, XVIP_ACTIVE_SIZE,
-		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+	xvip_set_size(&xcfa->xvip, width, height);
 
-	xvip_write(&xcfa->xvip, XVIP_CTRL_CONTROL, XVIP_CTRL_CONTROL_SW_ENABLE |
-		   XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_start(&xcfa->xvip);
 
 	return 0;
 }
@@ -89,73 +76,14 @@ static int xcfa_s_stream(struct v4l2_subdev *subdev, int enable)
  * V4L2 Subdevice Pad Operations
  */
 
-static int xcfa_enum_mbus_code(struct v4l2_subdev *subdev,
-			       struct v4l2_subdev_fh *fh,
-			       struct v4l2_subdev_mbus_code_enum *code)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	if (code->index)
-		return -EINVAL;
-
-	format = v4l2_subdev_get_try_format(fh, code->pad);
-
-	code->code = format->code;
-
-	return 0;
-}
-
-static int xcfa_enum_frame_size(struct v4l2_subdev *subdev,
-				struct v4l2_subdev_fh *fh,
-				struct v4l2_subdev_frame_size_enum *fse)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	format = v4l2_subdev_get_try_format(fh, fse->pad);
-
-	if (fse->index || fse->code != format->code)
-		return -EINVAL;
-
-	if (fse->pad == XCFA_PAD_SINK) {
-		fse->min_width = XCFA_MIN_WIDTH;
-		fse->max_width = XCFA_MAX_WIDTH;
-		fse->min_height = XCFA_MIN_HEIGHT;
-		fse->max_height = XCFA_MAX_HEIGHT;
-	} else {
-		/* The size on the source pad is fixed and always identical to
-		 * the size on the sink pad.
-		 */
-		fse->min_width = format->width;
-		fse->max_width = format->width;
-		fse->min_height = format->height;
-		fse->max_height = format->height;
-	}
-
-	return 0;
-}
-
-static struct v4l2_mbus_framefmt *
-__xcfa_get_pad_format(struct xcfa_device *xcfa,
-		      struct v4l2_subdev_fh *fh,
-		      unsigned int pad, u32 which)
-{
-	switch (which) {
-	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
-	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &xcfa->formats[pad];
-	default:
-		return NULL;
-	}
-}
-
 static int xcfa_get_format(struct v4l2_subdev *subdev,
 			   struct v4l2_subdev_fh *fh,
 			   struct v4l2_subdev_format *fmt)
 {
 	struct xcfa_device *xcfa = to_cfa(subdev);
 
-	fmt->format = *__xcfa_get_pad_format(xcfa, fh, fmt->pad, fmt->which);
+	fmt->format = *xvip_get_pad_format(fh, &xcfa->formats[fmt->pad],
+					   fmt->pad, fmt->which);
 
 	return 0;
 }
@@ -167,26 +95,23 @@ static int xcfa_set_format(struct v4l2_subdev *subdev,
 	struct xcfa_device *xcfa = to_cfa(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xcfa_get_pad_format(xcfa, fh, fmt->pad, fmt->which);
+	__format = xvip_get_pad_format(fh, &xcfa->formats[fmt->pad], fmt->pad,
+				       fmt->which);
 
-	if (fmt->pad == XCFA_PAD_SOURCE) {
+	if (fmt->pad == XVIP_PAD_SOURCE) {
 		fmt->format = *__format;
 		return 0;
 	}
 
-	__format->code = xcfa->vip_formats[XCFA_PAD_SINK]->code;
-	__format->width = clamp_t(unsigned int, fmt->format.width,
-				  XCFA_MIN_WIDTH, XCFA_MAX_WIDTH);
-	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XCFA_MIN_HEIGHT, XCFA_MAX_HEIGHT);
+	xvip_set_format(__format, xcfa->vip_formats[XVIP_PAD_SINK], fmt);
 
 	fmt->format = *__format;
 
 	/* Propagate the format to the source pad */
-	__format = __xcfa_get_pad_format(xcfa, fh, XCFA_PAD_SOURCE, fmt->which);
-	__format->code = xcfa->vip_formats[XCFA_PAD_SOURCE]->code;
-	__format->width = fmt->format.width;
-	__format->height = fmt->format.height;
+	__format = xvip_get_pad_format(fh, &xcfa->formats[XVIP_PAD_SOURCE],
+				       XVIP_PAD_SOURCE, fmt->which);
+
+	xvip_set_format(__format, xcfa->vip_formats[XVIP_PAD_SOURCE], fmt);
 
 	return 0;
 }
@@ -195,44 +120,9 @@ static int xcfa_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-/**
- * xcfa_init_formats - Initialize formats on all pads
- * @subdev: cfaper V4L2 subdevice
- * @fh: V4L2 subdev file handle
- *
- * Initialize all pad formats with default values. If fh is not NULL, try
- * formats are initialized on the file handle. Otherwise active formats are
- * initialized on the device.
- */
-static void xcfa_init_formats(struct v4l2_subdev *subdev,
-			      struct v4l2_subdev_fh *fh)
-{
-	struct xcfa_device *xcfa = to_cfa(subdev);
-	struct v4l2_subdev_format format;
-
-	memset(&format, 0, sizeof(format));
-
-	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = xvip_read(&xcfa->xvip, XVIP_ACTIVE_SIZE) &
-			      XVIP_ACTIVE_HSIZE_MASK;
-	format.format.height = (xvip_read(&xcfa->xvip, XVIP_ACTIVE_SIZE) &
-				XVIP_ACTIVE_VSIZE_MASK) >>
-			       XVIP_ACTIVE_VSIZE_SHIFT;
-	format.format.field = V4L2_FIELD_NONE;
-	format.format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	format.pad = XCFA_PAD_SINK;
-
-	xcfa_set_format(subdev, fh, &format);
-
-	format.pad = XCFA_PAD_SOURCE;
-
-	xcfa_set_format(subdev, fh, &format);
-}
-
 static int xcfa_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 {
-	xcfa_init_formats(subdev, fh);
+	xvip_init_formats(subdev, NULL);
 
 	return 0;
 }
@@ -276,8 +166,8 @@ static struct v4l2_subdev_video_ops xcfa_video_ops = {
 };
 
 static struct v4l2_subdev_pad_ops xcfa_pad_ops = {
-	.enum_mbus_code		= xcfa_enum_mbus_code,
-	.enum_frame_size	= xcfa_enum_frame_size,
+	.enum_mbus_code		= xvip_enum_mbus_code,
+	.enum_frame_size	= xvip_enum_frame_size,
 	.get_fmt		= xcfa_get_format,
 	.set_fmt		= xcfa_set_format,
 };
@@ -364,8 +254,8 @@ static int xcfa_parse_of(struct xcfa_device *xcfa)
 	struct device_node *node = xcfa->xvip.dev->of_node;
 	int ret;
 
-	ret = xvip_of_get_formats(node, &xcfa->vip_formats[XCFA_PAD_SINK],
-				  &xcfa->vip_formats[XCFA_PAD_SOURCE]);
+	ret = xvip_of_get_formats(node, &xcfa->vip_formats[XVIP_PAD_SINK],
+				  &xcfa->vip_formats[XVIP_PAD_SOURCE]);
 	if (ret < 0)
 		dev_err(xcfa->xvip.dev, "invalid format in DT");
 
@@ -407,10 +297,10 @@ static int xcfa_probe(struct platform_device *pdev)
 	v4l2_set_subdevdata(subdev, xcfa);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
-	xcfa_init_formats(subdev, NULL);
+	xvip_init_formats(subdev, NULL);
 
-	xcfa->pads[XCFA_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-	xcfa->pads[XCFA_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+	xcfa->pads[XVIP_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
+	xcfa->pads[XVIP_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xcfa_media_ops;
 	ret = media_entity_init(&subdev->entity, 2, xcfa->pads, 0);
 	if (ret < 0)
