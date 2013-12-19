@@ -131,9 +131,21 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 
 	__format = xvip_get_pad_format(fh, &xtpg->format, fmt->pad, fmt->which);
 
+	if (fmt->pad == XTPG_PAD_SOURCE && xtpg->passthrough) {
+		fmt->format = *__format;
+		return 0;
+	}
+
 	xvip_set_format(__format, xtpg->vip_format, fmt);
 
 	fmt->format = *__format;
+
+	/* Propagate the format to the source pad */
+	if (xtpg->passthrough) {
+		__format = xvip_get_pad_format(fh, &xtpg->format,
+					       XTPG_PAD_SOURCE, fmt->which);
+		*__format = fmt->format;
+	}
 
 	return 0;
 }
