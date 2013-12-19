@@ -140,4 +140,12 @@ static inline void xvip_start(struct xvip_device *xvip)
 		   XVIP_CTRL_CONTROL_REG_UPDATE);
 }
 
+static inline void xvip_stop(struct xvip_device *xvip)
+{
+	u32 reg;
+
+	reg = xvip_read(xvip, XVIP_CTRL_CONTROL);
+	xvip_write(xvip, XVIP_CTRL_CONTROL, reg & ~XVIP_CTRL_CONTROL_SW_ENABLE);
+}
+
 #endif /* __XILINX_VIP_H__ */
