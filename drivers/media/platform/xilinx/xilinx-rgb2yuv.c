@@ -27,14 +27,6 @@
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
-#define XRGB2YUV_MIN_WIDTH				32
-#define XRGB2YUV_MAX_WIDTH				7680
-#define XRGB2YUV_MIN_HEIGHT				32
-#define XRGB2YUV_MAX_HEIGHT				7680
-
-#define XRGB2YUV_PAD_SINK				0
-#define XRGB2YUV_PAD_SOURCE				1
-
 #define XRGB2YUV_YMAX					0x100
 #define XRGB2YUV_YMIN					0x104
 #define XRGB2YUV_CBMAX					0x108
@@ -77,22 +69,17 @@ static inline struct xrgb2yuv_device *to_rgb2yuv(struct v4l2_subdev *subdev)
 static int xrgb2yuv_s_stream(struct v4l2_subdev *subdev, int enable)
 {
 	struct xrgb2yuv_device *xrgb2yuv = to_rgb2yuv(subdev);
-	const u32 width = xrgb2yuv->formats[XRGB2YUV_PAD_SINK].width;
-	const u32 height = xrgb2yuv->formats[XRGB2YUV_PAD_SINK].height;
+	const u32 width = xrgb2yuv->formats[XVIP_PAD_SINK].width;
+	const u32 height = xrgb2yuv->formats[XVIP_PAD_SINK].height;
 
 	if (!enable) {
-		xvip_write(&xrgb2yuv->xvip, XVIP_CTRL_CONTROL,
-			   XVIP_CTRL_CONTROL_SW_RESET);
-		xvip_write(&xrgb2yuv->xvip, XVIP_CTRL_CONTROL, 0);
+		xvip_stop(&xrgb2yuv->xvip);
 		return 0;
 	}
 
-	xvip_write(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE,
-		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+	xvip_set_size(&xrgb2yuv->xvip, width, height);
 
-	xvip_write(&xrgb2yuv->xvip, XVIP_CTRL_CONTROL,
-		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_start(&xrgb2yuv->xvip);
 
 	return 0;
 }
@@ -101,74 +88,14 @@ static int xrgb2yuv_s_stream(struct v4l2_subdev *subdev, int enable)
  * V4L2 Subdevice Pad Operations
  */
 
-static int xrgb2yuv_enum_mbus_code(struct v4l2_subdev *subdev,
-				   struct v4l2_subdev_fh *fh,
-				   struct v4l2_subdev_mbus_code_enum *code)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	if (code->index)
-		return -EINVAL;
-
-	format = v4l2_subdev_get_try_format(fh, code->pad);
-
-	code->code = format->code;
-
-	return 0;
-}
-
-static int xrgb2yuv_enum_frame_size(struct v4l2_subdev *subdev,
-				    struct v4l2_subdev_fh *fh,
-				    struct v4l2_subdev_frame_size_enum *fse)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	format = v4l2_subdev_get_try_format(fh, fse->pad);
-
-	if (fse->index || fse->code != format->code)
-		return -EINVAL;
-
-	if (fse->pad == XRGB2YUV_PAD_SINK) {
-		fse->min_width = XRGB2YUV_MIN_WIDTH;
-		fse->max_width = XRGB2YUV_MAX_WIDTH;
-		fse->min_height = XRGB2YUV_MIN_HEIGHT;
-		fse->max_height = XRGB2YUV_MAX_HEIGHT;
-	} else {
-		/* The size on the source pad is fixed and always identical to
-		 * the size on the sink pad.
-		 */
-		fse->min_width = format->width;
-		fse->max_width = format->width;
-		fse->min_height = format->height;
-		fse->max_height = format->height;
-	}
-
-	return 0;
-}
-
-static struct v4l2_mbus_framefmt *
-__xrgb2yuv_get_pad_format(struct xrgb2yuv_device *xrgb2yuv,
-			  struct v4l2_subdev_fh *fh,
-			  unsigned int pad, u32 which)
-{
-	switch (which) {
-	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
-	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &xrgb2yuv->formats[pad];
-	default:
-		return NULL;
-	}
-}
-
 static int xrgb2yuv_get_format(struct v4l2_subdev *subdev,
 			       struct v4l2_subdev_fh *fh,
 			       struct v4l2_subdev_format *fmt)
 {
 	struct xrgb2yuv_device *xrgb2yuv = to_rgb2yuv(subdev);
 
-	fmt->format = *__xrgb2yuv_get_pad_format(xrgb2yuv, fh, fmt->pad,
-						 fmt->which);
+	fmt->format = *xvip_get_pad_format(fh, &xrgb2yuv->formats[fmt->pad],
+					   fmt->pad, fmt->which);
 
 	return 0;
 }
@@ -180,75 +107,34 @@ static int xrgb2yuv_set_format(struct v4l2_subdev *subdev,
 	struct xrgb2yuv_device *xrgb2yuv = to_rgb2yuv(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xrgb2yuv_get_pad_format(xrgb2yuv, fh, fmt->pad,
-					     fmt->which);
+	__format = xvip_get_pad_format(fh, &xrgb2yuv->formats[fmt->pad],
+				       fmt->pad, fmt->which);
 
-	if (fmt->pad == XRGB2YUV_PAD_SOURCE) {
+	if (fmt->pad == XVIP_PAD_SOURCE) {
 		fmt->format = *__format;
 		return 0;
 	}
 
-	__format->code = V4L2_MBUS_FMT_RBG888_1X24;
-	__format->width = clamp_t(unsigned int, fmt->format.width,
-				  XRGB2YUV_MIN_WIDTH, XRGB2YUV_MAX_WIDTH);
-	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XRGB2YUV_MIN_HEIGHT, XRGB2YUV_MAX_HEIGHT);
+	xvip_set_format(__format, xrgb2yuv->vip_formats[XVIP_PAD_SINK], fmt);
 
 	fmt->format = *__format;
 
 	/* Propagate the format to the source pad. */
-	__format = __xrgb2yuv_get_pad_format(xrgb2yuv, fh, XRGB2YUV_PAD_SOURCE,
-					     fmt->which);
-	__format->code = V4L2_MBUS_FMT_VUY888_1X24;
-	__format->width = fmt->format.width;
-	__format->height = fmt->format.height;
+	__format = xvip_get_pad_format(fh, &xrgb2yuv->formats[XVIP_PAD_SOURCE],
+				       XVIP_PAD_SOURCE, fmt->which);
+
+	xvip_set_format(__format, xrgb2yuv->vip_formats[XVIP_PAD_SOURCE], fmt);
 
 	return 0;
-
 }
 
 /*
  * V4L2 Subdevice Operations
  */
 
-/**
- * xrgb2yuv_init_formats - Initialize formats on all pads
- * @subdev: rgb2yuvper V4L2 subdevice
- * @fh: V4L2 subdev file handle
- *
- * Initialize all pad formats with default values. If fh is not NULL, try
- * formats are initialized on the file handle. Otherwise active formats are
- * initialized on the device.
- */
-static void xrgb2yuv_init_formats(struct v4l2_subdev *subdev,
-				  struct v4l2_subdev_fh *fh)
-{
-	struct xrgb2yuv_device *xrgb2yuv = to_rgb2yuv(subdev);
-	struct v4l2_subdev_format format;
-
-	memset(&format, 0, sizeof(format));
-
-	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = xvip_read(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE) &
-			XVIP_ACTIVE_HSIZE_MASK;
-	format.format.height = (xvip_read(&xrgb2yuv->xvip, XVIP_ACTIVE_SIZE) &
-			 XVIP_ACTIVE_VSIZE_MASK) >>
-			 XVIP_ACTIVE_VSIZE_SHIFT;
-	format.format.field = V4L2_FIELD_NONE;
-	format.format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	format.format.code = V4L2_MBUS_FMT_RBG888_1X24;
-
-	xrgb2yuv_set_format(subdev, fh, &format);
-
-	format.pad = XRGB2YUV_PAD_SOURCE;
-
-	xrgb2yuv_set_format(subdev, fh, &format);
-}
-
 static int xrgb2yuv_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 {
-	xrgb2yuv_init_formats(subdev, fh);
+	xvip_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -328,8 +214,8 @@ static struct v4l2_subdev_video_ops xrgb2yuv_video_ops = {
 };
 
 static struct v4l2_subdev_pad_ops xrgb2yuv_pad_ops = {
-	.enum_mbus_code		= xrgb2yuv_enum_mbus_code,
-	.enum_frame_size	= xrgb2yuv_enum_frame_size,
+	.enum_mbus_code		= xvip_enum_mbus_code,
+	.enum_frame_size	= xvip_enum_frame_size,
 	.get_fmt		= xrgb2yuv_get_format,
 	.set_fmt		= xrgb2yuv_set_format,
 };
@@ -529,8 +415,8 @@ static int xrgb2yuv_parse_of(struct xrgb2yuv_device *xrgb2yuv)
 	int ret;
 
 	ret = xvip_of_get_formats(node,
-				  &xrgb2yuv->vip_formats[XRGB2YUV_PAD_SINK],
-				  &xrgb2yuv->vip_formats[XRGB2YUV_PAD_SOURCE]);
+				  &xrgb2yuv->vip_formats[XVIP_PAD_SINK],
+				  &xrgb2yuv->vip_formats[XVIP_PAD_SOURCE]);
 	if (ret < 0)
 		dev_err(xrgb2yuv->xvip.dev, "invalid format in DT");
 
@@ -572,10 +458,10 @@ static int xrgb2yuv_probe(struct platform_device *pdev)
 	v4l2_set_subdevdata(subdev, xrgb2yuv);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
-	xrgb2yuv_init_formats(subdev, NULL);
+	xvip_init_formats(subdev, NULL);
 
-	xrgb2yuv->pads[XRGB2YUV_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-	xrgb2yuv->pads[XRGB2YUV_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+	xrgb2yuv->pads[XVIP_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
+	xrgb2yuv->pads[XVIP_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xrgb2yuv_media_ops;
 	ret = media_entity_init(&subdev->entity, 2, xrgb2yuv->pads, 0);
 	if (ret < 0)
