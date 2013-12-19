@@ -16,6 +16,14 @@
 #include <linux/io.h>
 #include <media/v4l2-subdev.h>
 
+#define XVIP_MIN_WIDTH			32
+#define XVIP_MAX_WIDTH			7680
+#define XVIP_MIN_HEIGHT			32
+#define XVIP_MAX_HEIGHT			7680
+
+#define XVIP_PAD_SINK			0
+#define XVIP_PAD_SOURCE			1
+
 /* Xilinx Video IP Control Registers */
 #define XVIP_CTRL_CONTROL			0x0000
 #define XVIP_CTRL_CONTROL_SW_ENABLE		(1 << 0)
