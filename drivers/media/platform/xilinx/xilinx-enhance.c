@@ -27,14 +27,6 @@
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
-#define XENHANCE_MIN_WIDTH				32
-#define XENHANCE_MAX_WIDTH				7680
-#define XENHANCE_MIN_HEIGHT				32
-#define XENHANCE_MAX_HEIGHT				7680
-
-#define XENHANCE_PAD_SINK				0
-#define XENHANCE_PAD_SOURCE				1
-
 #define XENHANCE_NOISE_THRESHOLD			0x100
 #define XENHANCE_ENHANCE_STRENGTH			0x104
 #define XENHANCE_HALO_SUPPRESS				0x108
@@ -71,18 +63,13 @@ static int xenhance_s_stream(struct v4l2_subdev *subdev, int enable)
 	const u32 height = xenhance->format.height;
 
 	if (!enable) {
-		xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL,
-			   XVIP_CTRL_CONTROL_SW_RESET);
-		xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL, 0);
+		xvip_stop(&xenhance->xvip);
 		return 0;
 	}
 
-	xvip_write(&xenhance->xvip, XVIP_ACTIVE_SIZE,
-		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+	xvip_set_size(&xenhance->xvip, width, height);
 
-	xvip_write(&xenhance->xvip, XVIP_CTRL_CONTROL,
-		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_start(&xenhance->xvip);
 
 	return 0;
 }
@@ -91,72 +78,14 @@ static int xenhance_s_stream(struct v4l2_subdev *subdev, int enable)
  * V4L2 Subdevice Pad Operations
  */
 
-static int xenhance_enum_mbus_code(struct v4l2_subdev *subdev,
-				   struct v4l2_subdev_fh *fh,
-				   struct v4l2_subdev_mbus_code_enum *code)
-{
-	struct xenhance_device *xenhance = to_enhance(subdev);
-
-	if (code->index)
-		return -EINVAL;
-
-	code->code = xenhance->vip_format->code;
-
-	return 0;
-}
-
-static int xenhance_enum_frame_size(struct v4l2_subdev *subdev,
-				    struct v4l2_subdev_fh *fh,
-				    struct v4l2_subdev_frame_size_enum *fse)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	format = v4l2_subdev_get_try_format(fh, fse->pad);
-
-	if (fse->index || fse->code != format->code)
-		return -EINVAL;
-
-	if (fse->pad == XENHANCE_PAD_SINK) {
-		fse->min_width = XENHANCE_MIN_WIDTH;
-		fse->max_width = XENHANCE_MAX_WIDTH;
-		fse->min_height = XENHANCE_MIN_HEIGHT;
-		fse->max_height = XENHANCE_MAX_HEIGHT;
-	} else {
-		/* The size on the source pad is fixed and always identical to
-		 * the size on the sink pad.
-		 */
-		fse->min_width = format->width;
-		fse->max_width = format->width;
-		fse->min_height = format->height;
-		fse->max_height = format->height;
-	}
-
-	return 0;
-}
-
-static struct v4l2_mbus_framefmt *
-__xenhance_get_pad_format(struct xenhance_device *xenhance,
-			  struct v4l2_subdev_fh *fh,
-			  unsigned int pad, u32 which)
-{
-	switch (which) {
-	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
-	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &xenhance->format;
-	default:
-		return NULL;
-	}
-}
-
 static int xenhance_get_format(struct v4l2_subdev *subdev,
 			       struct v4l2_subdev_fh *fh,
 			       struct v4l2_subdev_format *fmt)
 {
 	struct xenhance_device *xenhance = to_enhance(subdev);
 
-	fmt->format = *__xenhance_get_pad_format(xenhance, fh, fmt->pad,
-						 fmt->which);
+	fmt->format = *xvip_get_pad_format(fh, &xenhance->format, fmt->pad,
+					   fmt->which);
 
 	return 0;
 }
@@ -168,25 +97,22 @@ static int xenhance_set_format(struct v4l2_subdev *subdev,
 	struct xenhance_device *xenhance = to_enhance(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xenhance_get_pad_format(xenhance, fh, fmt->pad,
-					     fmt->which);
+	__format = xvip_get_pad_format(fh, &xenhance->format, fmt->pad,
+				       fmt->which);
 
-	if (fmt->pad == XENHANCE_PAD_SOURCE) {
+	if (fmt->pad == XVIP_PAD_SOURCE) {
 		fmt->format = *__format;
 		return 0;
 	}
 
-	__format->code = xenhance->vip_format->code;
-	__format->width = clamp_t(unsigned int, fmt->format.width,
-				  XENHANCE_MIN_WIDTH, XENHANCE_MAX_WIDTH);
-	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XENHANCE_MIN_HEIGHT, XENHANCE_MAX_HEIGHT);
+	xvip_set_format(__format, xenhance->vip_format, fmt);
 
 	fmt->format = *__format;
 
 	/* Propagate the format to the source pad. */
-	__format = __xenhance_get_pad_format(xenhance, fh, XENHANCE_PAD_SOURCE,
-					     fmt->which);
+	__format = xvip_get_pad_format(fh, &xenhance->format, XVIP_PAD_SOURCE,
+				       fmt->which);
+
 	*__format = fmt->format;
 
 	return 0;
@@ -196,44 +122,9 @@ static int xenhance_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-/**
- * xenhance_init_formats - Initialize formats on all pads
- * @subdev: enhanceper V4L2 subdevice
- * @fh: V4L2 subdev file handle
- *
- * Initialize all pad formats with default values. If fh is not NULL, try
- * formats are initialized on the file handle. Otherwise active formats are
- * initialized on the device.
- */
-static void xenhance_init_formats(struct v4l2_subdev *subdev,
-			      struct v4l2_subdev_fh *fh)
-{
-	struct xenhance_device *xenhance = to_enhance(subdev);
-	struct v4l2_subdev_format format;
-
-	memset(&format, 0, sizeof(format));
-
-	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
-			      XVIP_ACTIVE_HSIZE_MASK;
-	format.format.height = (xvip_read(&xenhance->xvip, XVIP_ACTIVE_SIZE) &
-				XVIP_ACTIVE_VSIZE_MASK) >>
-			       XVIP_ACTIVE_VSIZE_SHIFT;
-	format.format.field = V4L2_FIELD_NONE;
-	format.format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	format.pad = XENHANCE_PAD_SINK;
-
-	xenhance_set_format(subdev, fh, &format);
-
-	format.pad = XENHANCE_PAD_SOURCE;
-
-	xenhance_set_format(subdev, fh, &format);
-}
-
 static int xenhance_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 {
-	xenhance_init_formats(subdev, fh);
+	xvip_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -285,8 +176,8 @@ static struct v4l2_subdev_video_ops xenhance_video_ops = {
 };
 
 static struct v4l2_subdev_pad_ops xenhance_pad_ops = {
-	.enum_mbus_code		= xenhance_enum_mbus_code,
-	.enum_frame_size	= xenhance_enum_frame_size,
+	.enum_mbus_code		= xvip_enum_mbus_code,
+	.enum_frame_size	= xvip_enum_frame_size,
 	.get_fmt		= xenhance_get_format,
 	.set_fmt		= xenhance_set_format,
 };
@@ -440,10 +331,10 @@ static int xenhance_probe(struct platform_device *pdev)
 	v4l2_set_subdevdata(subdev, xenhance);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
-	xenhance_init_formats(subdev, NULL);
+	xvip_init_formats(subdev, NULL);
 
-	xenhance->pads[XENHANCE_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-	xenhance->pads[XENHANCE_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+	xenhance->pads[XVIP_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
+	xenhance->pads[XVIP_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xenhance_media_ops;
 	ret = media_entity_init(&subdev->entity, 2, xenhance->pads, 0);
 	if (ret < 0)
