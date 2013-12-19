@@ -165,3 +165,46 @@ int xvip_enum_mbus_code(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(xvip_enum_mbus_code);
+
+/**
+ * xvip_enum_frame_size - Enumerate the media bus frame size
+ * @subdev: V4L2 subdevice
+ * @fh: V4L2 subdevice file handle
+ * @fse: returning media bus frame size
+ *
+ * Enumerate the media bus frame size of the subdevice, such as min/max
+ * width and height. This function and assumes that the format on the given
+ * pad is fixed, and the size of source pad is identical to the size
+ * on the sink pad.
+ *
+ * Return: 0 if the media bus frame size is found, or -EINVAL
+ * if the index or the code is not valid.
+ */
+int xvip_enum_frame_size(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh,
+			 struct v4l2_subdev_frame_size_enum *fse)
+{
+	struct v4l2_mbus_framefmt *format;
+
+	format = v4l2_subdev_get_try_format(fh, fse->pad);
+
+	if (fse->index || fse->code != format->code)
+		return -EINVAL;
+
+	if (fse->pad == XVIP_PAD_SINK) {
+		fse->min_width = XVIP_MIN_WIDTH;
+		fse->max_width = XVIP_MAX_WIDTH;
+		fse->min_height = XVIP_MIN_HEIGHT;
+		fse->max_height = XVIP_MAX_HEIGHT;
+	} else {
+		/* The size on the source pad is fixed and always identical to
+		 * the size on the sink pad.
+		 */
+		fse->min_width = format->width;
+		fse->max_width = format->width;
+		fse->min_height = format->height;
+		fse->max_height = format->height;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(xvip_enum_frame_size);
