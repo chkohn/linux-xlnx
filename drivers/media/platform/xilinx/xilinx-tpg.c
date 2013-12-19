@@ -140,9 +140,7 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 		return 0;
 	}
 
-	xvip_write(&xtpg->xvip, XVIP_ACTIVE_SIZE,
-		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+	xvip_set_frame_size(&xtpg->xvip, width, height);
 
 	xvip_start(&xtpg->xvip);
 
