@@ -140,11 +140,7 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 
 	__format = xvip_get_pad_format(fh, &xtpg->format, fmt->pad, fmt->which);
 
-	__format->code = xtpg->vip_format->code;
-	__format->width = clamp_t(unsigned int, fmt->format.width,
-				  XTPG_MIN_WIDTH, XTPG_MAX_WIDTH);
-	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XTPG_MIN_HEIGHT, XTPG_MAX_HEIGHT);
+	xvip_set_format(__format, xtpg->vip_format, fmt);
 
 	fmt->format = *__format;
 
