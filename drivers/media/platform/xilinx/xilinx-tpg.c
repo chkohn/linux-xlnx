@@ -119,27 +119,14 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
  * V4L2 Subdevice Pad Operations
  */
 
-static struct v4l2_mbus_framefmt *
-__xtpg_get_pad_format(struct xtpg_device *xtpg, struct v4l2_subdev_fh *fh,
-		      unsigned int pad, u32 which)
-{
-	switch (which) {
-	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
-	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &xtpg->format;
-	default:
-		return NULL;
-	}
-}
-
 static int xtpg_get_format(struct v4l2_subdev *subdev,
 			   struct v4l2_subdev_fh *fh,
 			   struct v4l2_subdev_format *fmt)
 {
 	struct xtpg_device *xtpg = to_tpg(subdev);
 
-	fmt->format = *__xtpg_get_pad_format(xtpg, fh, fmt->pad, fmt->which);
+	fmt->format = *xvip_get_pad_format(fh, &xtpg->format, fmt->pad,
+					   fmt->which);
 
 	return 0;
 }
@@ -151,7 +138,7 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 	struct xtpg_device *xtpg = to_tpg(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xtpg_get_pad_format(xtpg, fh, fmt->pad, fmt->which);
+	__format = xvip_get_pad_format(fh, &xtpg->format, fmt->pad, fmt->which);
 
 	__format->code = xtpg->vip_format->code;
 	__format->width = clamp_t(unsigned int, fmt->format.width,
