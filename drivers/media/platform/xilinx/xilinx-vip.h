@@ -110,6 +110,8 @@ const struct xvip_video_format *xvip_of_get_format(struct device_node *node);
 int xvip_of_get_formats(struct device_node *node,
 			const struct xvip_video_format **input_format,
 			const struct xvip_video_format **output_format);
+int xvip_enum_mbus_code(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh,
+			struct v4l2_subdev_mbus_code_enum *code);
 
 static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
 {

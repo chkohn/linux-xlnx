@@ -172,3 +172,31 @@ int xvip_of_get_formats(struct device_node *node,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(xvip_of_get_formats);
+
+/**
+ * xvip_enum_mbus_code - Enumerate the media format code
+ * @subdev: V4L2 subdevice
+ * @fh: V4L2 subdevice file handle
+ * @code: returning media bus code
+ *
+ * Enumerate the media bus code of the subdevice. Return the corresponding
+ * pad format code.
+ *
+ * Return: 0 if the media bus code is found, or -EINVAL if the format index
+ * is not valid.
+ */
+int xvip_enum_mbus_code(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh,
+			struct v4l2_subdev_mbus_code_enum *code)
+{
+	struct v4l2_mbus_framefmt *format;
+
+	if (code->index)
+		return -EINVAL;
+
+	format = v4l2_subdev_get_try_format(fh, code->pad);
+
+	code->code = format->code;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(xvip_enum_mbus_code);
