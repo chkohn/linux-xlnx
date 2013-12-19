@@ -27,14 +27,6 @@
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
-#define XCRESAMPLE_MIN_WIDTH			32
-#define XCRESAMPLE_MAX_WIDTH			7680
-#define XCRESAMPLE_MIN_HEIGHT			32
-#define XCRESAMPLE_MAX_HEIGHT			7680
-
-#define XCRESAMPLE_PAD_SINK			0
-#define XCRESAMPLE_PAD_SOURCE			1
-
 #define XCRESAMPLE_ENCODING			0x100
 #define XCRESAMPLE_FIELD_SHIFT			7
 #define XCRESAMPLE_FIELD_MASK			(1 << XCRESAMPLE_FIELD_SHIFT)
@@ -69,22 +61,17 @@ static inline struct xcresample_device *to_cresample(struct v4l2_subdev *subdev)
 static int xcresample_s_stream(struct v4l2_subdev *subdev, int enable)
 {
 	struct xcresample_device *xcresample = to_cresample(subdev);
-	const u32 width = xcresample->formats[XCRESAMPLE_PAD_SINK].width;
-	const u32 height = xcresample->formats[XCRESAMPLE_PAD_SINK].height;
+	const u32 width = xcresample->formats[XVIP_PAD_SINK].width;
+	const u32 height = xcresample->formats[XVIP_PAD_SINK].height;
 
 	if (!enable) {
-		xvip_write(&xcresample->xvip, XVIP_CTRL_CONTROL,
-			   XVIP_CTRL_CONTROL_SW_RESET);
-		xvip_write(&xcresample->xvip, XVIP_CTRL_CONTROL, 0);
+		xvip_stop(&xcresample->xvip);
 		return 0;
 	}
 
-	xvip_write(&xcresample->xvip, XVIP_ACTIVE_SIZE,
-		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
-		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+	xvip_set_size(&xcresample->xvip, width, height);
 
-	xvip_write(&xcresample->xvip, XVIP_CTRL_CONTROL,
-		   XVIP_CTRL_CONTROL_SW_ENABLE | XVIP_CTRL_CONTROL_REG_UPDATE);
+	xvip_start(&xcresample->xvip);
 
 	return 0;
 }
@@ -93,74 +80,14 @@ static int xcresample_s_stream(struct v4l2_subdev *subdev, int enable)
  * V4L2 Subdevice Pad Operations
  */
 
-static int xcresample_enum_mbus_code(struct v4l2_subdev *subdev,
-				     struct v4l2_subdev_fh *fh,
-				     struct v4l2_subdev_mbus_code_enum *code)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	if (code->index)
-		return -EINVAL;
-
-	format = v4l2_subdev_get_try_format(fh, code->pad);
-
-	code->code = format->code;
-
-	return 0;
-}
-
-static int xcresample_enum_frame_size(struct v4l2_subdev *subdev,
-				      struct v4l2_subdev_fh *fh,
-				      struct v4l2_subdev_frame_size_enum *fse)
-{
-	struct v4l2_mbus_framefmt *format;
-
-	format = v4l2_subdev_get_try_format(fh, fse->pad);
-
-	if (fse->index || fse->code != format->code)
-		return -EINVAL;
-
-	if (fse->pad == XCRESAMPLE_PAD_SINK) {
-		fse->min_width = XCRESAMPLE_MIN_WIDTH;
-		fse->max_width = XCRESAMPLE_MAX_WIDTH;
-		fse->min_height = XCRESAMPLE_MIN_HEIGHT;
-		fse->max_height = XCRESAMPLE_MAX_HEIGHT;
-	} else {
-		/* The size on the source pad is fixed and always identical to
-		 * the size on the sink pad.
-		 */
-		fse->min_width = format->width;
-		fse->max_width = format->width;
-		fse->min_height = format->height;
-		fse->max_height = format->height;
-	}
-
-	return 0;
-}
-
-static struct v4l2_mbus_framefmt *
-__xcresample_get_pad_format(struct xcresample_device *xcresample,
-			    struct v4l2_subdev_fh *fh,
-			    unsigned int pad, u32 which)
-{
-	switch (which) {
-	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
-	case V4L2_SUBDEV_FORMAT_ACTIVE:
-		return &xcresample->formats[pad];
-	default:
-		return NULL;
-	}
-}
-
 static int xcresample_get_format(struct v4l2_subdev *subdev,
 				 struct v4l2_subdev_fh *fh,
 				 struct v4l2_subdev_format *fmt)
 {
 	struct xcresample_device *xcresample = to_cresample(subdev);
 
-	fmt->format = *__xcresample_get_pad_format(xcresample, fh, fmt->pad,
-						   fmt->which);
+	fmt->format = *xvip_get_pad_format(fh, &xcresample->formats[fmt->pad],
+					   fmt->pad, fmt->which);
 
 	return 0;
 }
@@ -172,30 +99,25 @@ static int xcresample_set_format(struct v4l2_subdev *subdev,
 	struct xcresample_device *xcresample = to_cresample(subdev);
 	struct v4l2_mbus_framefmt *__format;
 
-	__format = __xcresample_get_pad_format(xcresample, fh, fmt->pad,
-					       fmt->which);
+	__format = xvip_get_pad_format(fh, &xcresample->formats[fmt->pad],
+				       fmt->pad, fmt->which);
 
-	if (fmt->pad == XCRESAMPLE_PAD_SOURCE) {
+	if (fmt->pad == XVIP_PAD_SOURCE) {
 		fmt->format = *__format;
 		return 0;
 	}
 
-	__format->code = xcresample->vip_formats[XCRESAMPLE_PAD_SINK]->code;
-	__format->width = clamp_t(unsigned int, fmt->format.width,
-				  XCRESAMPLE_MIN_WIDTH, XCRESAMPLE_MAX_WIDTH);
-	__format->height = clamp_t(unsigned int, fmt->format.height,
-				   XCRESAMPLE_MIN_HEIGHT,
-				   XCRESAMPLE_MAX_HEIGHT);
+	xvip_set_format(__format, xcresample->vip_formats[XVIP_PAD_SINK], fmt);
 
 	fmt->format = *__format;
 
 	/* Propagate the format to the source pad. */
-	__format = __xcresample_get_pad_format(xcresample, fh,
-					       XCRESAMPLE_PAD_SOURCE,
-					       fmt->which);
-	__format->code = xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE]->code;
-	__format->width = fmt->format.width;
-	__format->height = fmt->format.height;
+	__format = xvip_get_pad_format(fh,
+				       &xcresample->formats[XVIP_PAD_SOURCE],
+				       XVIP_PAD_SOURCE, fmt->which);
+
+	xvip_set_format(__format, xcresample->vip_formats[XVIP_PAD_SOURCE],
+			fmt);
 
 	return 0;
 }
@@ -204,45 +126,10 @@ static int xcresample_set_format(struct v4l2_subdev *subdev,
  * V4L2 Subdevice Operations
  */
 
-/**
- * xcresample_init_formats - Initialize formats on all pads
- * @subdev: cresampleper V4L2 subdevice
- * @fh: V4L2 subdev file handle
- *
- * Initialize all pad formats with default values. If fh is not NULL, try
- * formats are initialized on the file handle. Otherwise active formats are
- * initialized on the device.
- */
-static void xcresample_init_formats(struct v4l2_subdev *subdev,
-				    struct v4l2_subdev_fh *fh)
-{
-	struct xcresample_device *xcresample = to_cresample(subdev);
-	struct v4l2_subdev_format format;
-
-	memset(&format, 0, sizeof(format));
-
-	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-	format.format.width = xvip_read(&xcresample->xvip, XVIP_ACTIVE_SIZE) &
-			      XVIP_ACTIVE_HSIZE_MASK;
-	format.format.height = (xvip_read(&xcresample->xvip, XVIP_ACTIVE_SIZE) &
-				XVIP_ACTIVE_VSIZE_MASK) >>
-			       XVIP_ACTIVE_VSIZE_SHIFT;
-	format.format.field = V4L2_FIELD_NONE;
-	format.format.colorspace = V4L2_COLORSPACE_SRGB;
-
-	format.pad = XCRESAMPLE_PAD_SINK;
-
-	xcresample_set_format(subdev, fh, &format);
-
-	format.pad = XCRESAMPLE_PAD_SOURCE;
-
-	xcresample_set_format(subdev, fh, &format);
-}
-
 static int xcresample_open(struct v4l2_subdev *subdev,
 			   struct v4l2_subdev_fh *fh)
 {
-	xcresample_init_formats(subdev, fh);
+	xvip_init_formats(subdev, fh);
 
 	return 0;
 }
@@ -296,8 +183,8 @@ static struct v4l2_subdev_video_ops xcresample_video_ops = {
 };
 
 static struct v4l2_subdev_pad_ops xcresample_pad_ops = {
-	.enum_mbus_code		= xcresample_enum_mbus_code,
-	.enum_frame_size	= xcresample_enum_frame_size,
+	.enum_mbus_code		= xvip_enum_mbus_code,
+	.enum_frame_size	= xvip_enum_frame_size,
 	.get_fmt		= xcresample_get_format,
 	.set_fmt		= xcresample_set_format,
 };
@@ -393,8 +280,8 @@ static int xcresample_parse_of(struct xcresample_device *xcresample)
 	int ret;
 
 	ret = xvip_of_get_formats(node,
-			&xcresample->vip_formats[XCRESAMPLE_PAD_SINK],
-			&xcresample->vip_formats[XCRESAMPLE_PAD_SOURCE]);
+			&xcresample->vip_formats[XVIP_PAD_SINK],
+			&xcresample->vip_formats[XVIP_PAD_SOURCE]);
 	if (ret < 0)
 		dev_err(xcresample->xvip.dev, "invalid format in DT");
 
@@ -436,10 +323,10 @@ static int xcresample_probe(struct platform_device *pdev)
 	v4l2_set_subdevdata(subdev, xcresample);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
-	xcresample_init_formats(subdev, NULL);
+	xvip_init_formats(subdev, NULL);
 
-	xcresample->pads[XCRESAMPLE_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-	xcresample->pads[XCRESAMPLE_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+	xcresample->pads[XVIP_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
+	xcresample->pads[XVIP_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 	subdev->entity.ops = &xcresample_media_ops;
 	ret = media_entity_init(&subdev->entity, 2, xcresample->pads, 0);
 	if (ret < 0)
