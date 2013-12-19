@@ -145,4 +145,12 @@ static inline void xvip_stop(struct xvip_device *xvip)
 	xvip_write(xvip, XVIP_CTRL_CONTROL, 0);
 }
 
+static inline void xvip_set_size(struct xvip_device *xvip, u32 width,
+				 u32 height)
+{
+	xvip_write(xvip, XVIP_ACTIVE_SIZE,
+		   (height << XVIP_ACTIVE_VSIZE_SHIFT) |
+		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
+}
+
 #endif /* __XILINX_VIP_H__ */
