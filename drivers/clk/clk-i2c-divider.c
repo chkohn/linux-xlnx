@@ -98,14 +98,23 @@ static unsigned int _get_val(struct clk_i2c_divider *divider, u8 div)
 	return div - 1;
 }
 
+static unsigned int clk_i2c_divider_get_div(struct clk_i2c_divider *divider)
+{
+	unsigned int div;
+
+	div = clk_i2c_readb(divider->regmap, divider->reg) >> divider->shift;
+	div &= div_mask(divider);
+
+	return div;
+}
+
 static unsigned long clk_divider_recalc_rate(struct clk_hw *hw,
 		unsigned long parent_rate)
 {
 	struct clk_i2c_divider *divider = to_clk_i2c_divider(hw);
 	unsigned int div, val;
 
-	val = clk_i2c_readb(divider->regmap, divider->reg) >> divider->shift;
-	val &= div_mask(divider);
+	val = divider->get_div(divider);
 
 	div = _get_div(divider, val);
 	if (!div) {
@@ -210,16 +219,10 @@ static long clk_divider_round_rate(struct clk_hw *hw, unsigned long rate,
 	return *prate / div;
 }
 
-static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
-				unsigned long parent_rate)
+static int clk_i2c_divider_set_div(unsigned int value,
+		struct clk_i2c_divider *divider)
 {
-	struct clk_i2c_divider *divider = to_clk_i2c_divider(hw);
-	unsigned int div, value;
-	unsigned long flags = 0;
-	u32 val;
-
-	div = parent_rate / rate;
-	value = _get_val(divider, div);
+	unsigned int val;
 
 	if (value > div_mask(divider))
 		value = div_mask(divider);
@@ -236,6 +239,18 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
 	return 0;
 }
 
+static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
+				unsigned long parent_rate)
+{
+	struct clk_i2c_divider *divider = to_clk_i2c_divider(hw);
+	unsigned int div, value;
+
+	div = parent_rate / rate;
+	value = _get_val(divider, div);
+
+	return divider->set_div(value, divider);
+}
+
 const struct clk_ops clk_i2c_divider_ops = {
 	.recalc_rate = clk_divider_recalc_rate,
 	.round_rate = clk_divider_round_rate,
@@ -246,7 +261,9 @@ EXPORT_SYMBOL_GPL(clk_i2c_divider_ops);
 static struct clk *_register_divider(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		struct regmap *regmap, unsigned int reg, u8 shift, u8 width,
-		u8 clk_divider_flags, const struct clk_div_table *table)
+		u8 clk_divider_flags, const struct clk_div_table *table,
+		unsigned int (*get_div)(struct clk_i2c_divider *),
+		int (*set_div)(unsigned int val, struct clk_i2c_divider *))
 {
 	struct clk_i2c_divider *div;
 	struct clk *clk;
@@ -285,6 +302,15 @@ static struct clk *_register_divider(struct device *dev, const char *name,
 	div->flags = clk_divider_flags;
 	div->hw.init = &init;
 	div->table = table;
+	if (get_div)
+		div->get_div = get_div;
+	else
+		div->get_div = clk_i2c_divider_get_div;
+
+	if (set_div)
+		div->set_div = set_div;
+	else
+		div->set_div = clk_i2c_divider_set_div;
 
 	/* register the clock */
 	clk = devm_clk_register(dev, &div->hw);
@@ -310,10 +336,13 @@ static struct clk *_register_divider(struct device *dev, const char *name,
 struct clk *clk_i2c_register_divider(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		struct regmap *regmap, unsigned int reg, u8 shift, u8 width,
-		u8 clk_divider_flags)
+		u8 clk_divider_flags,
+		unsigned int (*get_div)(struct clk_i2c_divider *),
+		int (*set_div)(unsigned int val, struct clk_i2c_divider *))
 {
 	return _register_divider(dev, name, parent_name, flags, regmap, reg,
-			shift, width, clk_divider_flags, NULL);
+			shift, width, clk_divider_flags, NULL, get_div,
+			set_div);
 }
 EXPORT_SYMBOL_GPL(clk_i2c_register_divider);
 
@@ -334,9 +363,12 @@ EXPORT_SYMBOL_GPL(clk_i2c_register_divider);
 struct clk *clk_i2c_register_divider_table(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		struct regmap *regmap, unsigned int reg, u8 shift, u8 width,
-		u8 clk_divider_flags, const struct clk_div_table *table)
+		u8 clk_divider_flags, const struct clk_div_table *table,
+		unsigned int (*get_div)(struct clk_i2c_divider *),
+		int (*set_div)(unsigned int val, struct clk_i2c_divider *))
 {
 	return _register_divider(dev, name, parent_name, flags, regmap, reg,
-			shift, width, clk_divider_flags, table);
+			shift, width, clk_divider_flags, table, get_div,
+			set_div);
 }
 EXPORT_SYMBOL_GPL(clk_i2c_register_divider_table);

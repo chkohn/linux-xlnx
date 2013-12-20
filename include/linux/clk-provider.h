@@ -324,6 +324,8 @@ struct clk_i2c_divider {
 	u8		width;
 	u8		flags;
 	const struct clk_div_table	*table;
+	unsigned int	(*get_div)(struct clk_i2c_divider *);
+	int		(*set_div)(unsigned int, struct clk_i2c_divider *);
 };
 
 #define CLK_DIVIDER_ONE_BASED		BIT(0)
@@ -609,11 +611,15 @@ struct clk *clk_i2c_register_mux_table(struct device *dev, const char *name,
 struct clk *clk_i2c_register_divider(struct device *dev, const char *name,       
                 const char *parent_name, unsigned long flags,                    
                 struct regmap *regmap, unsigned int reg, u8 shift, u8 width,     
-                u8 clk_divider_flags);
+                u8 clk_divider_flags, unsigned int (*get_div)(struct
+			clk_i2c_divider *), int (*set_div)(unsigned int val,
+				struct clk_i2c_divider *));
 struct clk *clk_i2c_register_divider_table(struct device *dev, const char *name, 
                 const char *parent_name, unsigned long flags,                    
                 struct regmap *regmap, unsigned int reg, u8 shift, u8 width,      
-                u8 clk_divider_flags, const struct clk_div_table *table);
+                u8 clk_divider_flags, const struct clk_div_table *table,
+		unsigned int (*get_div)(struct clk_i2c_divider *), int
+		(*set_div)(unsigned int val, struct clk_i2c_divider *));
 #endif /* CONFIG_COMMON_CLK_I2C */
 
 #endif /* CONFIG_COMMON_CLK */
