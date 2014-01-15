@@ -35,6 +35,7 @@
 
 #define XSCALER_HSF				0x0100
 #define XSCALER_VSF				0x0104
+#define XSCALER_SF_SHIFT			20
 #define XSCALER_SF_MASK				0xffffff
 #define XSCALER_SIZE_SHIFT			16
 #define XSCALER_SIZE_MASK			0xfff
@@ -370,7 +371,7 @@ static int xscaler_s_ctrl(struct v4l2_ctrl *ctrl)
 	out &= XSCALER_SIZE_MASK;
 
 	addr = horizontal ? XSCALER_HSF : XSCALER_VSF;
-	scale_factor = (((in + 1) << 20) / out) & XSCALER_SF_MASK;
+	scale_factor = (((in + 1) << XSCALER_SF_SHIFT) / out) & XSCALER_SF_MASK;
 	xvip_write(&xscaler->xvip, addr, scale_factor);
 
 	xvip_enable_reg_update(&xscaler->xvip);
