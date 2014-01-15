@@ -40,6 +40,7 @@
 #define XSCALER_SIZE_MASK			0xfff
 #define XSCALER_SOURCE_SIZE			0x0108
 #define XSCALER_APERTURE_SHIFT			16
+#define XSCALER_APERTURE_MASK			0xfff
 #define XSCALER_HAPERTURE			0x010c
 #define XSCALER_VAPERTURE			0x0110
 #define XSCALER_OUTPUT_SIZE			0x0114
@@ -57,6 +58,7 @@
  * @max_num_phases: maximum number of phases
  * @separate_yc_coef: separate coefficients for Luma(y) and Chroma(c)
  * @separate_hv_coef: separate coefficients for Horizontal(h) and Vertical(v)
+ * @ctrl_handler: control handler
  */
 struct xscaler_device {
 	struct xvip_device xvip;
@@ -68,6 +70,7 @@ struct xscaler_device {
 	u32 max_num_phases;
 	bool separate_yc_coef;
 	bool separate_hv_coef;
+	struct v4l2_ctrl_handler ctrl_handler;
 };
 
 static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
@@ -179,41 +182,26 @@ static int xscaler_gen_coefs(struct xscaler_device *xscaler, s16 taps)
 static int xscaler_s_stream(struct v4l2_subdev *subdev, int enable)
 {
 	struct xscaler_device *xscaler = to_scaler(subdev);
-	u32 in_width;
-	u32 in_height;
-	u32 out_width;
-	u32 out_height;
-	u32 scale_factor;
+	u32 width;
+	u32 height;
 
 	if (!enable) {
 		xvip_stop(&xscaler->xvip);
 		return 0;
 	}
 
-	in_width = xscaler->formats[XVIP_PAD_SINK].width & XSCALER_SIZE_MASK;
-	in_height = xscaler->formats[XVIP_PAD_SINK].height &
+	width = xscaler->formats[XVIP_PAD_SINK].width & XSCALER_SIZE_MASK;
+	height = xscaler->formats[XVIP_PAD_SINK].height &
 		    XSCALER_SIZE_MASK;
 	xvip_write(&xscaler->xvip, XSCALER_SOURCE_SIZE,
-		   (in_height << XSCALER_SIZE_SHIFT) | in_width);
+		   (height << XSCALER_SIZE_SHIFT) | width);
 
-	/* TODO: aperture is fixed to input width/height for now */
-	xvip_write(&xscaler->xvip, XSCALER_HAPERTURE,
-		   ((in_width - 1) << XSCALER_APERTURE_SHIFT));
-	xvip_write(&xscaler->xvip, XSCALER_VAPERTURE,
-		   ((in_height - 1) << XSCALER_APERTURE_SHIFT));
-
-	out_width = xscaler->formats[XVIP_PAD_SOURCE].width &
+	width = xscaler->formats[XVIP_PAD_SOURCE].width &
 		   XSCALER_SIZE_MASK;
-	out_height = xscaler->formats[XVIP_PAD_SOURCE].height &
+	height = xscaler->formats[XVIP_PAD_SOURCE].height &
 		    XSCALER_SIZE_MASK;
 	xvip_write(&xscaler->xvip, XSCALER_OUTPUT_SIZE,
-		   (out_height << XSCALER_SIZE_SHIFT) | out_width);
-
-	scale_factor = ((in_width << 20) / out_width) & XSCALER_SF_MASK;
-	xvip_write(&xscaler->xvip, XSCALER_HSF, scale_factor);
-
-	scale_factor = ((in_height << 20) / out_height) & XSCALER_SF_MASK;
-	xvip_write(&xscaler->xvip, XSCALER_VSF, scale_factor);
+		   (height << XSCALER_SIZE_SHIFT) | width);
 
 	xvip_start(&xscaler->xvip);
 
@@ -331,6 +319,69 @@ static int xscaler_close(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 
+static int xscaler_s_ctrl(struct v4l2_ctrl *ctrl)
+{
+	struct xscaler_device *xscaler = container_of(ctrl->handler,
+						      struct xscaler_device,
+						      ctrl_handler);
+	bool start;
+	bool horizontal;
+	u32 in;
+	u32 out;
+	u32 scale_factor;
+	u32 addr;
+	u32 reg;
+	u32 mask;
+	u8 shift;
+
+	switch (ctrl->id) {
+	case V4L2_CID_XILINX_SCALER_HAPERTURE_START:
+		start = true;
+		horizontal = true;
+		break;
+	case V4L2_CID_XILINX_SCALER_HAPERTURE_END:
+		start = false;
+		horizontal = true;
+		break;
+	case V4L2_CID_XILINX_SCALER_VAPERTURE_START:
+		start = true;
+		horizontal = false;
+		break;
+	case V4L2_CID_XILINX_SCALER_VAPERTURE_END:
+		start = false;
+		horizontal = false;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	xvip_disable_reg_update(&xscaler->xvip);
+
+	addr = horizontal ? XSCALER_HAPERTURE : XSCALER_VAPERTURE;
+	shift = start ? 0 : XSCALER_APERTURE_SHIFT;
+	mask = XSCALER_APERTURE_MASK << shift;
+
+	reg = (xvip_read(&xscaler->xvip, addr) & ~mask) | (ctrl->val << shift);
+	xvip_write(&xscaler->xvip, addr, reg);
+
+	in = (reg >> XSCALER_APERTURE_SHIFT) - (reg & XSCALER_APERTURE_MASK);
+	out = horizontal ? xscaler->formats[XVIP_PAD_SOURCE].width :
+			   xscaler->formats[XVIP_PAD_SOURCE].height;
+	out &= XSCALER_SIZE_MASK;
+
+	addr = horizontal ? XSCALER_HSF : XSCALER_VSF;
+	scale_factor = (((in + 1) << 20) / out) & XSCALER_SF_MASK;
+	xvip_write(&xscaler->xvip, addr, scale_factor);
+
+	xvip_enable_reg_update(&xscaler->xvip);
+
+	return 0;
+}
+
+static const struct v4l2_ctrl_ops xscaler_ctrl_ops = {
+	.s_ctrl	= xscaler_s_ctrl,
+};
+
 static struct v4l2_subdev_core_ops xscaler_core_ops = {
 };
 
@@ -354,6 +405,50 @@ static struct v4l2_subdev_ops xscaler_ops = {
 static const struct v4l2_subdev_internal_ops xscaler_internal_ops = {
 	.open	= xscaler_open,
 	.close	= xscaler_close,
+};
+
+static struct v4l2_ctrl_config xscaler_haperture_start = {
+	.ops	= &xscaler_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SCALER_HAPERTURE_START,
+	.name	= "Scaler: Horizontal Aperture Start",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= XVIP_MAX_WIDTH,
+	.step	= 1,
+	.def	= 0,
+};
+
+static struct v4l2_ctrl_config xscaler_haperture_end = {
+	.ops	= &xscaler_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SCALER_HAPERTURE_END,
+	.name	= "Scaler: Horizontal Aperture End",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= XVIP_MAX_WIDTH,
+	.step	= 1,
+	.def	= 0,
+};
+
+static struct v4l2_ctrl_config xscaler_vaperture_start = {
+	.ops	= &xscaler_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SCALER_VAPERTURE_START,
+	.name	= "Scaler: Vertical Aperture Start",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= XVIP_MAX_HEIGHT,
+	.step	= 1,
+	.def	= 0,
+};
+
+static struct v4l2_ctrl_config xscaler_vaperture_end = {
+	.ops	= &xscaler_ctrl_ops,
+	.id	= V4L2_CID_XILINX_SCALER_VAPERTURE_END,
+	.name	= "Scaler: Vertical Aperture End",
+	.type	= V4L2_CTRL_TYPE_INTEGER,
+	.min	= 0,
+	.max	= XVIP_MAX_HEIGHT,
+	.step	= 1,
+	.def	= 0,
 };
 
 /*
@@ -445,6 +540,34 @@ static int xscaler_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	v4l2_ctrl_handler_init(&xscaler->ctrl_handler, 4);
+	xscaler_haperture_start.def =
+		xvip_read(&xscaler->xvip, XSCALER_HAPERTURE) &
+		XSCALER_APERTURE_MASK;
+	v4l2_ctrl_new_custom(&xscaler->ctrl_handler, &xscaler_haperture_start,
+			     NULL);
+	xscaler_haperture_end.def =
+		(xvip_read(&xscaler->xvip, XSCALER_HAPERTURE) >>
+		XSCALER_APERTURE_SHIFT) & XSCALER_APERTURE_MASK;
+	v4l2_ctrl_new_custom(&xscaler->ctrl_handler, &xscaler_haperture_end,
+			     NULL);
+	xscaler_vaperture_start.def =
+		xvip_read(&xscaler->xvip, XSCALER_VAPERTURE) &
+		XSCALER_APERTURE_MASK;
+	v4l2_ctrl_new_custom(&xscaler->ctrl_handler, &xscaler_vaperture_start,
+			     NULL);
+	xscaler_vaperture_end.def =
+		(xvip_read(&xscaler->xvip, XSCALER_VAPERTURE) >>
+		XSCALER_APERTURE_SHIFT) & XSCALER_APERTURE_MASK;
+	v4l2_ctrl_new_custom(&xscaler->ctrl_handler, &xscaler_vaperture_end,
+			     NULL);
+	if (xscaler->ctrl_handler.error) {
+		dev_err(&pdev->dev, "failed to add controls\n");
+		ret = xscaler->ctrl_handler.error;
+		goto error;
+	}
+	subdev->ctrl_handler = &xscaler->ctrl_handler;
+
 	platform_set_drvdata(pdev, xscaler);
 
 	version = xvip_read(&xscaler->xvip, XVIP_CTRL_VERSION);
@@ -489,6 +612,7 @@ static int xscaler_probe(struct platform_device *pdev)
 	return 0;
 
 error:
+	v4l2_ctrl_handler_free(&xscaler->ctrl_handler);
 	media_entity_cleanup(&subdev->entity);
 	return ret;
 }
@@ -499,6 +623,7 @@ static int xscaler_remove(struct platform_device *pdev)
 	struct v4l2_subdev *subdev = &xscaler->xvip.subdev;
 
 	v4l2_async_unregister_subdev(subdev);
+	v4l2_ctrl_handler_free(&xscaler->ctrl_handler);
 	media_entity_cleanup(&subdev->entity);
 
 	return 0;
