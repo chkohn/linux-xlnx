@@ -156,4 +156,21 @@ static inline void xvip_set_frame_size(struct xvip_device *xvip, u32 width,
 		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
 }
 
+static inline void xvip_enable_reg_update(struct xvip_device *xvip)
+{
+	u32 reg;
+
+	reg = xvip_read(xvip, XVIP_CTRL_CONTROL);
+	xvip_write(xvip, XVIP_CTRL_CONTROL, reg | XVIP_CTRL_CONTROL_REG_UPDATE);
+}
+
+static inline void xvip_disable_reg_update(struct xvip_device *xvip)
+{
+	u32 reg;
+
+	reg = xvip_read(xvip, XVIP_CTRL_CONTROL);
+	xvip_write(xvip, XVIP_CTRL_CONTROL,
+		   reg & ~XVIP_CTRL_CONTROL_REG_UPDATE);
+}
+
 #endif /* __XILINX_VIP_H__ */
