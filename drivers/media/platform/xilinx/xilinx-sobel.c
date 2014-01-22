@@ -365,9 +365,9 @@ static int xsobel_probe(struct platform_device *pdev)
 	if (mem == NULL)
 		return -ENODEV;
 
-	xsobel->xvip.iomem = devm_request_and_ioremap(&pdev->dev, mem);
-	if (xsobel->xvip.iomem == NULL)
-		return -ENODEV;
+	xsobel->xvip.iomem = devm_ioremap_resource(&pdev->dev, mem);
+	if (IS_ERR(xsobel->xvip.iomem))
+		return PTR_ERR(xsobel->xvip.iomem);
 
 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (irq == NULL)
