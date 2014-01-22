@@ -297,6 +297,9 @@
 						};
 						port@1 {
 							reg = <1>;
+							adv7611_out: endpoint {
+								remote-endpoint = <&tpg_in>;
+							};
 						};
 					};
 				};
@@ -557,6 +560,13 @@
 				interrupts = <0 52 0x4>;
 				xlnx,datawidth = <0x40>;
 				xlnx,device-id = <0>;
+			};
+			dma-s2mmchannel@83010000 {
+				compatible = "xlnx,axi-vdma-s2mm-channel";
+				interrupt-parent = <&ps7_scugic_0>;
+				interrupts = <0 36 IRQ_TYPE_LEVEL_HIGH>;
+				xlnx,datawidth = <0x40>;
+				xlnx,device-id = <1>;
 			};
 		};
 
@@ -829,9 +839,76 @@
 
 				port@1 {
 					reg = <1>;
-					cresample0_out: endpoint {
+/*					cresample0_out: endpoint {
+						remote-endpoint = <&switch_in1>;
+					}; */
+				};
+			};
+		};
+
+		vtc_2: vtc@83c40000 {
+			compatible = "xlnx,axi-vtc";
+			reg = <0x83c40000 0x10000>;
+			interrupt-parent = <&ps7_scugic_0>;
+			interrupts = <0 35 IRQ_TYPE_LEVEL_HIGH>;
+			xlnx,generator;
+		};
+
+		axi_tpg_1: axi_tpg@83c50000 {
+			compatible = "xlnx,axi-tpg-5.0", "xlnx,axi-tpg";
+			reg = <0x83c50000 0x10000>;
+
+			xlnx,axi-video-format = "yuv422";
+			xlnx,axi-video-width = <8>;
+			xlnx,vtc = <&vtc_2>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				tpg_in: endpoint {
+					remote-endpoint = <&adv7611_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+				tpg_out: endpoint {
+					remote-endpoint = <&switch_in0>;
+				};
+			};
+		};
+
+		axi_switch: axi_switch@83c80000 {
+			compatible = "xlnx,axi-switch";
+			reg = <0x83c80000 0x10000>;
+
+			#xlnx,inputs = <2>;
+			#xlnx,outputs = <2>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				port@0 {
+					reg = <0>;
+					switch_in0: endpoint {
+						remote-endpoint = <&tpg_out>;
+					};
+				};
+				port@1 {
+					reg = <1>;
+/*					switch_in1: endpoint {
+						remote-endpoint = <&cresample0_out>;
+					};*/
+				};
+				port@2 {
+					reg = <2>;
+					switch_out0: endpoint {
 						remote-endpoint = <&scaler0_in>;
 					};
+				};
+				port@3 {
+					reg = <3>;
 				};
 			};
 		};
@@ -853,7 +930,7 @@
 				port@0 {
 					reg = <0>;
 					scaler0_in: endpoint {
-						remote-endpoint = <&cresample0_out>;
+						remote-endpoint = <&switch_out0>;
 					};
 				};
 
