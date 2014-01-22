@@ -14,6 +14,7 @@
 
 /dts-v1/;
 
+#include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 
 / {
@@ -266,6 +267,52 @@
 
 			#address-cells = <1>;
 			#size-cells = <0>;
+
+			i2c_switch@70 {
+				compatible = "nxp,pca9546";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				reg = <0x70>;
+
+				reset-gpios = <&ps7_gpio_0 54 GPIO_ACTIVE_LOW>;
+
+				i2c@2 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <2>;
+					hdmi_in@4c {
+						compatible = "adi,adv7611";
+						reg = <0x4c>;
+
+						reset-gpios = <&fmc_ioexp 0 GPIO_ACTIVE_LOW>;
+						hpd-gpios = <&fmc_ioexp 2 GPIO_ACTIVE_HIGH>;
+
+						adi,default-input = <0>;
+
+						#address-cells = <1>;
+						#size-cells = <0>;
+
+						port@0 {
+							reg = <0>;
+						};
+						port@1 {
+							reg = <1>;
+						};
+					};
+				};
+
+				i2c@3 {
+					#address-cells = <1>;
+					#size-cells = <0>;
+					reg = <3>;
+					fmc_ioexp: gpio@20 {
+						compatible = "nxp,pca9534";
+						reg = <0x20>;
+						gpio-controller;
+						#gpio-cells = <2>;
+					};
+				};
+			};
 		};
 		ps7_iop_bus_config_0: ps7-iop-bus-config@e0200000 {
 			compatible = "xlnx,ps7-iop-bus-config-1.00.a";
