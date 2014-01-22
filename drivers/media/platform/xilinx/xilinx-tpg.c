@@ -633,8 +633,8 @@ static int xtpg_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
-	if (xtpg->xvip.iomem == NULL)
-		return -ENODEV;
+	if (IS_ERR(xtpg->xvip.iomem))
+		return PTR_ERR(xtpg->xvip.iomem);
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
