@@ -13,6 +13,9 @@
  */
 
 /dts-v1/;
+
+#include <dt-bindings/interrupt-controller/irq.h>
+
 / {
 	#address-cells = <1>;
 	#size-cells = <1>;
@@ -21,6 +24,7 @@
 	aliases {
 		ethernet0 = &ps7_ethernet_0;
 		i2c0 = &ps7_i2c_0;
+		i2c1 = &ps7_i2c_1;
 		serial0 = &ps7_uart_1;
 		spi0 = &ps7_qspi_0;
 	} ;
@@ -250,6 +254,19 @@
 			};
 
 		} ;
+		ps7_i2c_1: ps7-i2c@e0005000 {
+			compatible = "xlnx,ps7-i2c-1.00.a";
+			clocks = <&clkc 39>;
+			reg = <0xe0005000 0x1000>;
+			interrupt-parent = <&ps7_scugic_0>;
+			interrupts = <0 48 IRQ_TYPE_LEVEL_HIGH>;
+
+			bus-id = <1>;
+			i2c-clk = <100000>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
 		ps7_iop_bus_config_0: ps7-iop-bus-config@e0200000 {
 			compatible = "xlnx,ps7-iop-bus-config-1.00.a";
 			reg = <0xe0200000 0x1000>;
