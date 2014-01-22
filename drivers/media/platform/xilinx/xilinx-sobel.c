@@ -434,7 +434,7 @@ static struct platform_driver xsobel_driver = {
 	.driver = {
 		.owner = THIS_MODULE,
 		.name = "xilinx-axi-sobel",
-		.of_match_table = of_match_ptr(xsobel_of_id_table),
+		.of_match_table = xsobel_of_id_table,
 	},
 	.probe = xsobel_probe,
 	.remove = xsobel_remove,
