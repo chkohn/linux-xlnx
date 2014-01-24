@@ -11,8 +11,10 @@
  */
 
 #include <linux/device.h>
+#include <linux/gpio.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 
 #include <media/v4l2-async.h>
@@ -68,6 +70,8 @@
  * @vip_format: format information corresponding to the active format
  * @ctrl_handler: control handler
  * @vtc: video timing controller
+ * @vtmux_gpio: video timing mux GPIO
+ * @vtmux_flags: video timing mux GPIO flags
  */
 struct xtpg_device {
 	struct xvip_device xvip;
@@ -80,6 +84,8 @@ struct xtpg_device {
 	struct v4l2_ctrl_handler ctrl_handler;
 
 	struct xvtc_device *vtc;
+	int vtmux_gpio;
+	enum of_gpio_flags vtmux_flags;
 };
 
 static inline struct xtpg_device *to_tpg(struct v4l2_subdev *subdev)
@@ -231,6 +237,12 @@ static void xtpg_set_test_pattern(struct xtpg_device *xtpg,
 	reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 		   (reg & ~XTPG_PATTERN_MASK) | pattern);
+
+	if (!IS_ERR_VALUE(xtpg->vtmux_gpio)) {
+		int vtc = xtpg->vtmux_flags == OF_GPIO_ACTIVE_LOW ? 0 : 1;
+
+		gpio_set_value(xtpg->vtmux_gpio, pattern ? vtc : !vtc);
+	}
 }
 
 static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
@@ -646,6 +658,9 @@ static int xtpg_parse_of(struct xtpg_device *xtpg)
 		return -EINVAL;
 	}
 
+	xtpg->vtmux_gpio = of_get_named_gpio_flags(node, "timing-gpios", 0,
+						   &xtpg->vtmux_flags);
+
 	return 0;
 }
 
@@ -671,6 +686,17 @@ static int xtpg_probe(struct platform_device *pdev)
 	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(xtpg->xvip.iomem))
 		return PTR_ERR(xtpg->xvip.iomem);
+
+	if (!IS_ERR_VALUE(xtpg->vtmux_gpio)) {
+		unsigned long gpio_flags =
+			xtpg->vtmux_flags == OF_GPIO_ACTIVE_LOW ?
+			GPIOF_OUT_INIT_LOW : GPIOF_OUT_INIT_HIGH;
+
+		ret = devm_gpio_request_one(&pdev->dev, xtpg->vtmux_gpio,
+					    gpio_flags, "vtmux");
+		if (ret < 0)
+			return ret;
+	}
 
 	xtpg->vtc = xvtc_of_get(pdev->dev.of_node);
 	if (IS_ERR(xtpg->vtc))
