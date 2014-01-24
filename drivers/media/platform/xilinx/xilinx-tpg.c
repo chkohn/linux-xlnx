@@ -356,7 +356,6 @@ static const char *const xtpg_pattern_strings[] = {
 	"None",
 	"Vertical/Horizontal Ramps",
 	"Black/White Checker Board",
-	NULL,
 };
 
 static struct v4l2_ctrl_config xtpg_pattern = {
