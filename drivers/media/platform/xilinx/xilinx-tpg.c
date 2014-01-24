@@ -201,6 +201,16 @@ static int xtpg_close(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 
+static void xtpg_set_test_pattern(struct xtpg_device *xtpg,
+				  unsigned int pattern)
+{
+	u32 reg;
+
+	reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
+	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
+		   (reg & ~XTPG_PATTERN_MASK) | pattern);
+}
+
 static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct xtpg_device *xtpg = container_of(ctrl->handler,
@@ -209,10 +219,8 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 	u32 reg;
 
 	switch (ctrl->id) {
-	case V4L2_CID_XILINX_TPG_PATTERN:
-		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
-		xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
-			   (reg & ~XTPG_PATTERN_MASK) | ctrl->val);
+	case V4L2_CID_TEST_PATTERN:
+		xtpg_set_test_pattern(xtpg, ctrl->val);
 		return 0;
 	case V4L2_CID_XILINX_TPG_CROSS_HAIRS:
 		reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
@@ -356,17 +364,6 @@ static const char *const xtpg_pattern_strings[] = {
 	"None",
 	"Vertical/Horizontal Ramps",
 	"Black/White Checker Board",
-};
-
-static struct v4l2_ctrl_config xtpg_pattern = {
-	.ops	= &xtpg_ctrl_ops,
-	.id	= V4L2_CID_XILINX_TPG_PATTERN,
-	.name	= "Test Pattern: Pattern",
-	.type	= V4L2_CTRL_TYPE_MENU,
-	.min	= 0,
-	.max	= 15,
-	.def	= 0,
-	.qmenu	= xtpg_pattern_strings,
 };
 
 static struct v4l2_ctrl_config xtpg_cross_hairs = {
@@ -659,7 +656,12 @@ static int xtpg_probe(struct platform_device *pdev)
 		return ret;
 
 	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 14);
-	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_pattern, NULL);
+	v4l2_ctrl_new_std_menu_items(&xtpg->ctrl_handler, &xtpg_ctrl_ops,
+				     V4L2_CID_TEST_PATTERN,
+				     ARRAY_SIZE(xtpg_pattern_strings) - 1,
+				     xtpg->passthrough ? 0 : 1,
+				     xtpg->paddthrough ? 0 : 1,
+				     xtpg_pattern_strings);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hairs, NULL);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_moving_box, NULL);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_color_mask, NULL);

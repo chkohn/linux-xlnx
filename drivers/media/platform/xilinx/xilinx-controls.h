@@ -30,7 +30,6 @@
 /* TODO: use subdev id instead of hard coded base for multiple instances */
 /* tpg */
 #define V4L2_CID_XILINX_TPG			(V4L2_CID_XILINX_BASE + 0x000)
-#define V4L2_CID_XILINX_TPG_PATTERN		(V4L2_CID_XILINX_TPG + 1)
 #define V4L2_CID_XILINX_TPG_CROSS_HAIRS		(V4L2_CID_XILINX_TPG + 2)
 #define V4L2_CID_XILINX_TPG_MOVING_BOX		(V4L2_CID_XILINX_TPG + 3)
 #define V4L2_CID_XILINX_TPG_COLOR_MASK		(V4L2_CID_XILINX_TPG + 4)
