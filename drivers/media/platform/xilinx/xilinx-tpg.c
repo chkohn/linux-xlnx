@@ -27,9 +27,6 @@
 #define XTPG_MIN_HEIGHT				32
 #define XTPG_MAX_HEIGHT				7680
 
-#define XTPG_PAD_SOURCE				0
-#define XTPG_PAD_SINK				1
-
 #define XTPG_CTRL_STATUS_SLAVE_ERROR		(1 << 16)
 #define XTPG_CTRL_IRQ_SLAVE_ERROR		(1 << 16)
 
@@ -65,17 +62,19 @@
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
  * @xvip: Xilinx Video IP device
  * @pads: media pads
+ * @npads: number of pads (1 or 2)
  * @format: active V4L2 media bus format
  * @vip_format: format information corresponding to the active format
- * @passthrough: passthrough flag
  * @ctrl_handler: control handler
  */
 struct xtpg_device {
 	struct xvip_device xvip;
+
 	struct media_pad pads[2];
+	unsigned int npads;
+
 	struct v4l2_mbus_framefmt format;
 	const struct xvip_video_format *vip_format;
-	bool passthrough;
 	struct v4l2_ctrl_handler ctrl_handler;
 };
 
@@ -131,7 +130,10 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 
 	__format = xvip_get_pad_format(fh, &xtpg->format, fmt->pad, fmt->which);
 
-	if (fmt->pad == XTPG_PAD_SOURCE && xtpg->passthrough) {
+	/* In two pads mode the source pad format is always identical to the
+	 * sink pad format.
+	 */
+	if (xtpg->npads == 2 && fmt->pad == 1) {
 		fmt->format = *__format;
 		return 0;
 	}
@@ -140,10 +142,10 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 
 	fmt->format = *__format;
 
-	/* Propagate the format to the source pad */
-	if (xtpg->passthrough) {
-		__format = xvip_get_pad_format(fh, &xtpg->format,
-					       XTPG_PAD_SOURCE, fmt->which);
+	/* Propagate the format to the source pad. */
+	if (xtpg->npads == 2) {
+		__format = xvip_get_pad_format(fh, &xtpg->format, 1,
+					       fmt->which);
 		*__format = fmt->format;
 	}
 
@@ -162,6 +164,10 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
  * Initialize all pad formats with default values. If fh is not NULL, try
  * formats are initialized on the file handle. Otherwise active formats are
  * initialized on the device.
+ *
+ * The function sets the format on pad 0 only. In two pads mode, this is the
+ * sink pad and the set format handler will propagate the format to the source
+ * pad. In one pad mode this is the source pad.
  */
 static void xtpg_init_formats(struct v4l2_subdev *subdev,
 			      struct v4l2_subdev_fh *fh)
@@ -171,6 +177,7 @@ static void xtpg_init_formats(struct v4l2_subdev *subdev,
 
 	memset(&format, 0, sizeof(format));
 
+	format.pad = 0;
 	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
 	format.format.width = xvip_read(&xtpg->xvip, XVIP_ACTIVE_SIZE) &
 			      XVIP_ACTIVE_HSIZE_MASK;
@@ -180,12 +187,6 @@ static void xtpg_init_formats(struct v4l2_subdev *subdev,
 	format.format.field = V4L2_FIELD_NONE;
 	format.format.colorspace = V4L2_COLORSPACE_SRGB;
 
-	if (xtpg->passthrough) {
-		format.pad = XTPG_PAD_SINK;
-		xtpg_set_format(subdev, fh, &format);
-	}
-
-	format.pad = XTPG_PAD_SOURCE;
 	xtpg_set_format(subdev, fh, &format);
 }
 
@@ -597,14 +598,32 @@ static const struct media_entity_operations xtpg_media_ops = {
 static int xtpg_parse_of(struct xtpg_device *xtpg)
 {
 	struct device_node *node = xtpg->xvip.dev->of_node;
+	struct device_node *ports;
+	struct device_node *port;
+	unsigned int nports = 0;
 
-	xtpg->vip_format = xvip_of_get_format(node);
-	if (xtpg->vip_format == NULL) {
-		dev_err(xtpg->xvip.dev, "invalid format in DT");
+	/* Count the number of ports. */
+	ports = of_get_child_by_name(node, "ports");
+	if (ports == NULL)
+		ports = node;
+
+	for_each_child_of_node(ports, port) {
+		if (port->name && (of_node_cmp(port->name, "port") == 0))
+			nports++;
+	}
+
+	if (nports != 1 && nports != 2) {
+		dev_err(xtpg->xvip.dev, "invalid number of ports %u\n", nports);
 		return -EINVAL;
 	}
 
-	xtpg->passthrough = of_property_read_bool(node, "xlnx,tpg-passthrough");
+	xtpg->npads = nports;
+
+	xtpg->vip_format = xvip_of_get_format(node);
+	if (xtpg->vip_format == NULL) {
+		dev_err(xtpg->xvip.dev, "invalid format in DT\n");
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -632,7 +651,16 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (IS_ERR(xtpg->xvip.iomem))
 		return PTR_ERR(xtpg->xvip.iomem);
 
-	/* Initialize V4L2 subdevice and media entity */
+	/* Initialize V4L2 subdevice and media entity. Pad numbers depend on the
+	 * number of pads.
+	 */
+	if (xtpg->npads == 2) {
+		xtpg->pads[0].flags = MEDIA_PAD_FL_SINK;
+		xtpg->pads[1].flags = MEDIA_PAD_FL_SOURCE;
+	} else {
+		xtpg->pads[0].flags = MEDIA_PAD_FL_SOURCE;
+	}
+
 	subdev = &xtpg->xvip.subdev;
 	v4l2_subdev_init(subdev, &xtpg_ops);
 	subdev->dev = &pdev->dev;
@@ -640,18 +668,11 @@ static int xtpg_probe(struct platform_device *pdev)
 	strlcpy(subdev->name, dev_name(&pdev->dev), sizeof(subdev->name));
 	v4l2_set_subdevdata(subdev, xtpg);
 	subdev->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	subdev->entity.ops = &xtpg_media_ops;
 
 	xtpg_init_formats(subdev, NULL);
 
-	xtpg->pads[XTPG_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-	xtpg->pads[XTPG_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
-	subdev->entity.ops = &xtpg_media_ops;
-
-	if (xtpg->passthrough)
-		ret = media_entity_init(&subdev->entity, 2, xtpg->pads, 0);
-	else
-		ret = media_entity_init(&subdev->entity, 1,
-					&xtpg->pads[XTPG_PAD_SOURCE], 0);
+	ret = media_entity_init(&subdev->entity, xtpg->npads, xtpg->pads, 0);
 	if (ret < 0)
 		return ret;
 
@@ -659,8 +680,8 @@ static int xtpg_probe(struct platform_device *pdev)
 	v4l2_ctrl_new_std_menu_items(&xtpg->ctrl_handler, &xtpg_ctrl_ops,
 				     V4L2_CID_TEST_PATTERN,
 				     ARRAY_SIZE(xtpg_pattern_strings) - 1,
-				     xtpg->passthrough ? 0 : 1,
-				     xtpg->paddthrough ? 0 : 1,
+				     xtpg->npads == 2 ? 0 : 1,
+				     xtpg->npads == 2 ? 0 : 1,
 				     xtpg_pattern_strings);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_cross_hairs, NULL);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_moving_box, NULL);
