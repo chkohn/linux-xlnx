@@ -21,6 +21,7 @@
 
 #include "xilinx-controls.h"
 #include "xilinx-vip.h"
+#include "xilinx-vtc.h"
 
 #define XTPG_MIN_WIDTH				32
 #define XTPG_MAX_WIDTH				7680
@@ -66,6 +67,7 @@
  * @format: active V4L2 media bus format
  * @vip_format: format information corresponding to the active format
  * @ctrl_handler: control handler
+ * @vtc: video timing controller
  */
 struct xtpg_device {
 	struct xvip_device xvip;
@@ -76,6 +78,8 @@ struct xtpg_device {
 	struct v4l2_mbus_framefmt format;
 	const struct xvip_video_format *vip_format;
 	struct v4l2_ctrl_handler ctrl_handler;
+
+	struct xvtc_device *vtc;
 };
 
 static inline struct xtpg_device *to_tpg(struct v4l2_subdev *subdev)
@@ -95,10 +99,27 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 
 	if (!enable) {
 		xvip_stop(&xtpg->xvip);
+		if (xtpg->vtc)
+			xvtc_generator_stop(xtpg->vtc);
 		return 0;
 	}
 
 	xvip_set_size(&xtpg->xvip, width, height);
+
+	if (xtpg->vtc) {
+		struct xvtc_config config = {
+			.hblank_start = width,
+			.hsync_start = width + 10,
+			.hsync_end = width + 20,
+			.hsize = width + 100,
+			.vblank_start = height,
+			.vsync_start = height + 10,
+			.vsync_end = height + 20,
+			.vsize = height + 100,
+		};
+
+		xvtc_generator_start(xtpg->vtc, &config);
+	}
 
 	xvip_start(&xtpg->xvip);
 
@@ -651,6 +672,10 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (IS_ERR(xtpg->xvip.iomem))
 		return PTR_ERR(xtpg->xvip.iomem);
 
+	xtpg->vtc = xvtc_of_get(pdev->dev.of_node);
+	if (IS_ERR(xtpg->vtc))
+		return PTR_ERR(xtpg->vtc);
+
 	/* Initialize V4L2 subdevice and media entity. Pad numbers depend on the
 	 * number of pads.
 	 */
@@ -674,7 +699,7 @@ static int xtpg_probe(struct platform_device *pdev)
 
 	ret = media_entity_init(&subdev->entity, xtpg->npads, xtpg->pads, 0);
 	if (ret < 0)
-		return ret;
+		goto error_media_init;
 
 	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 14);
 	v4l2_ctrl_new_std_menu_items(&xtpg->ctrl_handler, &xtpg_ctrl_ops,
@@ -733,6 +758,8 @@ static int xtpg_probe(struct platform_device *pdev)
 error:
 	v4l2_ctrl_handler_free(&xtpg->ctrl_handler);
 	media_entity_cleanup(&subdev->entity);
+error_media_init:
+	xvtc_put(xtpg->vtc);
 	return ret;
 }
 

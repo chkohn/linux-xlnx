@@ -76,6 +76,7 @@ config VIDEO_XILINX_STATS
 config VIDEO_XILINX_TPG
 	tristate "Xilinx Video Test Pattern Generator"
 	depends on VIDEO_XILINX
+	depends on VIDEO_XILINX_VTC
 	---help---
 	   Driver for the Xilinx Video Test Pattern Generator
 
