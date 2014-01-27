@@ -190,6 +190,8 @@ int xvtc_generator_start(struct xvtc_device *xvtc,
 	if (!xvtc->has_generator)
 		return -ENXIO;
 
+	printk(KERN_INFO "%s: starting VTC\n", __func__);
+
 	ret = clk_prepare_enable(xvtc->clk);
 	if (ret < 0)
 		return ret;
@@ -254,6 +256,8 @@ int xvtc_generator_stop(struct xvtc_device *xvtc)
 {
 	if (!xvtc->has_generator)
 		return -ENXIO;
+
+	printk(KERN_INFO "%s: stopping VTC\n", __func__);
 
 	xvip_write(&xvtc->xvip, XVIP_CTRL_IRQ_ENABLE, 0);
 
@@ -327,6 +331,7 @@ static void xvtc_unregister_device(struct xvtc_device *xvtc)
  * Platform Device Driver
  */
 
+void xtpg_reset_status(void);
 static irqreturn_t xvtc_irq_handler(int irq, void *data)
 {
 	struct xvtc_device *xvtc = data;
@@ -336,6 +341,7 @@ static irqreturn_t xvtc_irq_handler(int irq, void *data)
 	xvip_write(&xvtc->xvip, XVIP_CTRL_STATUS, status);
 
 	dev_dbg(xvtc->xvip.dev, "%s: status 0x%08x\n", __func__, status);
+	xtpg_reset_status();
 
 	return status ? IRQ_HANDLED : IRQ_NONE;
 }

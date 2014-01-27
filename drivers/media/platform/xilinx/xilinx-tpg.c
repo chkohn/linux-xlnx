@@ -10,6 +10,8 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG
+
 #include <linux/device.h>
 #include <linux/gpio.h>
 #include <linux/module.h>
@@ -104,6 +106,9 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 	const u32 height = xtpg->format.height;
 
 	if (!enable) {
+		printk(KERN_INFO "%s: stopping TPG\n", __func__);
+		xvip_read(&xtpg->xvip, XVIP_CTRL_STATUS);
+		xvip_read(&xtpg->xvip, XVIP_CTRL_ERROR);
 		xvip_stop(&xtpg->xvip);
 		if (xtpg->vtc)
 			xvtc_generator_stop(xtpg->vtc);
@@ -115,22 +120,35 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 	if (xtpg->vtc) {
 		struct xvtc_config config = {
 			.hblank_start = width,
-			.hsync_start = width + 10,
-			.hsync_end = width + 20,
+			.hsync_start = width,
+			.hsync_end = width + 10,
 			.hsize = width + 100,
 			.vblank_start = height,
-			.vsync_start = height + 10,
-			.vsync_end = height + 20,
+			.vsync_start = height,
+			.vsync_end = height + 10,
 			.vsize = height + 3000,
 		};
 
 		xvtc_generator_start(xtpg->vtc, &config);
 	}
 
+	printk(KERN_INFO "%s: starting TPG in %ux%u\n", __func__, width, height);
+	xvip_read(&xtpg->xvip, XVIP_CTRL_STATUS);
+	xvip_read(&xtpg->xvip, XVIP_CTRL_ERROR);
 	xvip_start(&xtpg->xvip);
 
 	return 0;
 }
+
+static struct xtpg_device *xtpg_global;
+
+void xtpg_reset_status(void)
+{
+	xvip_write(&xtpg_global->xvip, XVIP_CTRL_STATUS,
+		   xvip_read(&xtpg_global->xvip, XVIP_CTRL_STATUS));
+	xvip_read(&xtpg_global->xvip, XVIP_CTRL_STATUS);
+}
+EXPORT_SYMBOL_GPL(xtpg_reset_status);
 
 /* -----------------------------------------------------------------------------
  * V4L2 Subdevice Pad Operations
@@ -241,6 +259,8 @@ static void xtpg_set_test_pattern(struct xtpg_device *xtpg,
 	if (!IS_ERR_VALUE(xtpg->vtmux_gpio)) {
 		int vtc = xtpg->vtmux_flags == OF_GPIO_ACTIVE_LOW ? 0 : 1;
 
+		printk(KERN_INFO "%s: setting GPIO %u to %u\n", __func__,
+			xtpg->vtmux_gpio, pattern ? vtc : !vtc);
 		gpio_set_value(xtpg->vtmux_gpio, pattern ? vtc : !vtc);
 	}
 }
@@ -687,6 +707,8 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (IS_ERR(xtpg->xvip.iomem))
 		return PTR_ERR(xtpg->xvip.iomem);
 	xtpg->xvip.base = res->start;
+	if (xtpg->xvip.base == 0x83c50000)
+		xtpg_global = xtpg;
 
 	if (!IS_ERR_VALUE(xtpg->vtmux_gpio)) {
 		unsigned long gpio_flags =
