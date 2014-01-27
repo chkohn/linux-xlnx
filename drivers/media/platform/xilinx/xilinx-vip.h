@@ -88,6 +88,7 @@ struct xvip_device {
 	struct v4l2_subdev subdev;
 	struct device *dev;
 	void __iomem *iomem;
+	u32 base;
 
 	unsigned int npads;
 	struct media_pad *pads;
@@ -135,11 +136,17 @@ void xvip_init_formats(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh);
 
 static inline u32 xvip_read(struct xvip_device *xvip, u32 addr)
 {
-	return ioread32(xvip->iomem + addr);
+	u32 value;
+	value = ioread32(xvip->iomem + addr);
+	dev_dbg(xvip->dev, "%s(0x%08x) -> 0x%08x\n", __func__,
+		xvip->base + addr, value);
+	return value;
 }
 
 static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
 {
+	dev_dbg(xvip->dev, "%s(0x%08x, 0x%08x)\n", __func__,
+		xvip->base + addr, value);
 	iowrite32(value, xvip->iomem + addr);
 }
 

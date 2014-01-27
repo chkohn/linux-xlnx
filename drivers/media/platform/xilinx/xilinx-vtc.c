@@ -371,6 +371,7 @@ static int xvtc_probe(struct platform_device *pdev)
 	xvtc->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(xvtc->xvip.iomem))
 		return PTR_ERR(xvtc->xvip.iomem);
+	xvtc->xvip.base = res->start;
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (res == NULL)

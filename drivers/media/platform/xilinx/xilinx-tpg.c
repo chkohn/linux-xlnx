@@ -686,6 +686,7 @@ static int xtpg_probe(struct platform_device *pdev)
 	xtpg->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(xtpg->xvip.iomem))
 		return PTR_ERR(xtpg->xvip.iomem);
+	xtpg->xvip.base = res->start;
 
 	if (!IS_ERR_VALUE(xtpg->vtmux_gpio)) {
 		unsigned long gpio_flags =
