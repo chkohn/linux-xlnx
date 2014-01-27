@@ -865,6 +865,8 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
+			timing-gpios = <&ps7_gpio_0 55 GPIO_ACTIVE_LOW>;
+
 			port@0 {
 				reg = <0>;
 				tpg_in: endpoint {
