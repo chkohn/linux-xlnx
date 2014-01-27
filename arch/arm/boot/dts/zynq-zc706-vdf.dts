@@ -851,6 +851,7 @@
 			reg = <0x83c40000 0x10000>;
 			interrupt-parent = <&ps7_scugic_0>;
 			interrupts = <0 35 IRQ_TYPE_LEVEL_HIGH>;
+			clocks = <&clkc 15>;
 			xlnx,generator;
 		};
 
