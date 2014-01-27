@@ -10,6 +10,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/clk.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -145,6 +146,7 @@
  * struct xvtc_device - Xilinx Video Timing Controller device structure
  * @xvip: Xilinx Video IP device
  * @list: entry in the global VTC list
+ * @clk: video clock
  * @has_detector: the VTC has a timing detector
  * @has_generator: the VTC has a timing generator
  * @config: generator timings configuration
@@ -152,6 +154,7 @@
 struct xvtc_device {
 	struct xvip_device xvip;
 	struct list_head list;
+	struct clk *clk;
 
 	bool has_detector;
 	bool has_generator;
@@ -174,8 +177,14 @@ static inline void xvtc_gen_write(struct xvtc_device *xvtc, u32 addr, u32 value)
 int xvtc_generator_start(struct xvtc_device *xvtc,
 			 const struct xvtc_config *config)
 {
+	int ret;
+
 	if (!xvtc->has_generator)
 		return -ENXIO;
+
+	ret = clk_prepare_enable(xvtc->clk);
+	if (ret < 0)
+		return ret;
 
 	/* We don't care about the chroma active signal, encoding parameters are
 	 * not important for now.
@@ -235,6 +244,9 @@ int xvtc_generator_stop(struct xvtc_device *xvtc)
 		return -ENXIO;
 
 	xvip_write(&xvtc->xvip, XVIP_CTRL_CONTROL, 0);
+
+	clk_disable_unprepare(xvtc->clk);
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(xvtc_generator_stop);
@@ -328,6 +340,10 @@ static int xvtc_probe(struct platform_device *pdev)
 	xvtc->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(xvtc->xvip.iomem))
 		return PTR_ERR(xvtc->xvip.iomem);
+
+	xvtc->clk = devm_clk_get(&pdev->dev, NULL);
+	if (IS_ERR(xvtc->clk))
+		return PTR_ERR(xvtc->clk);
 
 	platform_set_drvdata(pdev, xvtc);
 
