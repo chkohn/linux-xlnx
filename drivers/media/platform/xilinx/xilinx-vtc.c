@@ -10,7 +10,10 @@
  * published by the Free Software Foundation.
  */
 
+#define DEBUG
+
 #include <linux/clk.h>
+#include <linux/interrupt.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -170,6 +173,11 @@ static inline void xvtc_gen_write(struct xvtc_device *xvtc, u32 addr, u32 value)
 	xvip_write(&xvtc->xvip, XVTC_GENERATOR_OFFSET + addr, value);
 }
 
+static inline u32 xvtc_gen_read(struct xvtc_device *xvtc, u32 addr)
+{
+	return xvip_read(&xvtc->xvip, XVTC_GENERATOR_OFFSET + addr);
+}
+
 /* -----------------------------------------------------------------------------
  * Generator Operations
  */
@@ -234,6 +242,10 @@ int xvtc_generator_start(struct xvtc_device *xvtc,
 		   XVTC_CONTROL_FRAME_HSIZE_SRC | XVTC_CONTROL_GEN_ENABLE |
 		   XVIP_CTRL_CONTROL_REG_UPDATE);
 
+	xvip_read(&xvtc->xvip, XVIP_CTRL_STATUS);
+	xvip_write(&xvtc->xvip, XVIP_CTRL_STATUS, 0xffff3f00);
+	xvip_write(&xvtc->xvip, XVIP_CTRL_IRQ_ENABLE, 0xffff3f00);
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(xvtc_generator_start);
@@ -242,6 +254,12 @@ int xvtc_generator_stop(struct xvtc_device *xvtc)
 {
 	if (!xvtc->has_generator)
 		return -ENXIO;
+
+	xvip_write(&xvtc->xvip, XVIP_CTRL_IRQ_ENABLE, 0);
+
+	xvip_read(&xvtc->xvip, XVIP_CTRL_STATUS);
+	xvip_read(&xvtc->xvip, XVIP_CTRL_ERROR);
+	xvtc_gen_read(xvtc, XVTC_TIMING_STATUS);
 
 	xvip_write(&xvtc->xvip, XVIP_CTRL_CONTROL, 0);
 
@@ -309,6 +327,19 @@ static void xvtc_unregister_device(struct xvtc_device *xvtc)
  * Platform Device Driver
  */
 
+static irqreturn_t xvtc_irq_handler(int irq, void *data)
+{
+	struct xvtc_device *xvtc = data;
+	u32 status;
+
+	status = xvip_read(&xvtc->xvip, XVIP_CTRL_STATUS);
+	xvip_write(&xvtc->xvip, XVIP_CTRL_STATUS, status);
+
+	dev_dbg(xvtc->xvip.dev, "%s: status 0x%08x\n", __func__, status);
+
+	return status ? IRQ_HANDLED : IRQ_NONE;
+}
+
 static int xvtc_parse_of(struct xvtc_device *xvtc)
 {
 	struct device_node *node = xvtc->xvip.dev->of_node;
@@ -340,6 +371,15 @@ static int xvtc_probe(struct platform_device *pdev)
 	xvtc->xvip.iomem = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(xvtc->xvip.iomem))
 		return PTR_ERR(xvtc->xvip.iomem);
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (res == NULL)
+		return -ENODEV;
+
+	ret = devm_request_irq(&pdev->dev, res->start, xvtc_irq_handler,
+			       IRQF_SHARED, dev_name(&pdev->dev), xvtc);
+	if (ret < 0)
+		return -ENODEV;
 
 	xvtc->clk = devm_clk_get(&pdev->dev, NULL);
 	if (IS_ERR(xvtc->clk))
