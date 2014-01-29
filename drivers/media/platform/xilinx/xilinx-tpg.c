@@ -115,7 +115,7 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 			.vblank_start = height,
 			.vsync_start = height + 10,
 			.vsync_end = height + 20,
-			.vsize = height + 100,
+			.vsize = height + 3000,
 		};
 
 		xvtc_generator_start(xtpg->vtc, &config);
