@@ -169,5 +169,10 @@ struct v4l2_subdev_edid {
 #define VIDIOC_SUBDEV_S_SELECTION		_IOWR('V', 62, struct v4l2_subdev_selection)
 #define VIDIOC_SUBDEV_G_EDID			_IOWR('V', 40, struct v4l2_subdev_edid)
 #define VIDIOC_SUBDEV_S_EDID			_IOWR('V', 41, struct v4l2_subdev_edid)
+#define VIDIOC_SUBDEV_DV_TIMINGS_CAP		_IOWR('V', 42, struct v4l2_dv_timings_cap)
+#define VIDIOC_SUBDEV_ENUM_DV_TIMINGS		_IOWR('V', 43, struct v4l2_enum_dv_timings)
+#define VIDIOC_SUBDEV_QUERY_DV_TIMINGS		_IOR('V', 44, struct v4l2_dv_timings)
+#define VIDIOC_SUBDEV_G_DV_TIMINGS		_IOWR('V', 45, struct v4l2_dv_timings)
+#define VIDIOC_SUBDEV_S_DV_TIMINGS		_IOWR('V', 46, struct v4l2_dv_timings)
 
 #endif
