@@ -747,6 +747,12 @@ static int xtpg_probe(struct platform_device *pdev)
 		 ((version & XVIP_CTRL_VERSION_REVISION_MASK) >>
 		  XVIP_CTRL_VERSION_REVISION_SHIFT));
 
+	ret = v4l2_ctrl_handler_setup(&xtpg->ctrl_handler);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to initialize controls\n");
+		goto error;
+	}
+
 	ret = v4l2_async_register_subdev(subdev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed to register subdev\n");
