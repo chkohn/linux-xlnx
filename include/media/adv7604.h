@@ -90,6 +90,10 @@ struct adv7604_platform_data {
 	/* DIS_CABLE_DET_RST: 1 if the 5V pins are unused and unconnected */
 	unsigned disable_cable_det_rst:1;
 
+	/* Hot-Plug Detect control GPIOs */
+	int hpd_gpio[4];
+	bool hpd_gpio_low[4];
+
 	/* Analog input muxing mode */
 	enum adv7604_ain_sel ain_sel;
 
@@ -133,7 +137,6 @@ struct adv7604_platform_data {
 #define V4L2_CID_ADV_RX_FREE_RUN_COLOR		(V4L2_CID_DV_CLASS_BASE + 0x1002)
 
 /* notify events */
-#define ADV7604_HOTPLUG		1
 #define ADV7604_FMT_CHANGE	2
 
 #endif

@@ -28,6 +28,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/gpio.h>
 #include <linux/i2c.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -608,6 +609,23 @@ static inline int edid_write_block(struct v4l2_subdev *sd,
 	return err;
 }
 
+static void adv7604_set_hpd(struct adv7604_state *state, unsigned int hpd)
+{
+	unsigned int i;
+
+	for (i = 0; i < state->info->num_dv_ports; ++i) {
+		unsigned int enable = hpd & BIT(i);
+
+		if (IS_ERR_VALUE(state->pdata.hpd_gpio[i]))
+			continue;
+
+		if (state->pdata.hpd_gpio_low[i])
+			enable = !enable;
+
+		gpio_set_value_cansleep(state->pdata.hpd_gpio[i], enable);
+	}
+}
+
 static void adv7604_delayed_work_enable_hotplug(struct work_struct *work)
 {
 	struct delayed_work *dwork = to_delayed_work(work);
@@ -617,7 +635,7 @@ static void adv7604_delayed_work_enable_hotplug(struct work_struct *work)
 
 	v4l2_dbg(2, debug, sd, "%s: enable hotplug\n", __func__);
 
-	v4l2_subdev_notify(sd, ADV7604_HOTPLUG, (void *)&state->edid.present);
+	adv7604_set_hpd(state, state->edid.present);
 }
 
 static inline int hdmi_read(struct v4l2_subdev *sd, u8 reg)
@@ -2022,7 +2040,6 @@ static int adv7604_set_edid(struct v4l2_subdev *sd, struct v4l2_subdev_edid *edi
 	struct adv7604_state *state = to_state(sd);
 	const struct adv7604_chip_info *info = state->info;
 	int spa_loc;
-	int tmp = 0;
 	int err;
 	int i;
 
@@ -2033,7 +2050,7 @@ static int adv7604_set_edid(struct v4l2_subdev *sd, struct v4l2_subdev_edid *edi
 	if (edid->blocks == 0) {
 		/* Disable hotplug and I2C access to EDID RAM from DDC port */
 		state->edid.present &= ~(1 << edid->pad);
-		v4l2_subdev_notify(sd, ADV7604_HOTPLUG, (void *)&state->edid.present);
+		adv7604_set_hpd(state, state->edid.present);
 		rep_write_clr_set(sd, info->edid_enable_reg, 0x0f, state->edid.present);
 
 		/* Fall back to a 16:9 aspect ratio */
@@ -2059,7 +2076,7 @@ static int adv7604_set_edid(struct v4l2_subdev *sd, struct v4l2_subdev_edid *edi
 
 	/* Disable hotplug and I2C access to EDID RAM from DDC port */
 	cancel_delayed_work_sync(&state->delayed_work_enable_hotplug);
-	v4l2_subdev_notify(sd, ADV7604_HOTPLUG, (void *)&tmp);
+	adv7604_set_hpd(state, 0);
 	rep_write_clr_set(sd, info->edid_enable_reg, 0x0f, 0x00);
 
 	spa_loc = get_edid_spa_location(edid->edid);
@@ -2655,6 +2672,28 @@ static int adv7604_probe(struct i2c_client *client,
 		return -ENODEV;
 	}
 	state->pdata = *pdata;
+
+	/* Request GPIOs. */
+	for (i = 0; i < state->info->num_dv_ports; ++i) {
+		char name[5];
+
+		if (IS_ERR_VALUE(state->pdata.hpd_gpio[i]))
+			continue;
+
+		sprintf(name, "hpd%u", i);
+		err = devm_gpio_request_one(&client->dev,
+					    state->pdata.hpd_gpio[i],
+					    state->pdata.hpd_gpio_low[i] ?
+					    GPIOF_OUT_INIT_HIGH :
+					    GPIOF_OUT_INIT_LOW,
+					    name);
+		if (err < 0) {
+			v4l_err(client, "Failed to request HPD %u GPIO (%u)\n",
+				i, state->pdata.hpd_gpio[i]);
+			return err;
+		}
+	}
+
 	state->timings = cea640x480;
 	state->format = adv7604_format_info(state, V4L2_MBUS_FMT_YUYV8_2X8);
 
