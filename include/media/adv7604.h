@@ -94,6 +94,8 @@ struct adv7604_platform_data {
 	int hpd_gpio[4];
 	bool hpd_gpio_low[4];
 
+	int default_input;
+
 	/* Analog input muxing mode */
 	enum adv7604_ain_sel ain_sel;
 
