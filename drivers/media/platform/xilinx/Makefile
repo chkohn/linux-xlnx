@@ -12,5 +12,6 @@ obj-$(CONFIG_VIDEO_XILINX_SPC) += xilinx-spc.o
 obj-$(CONFIG_VIDEO_XILINX_STATS) += xilinx-stats.o
 obj-$(CONFIG_VIDEO_XILINX_REMAPPER) += xilinx-remapper.o
 obj-$(CONFIG_VIDEO_XILINX_SOBEL) += xilinx-sobel.o
+obj-$(CONFIG_VIDEO_XILINX_SWITCH) += xilinx-switch.o
 obj-$(CONFIG_VIDEO_XILINX_TPG) += xilinx-tpg.o
 obj-$(CONFIG_VIDEO_XILINX_VTC) += xilinx-vtc.o
