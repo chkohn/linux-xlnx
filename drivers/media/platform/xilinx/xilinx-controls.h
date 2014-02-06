@@ -158,4 +158,17 @@
 /* Minimum output value */
 #define V4L2_CID_XILINX_CCM_CLAMP		(V4L2_CID_XILINX_CCM + 14)
 
+/*
+ * Xilinx ENHANCE Video IP
+ */
+
+#define V4L2_CID_XILINX_ENHANCE			(V4L2_CID_USER_BASE + 0xc080)
+
+/* The amount of noise reduction applied by the low pass filter */
+#define V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD	(V4L2_CID_XILINX_ENHANCE + 1)
+/* The amount of edge enhancement applyed by the high pass filter */
+#define V4L2_CID_XILINX_ENHANCE_STRENGTH	(V4L2_CID_XILINX_ENHANCE + 2)
+/* The amount of halo suppression */
+#define V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS	(V4L2_CID_XILINX_ENHANCE + 3)
+
 #endif /* __XILINX_CONTROLS_H__ */
