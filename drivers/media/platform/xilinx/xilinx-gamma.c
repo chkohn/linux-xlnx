@@ -19,27 +19,16 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/v4l2-controls.h>
 
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-subdev.h>
 
+#include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
 #define XGAMMA_GAMMA_TABLE_UPDATE			0x100
 #define XGAMMA_GAMMA_ADDR_DATA				0x104
-
-/*
- * Private Controls for Xilinx GAMMA Video IP
- */
-
-#define V4L2_CID_XILINX_GAMMA			(V4L2_CID_USER_BASE + 0xb000)
-
-/* Switch to the new gamma LUT */
-#define V4L2_CID_XILINX_GAMMA_SWITCH_LUT	(V4L2_CID_XILINX_GAMMA + 1)
-/* Update the inactive gamma LUT */
-#define V4L2_CID_XILINX_GAMMA_UPDATE_LUT	(V4L2_CID_XILINX_GAMMA + 2)
 
 /**
  * struct xgamma_device - Xilinx GAMMA device structure

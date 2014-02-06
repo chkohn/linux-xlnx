@@ -135,4 +135,15 @@
 /* The amount of halo suppression */
 #define V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS	(V4L2_CID_XILINX_ENHANCE + 3)
 
+/*
+ * Xilinx GAMMA Video IP
+ */
+
+#define V4L2_CID_XILINX_GAMMA			(V4L2_CID_USER_BASE + 0xc080)
+
+/* Switch to the new gamma LUT */
+#define V4L2_CID_XILINX_GAMMA_SWITCH_LUT	(V4L2_CID_XILINX_GAMMA + 1)
+/* Update the inactive gamma LUT */
+#define V4L2_CID_XILINX_GAMMA_UPDATE_LUT	(V4L2_CID_XILINX_GAMMA + 2)
+
 #endif /* __XILINX_CONTROLS_H__ */
