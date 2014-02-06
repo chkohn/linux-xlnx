@@ -19,30 +19,17 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/v4l2-controls.h>
 
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-subdev.h>
 
+#include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
 #define XSPC_THRESH_TEMPORAL_VAR		0x100
 #define XSPC_THRESH_SPATIAL_VAR			0x104
 #define XSPC_THRESH_PIXEL_AGE			0x108
-
-/*
- * Private Controls for Xilinx SPC Video IPs
- */
-
-#define V4L2_CID_XILINX_SPC			(V4L2_CID_USER_BASE + 0xb000)
-
-/* Temporal threshold for noise detection */
-#define V4L2_CID_XILINX_SPC_TEMPORAL		(V4L2_CID_XILINX_SPC + 1)
-/* Spatial threshold for noise detection */
-#define V4L2_CID_XILINX_SPC_SPATIAL		(V4L2_CID_XILINX_SPC + 2)
-/* The number of frames to classfy nosie pixels within Temporal threshold */
-#define V4L2_CID_XILINX_SPC_PIXEL_AGE		(V4L2_CID_XILINX_SPC + 3)
 
 /**
  * struct xspc_device - Xilinx SPC device structure
