@@ -19,12 +19,12 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/v4l2-controls.h>
 
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-subdev.h>
 
+#include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
 #define XCCM_K11				0x100
@@ -41,49 +41,6 @@
 #define XCCM_BOFFSET				0x12c
 #define XCCM_CLIP				0x130
 #define XCCM_CLAMP				0x134
-
-/*
- * Private Controls for Xilinx CCM Video IP
- */
-
-#define V4L2_CID_XILINX_CCM			(V4L2_CID_USER_BASE + 0xb000)
-
-/*
- * The equation for color correction matrix:
- *
- * Rc = K11 * R + K12 * G + K13 * B + Roff
- * Gc = K21 * R + K22 * G + K23 * B + Goff
- * Bc = K31 * R + K32 * G + K33 * B + Boff
- */
-
-/* K11 */
-#define V4L2_CID_XILINX_CCM_COEFF11		(V4L2_CID_XILINX_CCM + 1)
-/* K12 */
-#define V4L2_CID_XILINX_CCM_COEFF12		(V4L2_CID_XILINX_CCM + 2)
-/* K13 */
-#define V4L2_CID_XILINX_CCM_COEFF13		(V4L2_CID_XILINX_CCM + 3)
-/* K21 */
-#define V4L2_CID_XILINX_CCM_COEFF21		(V4L2_CID_XILINX_CCM + 4)
-/* K22 */
-#define V4L2_CID_XILINX_CCM_COEFF22		(V4L2_CID_XILINX_CCM + 5)
-/* K23 */
-#define V4L2_CID_XILINX_CCM_COEFF23		(V4L2_CID_XILINX_CCM + 6)
-/* K31 */
-#define V4L2_CID_XILINX_CCM_COEFF31		(V4L2_CID_XILINX_CCM + 7)
-/* K32 */
-#define V4L2_CID_XILINX_CCM_COEFF32		(V4L2_CID_XILINX_CCM + 8)
-/* K33 */
-#define V4L2_CID_XILINX_CCM_COEFF33		(V4L2_CID_XILINX_CCM + 9)
-/* Roff */
-#define V4L2_CID_XILINX_CCM_RED_OFFSET		(V4L2_CID_XILINX_CCM + 10)
-/* Goff */
-#define V4L2_CID_XILINX_CCM_GREEN_OFFSET	(V4L2_CID_XILINX_CCM + 11)
-/* Boff */
-#define V4L2_CID_XILINX_CCM_BLUE_OFFSET		(V4L2_CID_XILINX_CCM + 12)
-/* Maximum output value */
-#define V4L2_CID_XILINX_CCM_CLIP		(V4L2_CID_XILINX_CCM + 13)
-/* Minimum output value */
-#define V4L2_CID_XILINX_CCM_CLAMP		(V4L2_CID_XILINX_CCM + 14)
 
 /**
  * struct xccm_device - Xilinx CCM device structure
