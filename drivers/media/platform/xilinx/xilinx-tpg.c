@@ -53,6 +53,11 @@
 #define XTPG_STUCK_PIXEL_THRESH			0x011c
 #define XTPG_NOISE_GAIN				0x0120
 #define XTPG_BAYER_PHASE			0x0124
+#define XTPG_BAYER_PHASE_RGGB			0
+#define XTPG_BAYER_PHASE_GRBG			1
+#define XTPG_BAYER_PHASE_GBRG			2
+#define XTPG_BAYER_PHASE_BGGR			3
+#define XTPG_BAYER_PHASE_OFF			4
 
 /*
  * Private Controls for Xilinx TPG Video IP
@@ -251,14 +256,47 @@ static int xtpg_close(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 	return 0;
 }
 
+static unsigned int xtpg_get_bayer_phase(const unsigned int code)
+{
+	switch (code) {
+	case V4L2_MBUS_FMT_SRGGB8_1X8:
+		return XTPG_BAYER_PHASE_RGGB;
+	case V4L2_MBUS_FMT_SGRBG8_1X8:
+		return XTPG_BAYER_PHASE_GRBG;
+	case V4L2_MBUS_FMT_SGBRG8_1X8:
+		return XTPG_BAYER_PHASE_GBRG;
+	case V4L2_MBUS_FMT_SBGGR8_1X8:
+		return XTPG_BAYER_PHASE_BGGR;
+	}
+
+	return XTPG_BAYER_PHASE_OFF;
+}
+
 static void xtpg_set_test_pattern(struct xtpg_device *xtpg,
 				  unsigned int pattern)
 {
+	int bayer_phase;
 	u32 reg;
+
+	xvip_disable_reg_update(&xtpg->xvip);
+
+	/* TODO: For TPG v5.0, the bayer phase needs to be off for
+	 * the pass through mode, otherwise the external input would be
+	 * subsampled. This is a bit strange, and will be fixed when
+	 * the TPG IP core is updated.
+	 */
+	if (pattern)
+		bayer_phase = xtpg_get_bayer_phase(xtpg->vip_format->code);
+	else
+		bayer_phase = XTPG_BAYER_PHASE_OFF;
+
+	xvip_write(&xtpg->xvip, XTPG_BAYER_PHASE, bayer_phase);
 
 	reg = xvip_read(&xtpg->xvip, XTPG_PATTERN_CONTROL);
 	xvip_write(&xtpg->xvip, XTPG_PATTERN_CONTROL,
 		   (reg & ~XTPG_PATTERN_MASK) | pattern);
+
+	xvip_enable_reg_update(&xtpg->xvip);
 }
 
 static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
