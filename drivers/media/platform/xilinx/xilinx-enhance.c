@@ -19,30 +19,17 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/v4l2-controls.h>
 
 #include <media/v4l2-async.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-subdev.h>
 
+#include "xilinx-controls.h"
 #include "xilinx-vip.h"
 
 #define XENHANCE_NOISE_THRESHOLD			0x100
 #define XENHANCE_ENHANCE_STRENGTH			0x104
 #define XENHANCE_HALO_SUPPRESS				0x108
-
-/*
- * Private Controls for Xilinx ENHANCE Video IP
- */
-
-#define V4L2_CID_XILINX_ENHANCE			(V4L2_CID_USER_BASE + 0xb000)
-
-/* The amount of noise reduction applied by the low pass filter */
-#define V4L2_CID_XILINX_ENHANCE_NOISE_THRESHOLD	(V4L2_CID_XILINX_ENHANCE + 1)
-/* The amount of edge enhancement applyed by the high pass filter */
-#define V4L2_CID_XILINX_ENHANCE_STRENGTH	(V4L2_CID_XILINX_ENHANCE + 2)
-/* The amount of halo suppression */
-#define V4L2_CID_XILINX_ENHANCE_HALO_SUPPRESS	(V4L2_CID_XILINX_ENHANCE + 3)
 
 /**
  * struct xenhance_device - Xilinx ENHANCE device structure
