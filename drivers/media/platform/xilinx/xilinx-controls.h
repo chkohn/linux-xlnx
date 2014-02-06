@@ -195,4 +195,37 @@
 /* The number of frames to classfy nosie pixels within Temporal threshold */
 #define V4L2_CID_XILINX_SPC_PIXEL_AGE		(V4L2_CID_XILINX_SPC + 3)
 
+/*
+ * Xilinx STATS Video IPs
+ */
+
+#define V4L2_CID_XILINX_STATS			(V4L2_CID_USER_BASE + 0xc0e0)
+
+/* The position of first vertical zone delimter */
+#define V4L2_CID_XILINX_STATS_HMAX0		(V4L2_CID_XILINX_STATS + 1)
+/* The position of second vertical zone delimter */
+#define V4L2_CID_XILINX_STATS_HMAX1		(V4L2_CID_XILINX_STATS + 2)
+/* The position of third vertical zone delimter */
+#define V4L2_CID_XILINX_STATS_HMAX2		(V4L2_CID_XILINX_STATS + 3)
+/* The position of first horizontal zone delimter */
+#define V4L2_CID_XILINX_STATS_VMAX0		(V4L2_CID_XILINX_STATS + 4)
+/* The position of second horizontal zone delimter */
+#define V4L2_CID_XILINX_STATS_VMAX1		(V4L2_CID_XILINX_STATS + 5)
+/* The position of third horizontal zone delimter */
+#define V4L2_CID_XILINX_STATS_VMAX2		(V4L2_CID_XILINX_STATS + 6)
+/* Histogram zoom */
+#define V4L2_CID_XILINX_STATS_HIST_ZOOM_FACTOR	(V4L2_CID_XILINX_STATS + 7)
+/* Enable the RGB histogramming for selected zone */
+#define V4L2_CID_XILINX_STATS_RGB_HIST_ZONE_EN	(V4L2_CID_XILINX_STATS + 8)
+/* Enable the YUV histogramming for selected zone */
+#define V4L2_CID_XILINX_STATS_YCC_HIST_ZONE_EN	(V4L2_CID_XILINX_STATS + 9)
+/* Select a zone for readout */
+#define V4L2_CID_XILINX_STATS_ZONE_ADDR		(V4L2_CID_XILINX_STATS + 10)
+/* Select a color channel for readout */
+#define V4L2_CID_XILINX_STATS_COLOR_ADDR	(V4L2_CID_XILINX_STATS + 11)
+/* Select the address for histogram data */
+#define V4L2_CID_XILINX_STATS_HIST_ADDR		(V4L2_CID_XILINX_STATS + 12)
+/* Address validation */
+#define V4L2_CID_XILINX_STATS_ADDR_VALID	(V4L2_CID_XILINX_STATS + 13)
+
 #endif /* __XILINX_CONTROLS_H__ */
