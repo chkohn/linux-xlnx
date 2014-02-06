@@ -182,4 +182,17 @@
 /* CD coefficient */
 #define V4L2_CID_XILINX_RGB2YUV_DCOEF		(V4L2_CID_XILINX_RGB2YUV + 13)
 
+/*
+ * Xilinx SPC Video IPs
+ */
+
+#define V4L2_CID_XILINX_SPC			(V4L2_CID_USER_BASE + 0xc0c0)
+
+/* Temporal threshold for noise detection */
+#define V4L2_CID_XILINX_SPC_TEMPORAL		(V4L2_CID_XILINX_SPC + 1)
+/* Spatial threshold for noise detection */
+#define V4L2_CID_XILINX_SPC_SPATIAL		(V4L2_CID_XILINX_SPC + 2)
+/* The number of frames to classfy nosie pixels within Temporal threshold */
+#define V4L2_CID_XILINX_SPC_PIXEL_AGE		(V4L2_CID_XILINX_SPC + 3)
+
 #endif /* __XILINX_CONTROLS_H__ */
