@@ -156,6 +156,16 @@ static inline void xvip_set_frame_size(struct xvip_device *xvip, u32 width,
 		   (width << XVIP_ACTIVE_HSIZE_SHIFT));
 }
 
+static inline void xvip_get_frame_size(struct xvip_device *xvip,
+				       u32 *width, u32 *height)
+{
+	u32 reg;
+
+	reg = xvip_read(xvip, XVIP_ACTIVE_SIZE);
+	*width = reg & XVIP_ACTIVE_HSIZE_MASK;
+	*height = (reg & XVIP_ACTIVE_VSIZE_MASK) >> XVIP_ACTIVE_VSIZE_SHIFT;
+}
+
 static inline void xvip_enable_reg_update(struct xvip_device *xvip)
 {
 	u32 reg;
