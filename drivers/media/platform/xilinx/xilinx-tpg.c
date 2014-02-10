@@ -660,9 +660,11 @@ static const struct media_entity_operations xtpg_media_ops = {
 
 static int xtpg_parse_of(struct xtpg_device *xtpg)
 {
+	struct device *dev = xtpg->xvip.dev;
 	struct device_node *node = xtpg->xvip.dev->of_node;
 	struct device_node *ports;
 	struct device_node *port;
+	const struct xvip_video_format *vip_format;
 	unsigned int nports = 0;
 
 	/* Count the number of ports. */
@@ -671,8 +673,22 @@ static int xtpg_parse_of(struct xtpg_device *xtpg)
 		ports = node;
 
 	for_each_child_of_node(ports, port) {
-		if (port->name && (of_node_cmp(port->name, "port") == 0))
+		if (port->name && (of_node_cmp(port->name, "port") == 0)) {
+			vip_format = xvip_of_get_format(port);
+			if (vip_format == NULL) {
+				dev_err(dev, "invalid format in DT");
+				return -EINVAL;
+			}
+
+			if (!xtpg->vip_format) {
+				xtpg->vip_format = vip_format;
+			} else if (xtpg->vip_format != vip_format) {
+				dev_err(dev, "in/out format mismatch in DT");
+				return -EINVAL;
+			}
+
 			nports++;
+		}
 	}
 
 	if (nports != 1 && nports != 2) {
@@ -681,12 +697,6 @@ static int xtpg_parse_of(struct xtpg_device *xtpg)
 	}
 
 	xtpg->npads = nports;
-
-	xtpg->vip_format = xvip_of_get_format(node);
-	if (xtpg->vip_format == NULL) {
-		dev_err(xtpg->xvip.dev, "invalid format in DT\n");
-		return -EINVAL;
-	}
 
 	return 0;
 }
