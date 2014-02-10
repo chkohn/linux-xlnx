@@ -99,8 +99,6 @@
 #define V4L2_CID_XILINX_TPG_STUCK_PIXEL_THRESH	(V4L2_CID_XILINX_TPG + 17)
 /* Noise level */
 #define V4L2_CID_XILINX_TPG_NOISE_GAIN		(V4L2_CID_XILINX_TPG + 18)
-/* Bayer phase for generated patterns */
-#define V4L2_CID_XILINX_TPG_BAYER_PHASE		(V4L2_CID_XILINX_TPG + 19)
 
 /**
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
@@ -395,9 +393,6 @@ static int xtpg_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_XILINX_TPG_NOISE_GAIN:
 		xvip_write(&xtpg->xvip, XTPG_NOISE_GAIN, ctrl->val);
 		return 0;
-	case V4L2_CID_XILINX_TPG_BAYER_PHASE:
-		xvip_write(&xtpg->xvip, XTPG_BAYER_PHASE, ctrl->val);
-		return 0;
 	}
 
 	return -EINVAL;
@@ -651,25 +646,6 @@ static struct v4l2_ctrl_config xtpg_noise_gain = {
 	.flags	= V4L2_CTRL_FLAG_SLIDER,
 };
 
-static const char *const xtpg_bayer_phase_menu_strings[] = {
-	"RGRG Bayer",
-	"GRGR Bayer",
-	"GBGB Bayer",
-	"BGBG Bayer",
-	"Off",
-};
-
-static struct v4l2_ctrl_config xtpg_bayer_phase = {
-	.ops	= &xtpg_ctrl_ops,
-	.id	= V4L2_CID_XILINX_TPG_BAYER_PHASE,
-	.name	= "Test Pattern: Bayer Phase",
-	.type	= V4L2_CTRL_TYPE_MENU,
-	.min	= 0,
-	.max	= 4,
-	.def	= 4,
-	.qmenu	= xtpg_bayer_phase_menu_strings,
-};
-
 /* -----------------------------------------------------------------------------
  * Media Operations
  */
@@ -776,7 +752,7 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 14);
+	v4l2_ctrl_handler_init(&xtpg->ctrl_handler, 13);
 	v4l2_ctrl_new_std_menu_items(&xtpg->ctrl_handler, &xtpg_ctrl_ops,
 				     V4L2_CID_TEST_PATTERN,
 				     ARRAY_SIZE(xtpg_pattern_strings) - 1,
@@ -802,7 +778,6 @@ static int xtpg_probe(struct platform_device *pdev)
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_stuck_pixel_thresh,
 			     NULL);
 	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_noise_gain, NULL);
-	v4l2_ctrl_new_custom(&xtpg->ctrl_handler, &xtpg_bayer_phase, NULL);
 	if (xtpg->ctrl_handler.error) {
 		dev_err(&pdev->dev, "failed to add controls\n");
 		ret = xtpg->ctrl_handler.error;
