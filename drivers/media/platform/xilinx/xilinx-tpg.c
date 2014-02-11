@@ -103,6 +103,7 @@
  * struct xtpg_device - Xilinx Test Pattern Generator device structure
  * @pad: media pad
  * @xvip: Xilinx Video IP device
+ * @default_format: default V4L2 media bus format
  * @format: active V4L2 media bus format at the source pad
  * @vip_format: format information corresponding to the active format
  * @ctrl_handler: control handler
@@ -111,6 +112,7 @@ struct xtpg_device {
 	struct xvip_device xvip;
 	struct media_pad pad;
 
+	struct v4l2_mbus_framefmt default_format;
 	struct v4l2_mbus_framefmt format;
 	const struct xvip_video_format *vip_format;
 
@@ -238,14 +240,8 @@ static int xtpg_set_format(struct v4l2_subdev *subdev,
 static int xtpg_open(struct v4l2_subdev *subdev, struct v4l2_subdev_fh *fh)
 {
 	struct xtpg_device *xtpg = to_tpg(subdev);
-	struct v4l2_mbus_framefmt *format;
 
-	format = v4l2_subdev_get_try_format(fh, 0);
-
-	format->code = xtpg->vip_format->code;
-	format->field = V4L2_FIELD_NONE;
-	format->colorspace = V4L2_COLORSPACE_SRGB;
-	xvip_get_frame_size(&xtpg->xvip, &format->width, &format->height);
+	*v4l2_subdev_get_try_format(fh, 0) = xtpg->default_format;
 
 	return 0;
 }
@@ -687,11 +683,14 @@ static int xtpg_probe(struct platform_device *pdev)
 	if (xtpg->xvip.iomem == NULL)
 		return -ENODEV;
 
-	xtpg->format.code = xtpg->vip_format->code;
-	xtpg->format.field = V4L2_FIELD_NONE;
-	xtpg->format.colorspace = V4L2_COLORSPACE_SRGB;
-	xvip_get_frame_size(&xtpg->xvip, &xtpg->format.width,
-			    &xtpg->format.height);
+	/* Initialize the default format */
+	xtpg->default_format.code = xtpg->vip_format->code;
+	xtpg->default_format.field = V4L2_FIELD_NONE;
+	xtpg->default_format.colorspace = V4L2_COLORSPACE_SRGB;
+	xvip_get_frame_size(&xtpg->xvip, &xtpg->default_format.width,
+			    &xtpg->default_format.height);
+
+	xtpg->format = xtpg->default_format;
 
 	/* Initialize V4L2 subdevice and media entity */
 	subdev = &xtpg->xvip.subdev;
