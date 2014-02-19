@@ -131,6 +131,11 @@ static inline void xvip_write(struct xvip_device *xvip, u32 addr, u32 value)
 	iowrite32(value, xvip->iomem + addr);
 }
 
+static inline void xvip_reset(struct xvip_device *xvip)
+{
+	xvip_write(xvip, XVIP_CTRL_CONTROL, XVIP_CTRL_CONTROL_SW_RESET);
+}
+
 static inline void xvip_start(struct xvip_device *xvip)
 {
 	u32 reg;
