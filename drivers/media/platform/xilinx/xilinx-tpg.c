@@ -538,6 +538,37 @@ static const struct media_entity_operations xtpg_media_ops = {
 };
 
 /* -----------------------------------------------------------------------------
+ * Power Management
+ */
+
+#ifdef CONFIG_PM
+
+static int xtpg_pm_suspend(struct device *dev)
+{
+	struct xtpg_device *xtpg = dev_get_drvdata(dev);
+
+	xvip_suspend(&xtpg->xvip);
+
+	return 0;
+}
+
+static int xtpg_pm_resume(struct device *dev)
+{
+	struct xtpg_device *xtpg = dev_get_drvdata(dev);
+
+	xvip_resume(&xtpg->xvip);
+
+	return 0;
+}
+
+#else
+
+#define xtpg_pm_suspend	NULL
+#define xtpg_pm_resume	NULL
+
+#endif /* CONFIG_PM */
+
+/* -----------------------------------------------------------------------------
  * Platform Device Driver
  */
 
@@ -655,6 +686,11 @@ static int xtpg_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
+static const struct dev_pm_ops xtpg_pm_ops = {
+	.suspend	= xtpg_pm_suspend,
+	.resume		= xtpg_pm_resume,
+};
 
 static const struct of_device_id xtpg_of_id_table[] = {
 	{ .compatible = "xlnx,axi-tpg" },
