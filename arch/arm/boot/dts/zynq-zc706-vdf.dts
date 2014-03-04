@@ -531,16 +531,16 @@
 			};
 		};
 
-		axi_vdma_2: axivdma@83000000 {
+		axi_vdma_2: axivdma@43030000 {
 			compatible = "xlnx,axi-vdma";
-			reg = <0x83000000 0x10000>;
+			reg = <0x43030000 0x10000>;
 
 			xlnx,flush-fsync = <1>;
 			xlnx,num-fstores = <1>;
 			xlnx,family = "zynq-770";
 
 			#dma-cells = <1>;
-			dma-mm2schannel@83000000 {
+			dma-mm2schannel@43030000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupt-parent = <&ps7_scugic_0>;
 				interrupts = <0 55 0x4>;
@@ -549,16 +549,16 @@
 			};
 		};
 
-		axi_vdma_3: axivdma@83010000 {
+		axi_vdma_3: axivdma@43020000 {
 			compatible = "xlnx,axi-vdma";
-			reg = <0x83010000 0x10000>;
+			reg = <0x43020000 0x10000>;
 
 			xlnx,flush-fsync = <1>;
 			xlnx,num-fstores = <1>;
 			xlnx,family = "zynq-770";
 
 			#dma-cells = <1>;
-			dma-mm2schannel@83010000 {
+			dma-mm2schannel@43020000 {
 				compatible = "xlnx,axi-vdma-mm2s-channel";
 				interrupt-parent = <&ps7_scugic_0>;
 				interrupts = <0 52 0x4>;
@@ -585,28 +585,28 @@
 			};
 		};
 
-		vtc_1: vtc@83c30000 {
-			compatible = "xlnx,v-vtc-5.01.a";
-			reg = <0x83c30000 0x10000>;
+		vtc_1: vtc@43d50000 {
+			compatible = "xlnx,v-tc-5.01.a";
+			reg = <0x43d50000 0x10000>;
 			interrupts = <0 53 4>;
 			interrupt-parent = <&ps7_scugic_0>;
 		};
 
-		cresample_0: vcresample@83c00000 {
+		cresample_0: vcresample@43d10000 {
 			compatible = "xlnx,v-cresample-3.01.a";
-			reg = <0x83c00000 0x10000>;
+			reg = <0x43d10000 0x10000>;
 			xlnx,input-format = "yuv444";
 			xlnx,output-format = "yuv422";
 		};
 
-		rgb2ycrcb_0: vrgb2ycrcb@83c20000 {
-			compatible = "xlnx,v-rgb2yuv-6.01.a";
-			reg = <0x83c20000 0x10000>;
+		rgb2ycrcb_0: vrgb2ycrcb@43d30000 {
+			compatible = "xlnx,v-rgb2ycrcb-6.01.a";
+			reg = <0x43d30000 0x10000>;
 		};
 
-		osd_0: osd@83c10000 {
+		osd_0: osd@43d20000 {
 			compatible = "xlnx,v-osd-5.01.a";
-			reg = <0x83c10000 0x10000>;
+			reg = <0x43d20000 0x10000>;
 			xlnx,num-layers = <3>;
 			xlnx,screen-width = <1920>;
 		};
@@ -637,7 +637,7 @@
 		};
 
 		vtc_2: vtc@43cc0000 {
-			compatible = "xlnx,v-vtc-5.01.a";
+			compatible = "xlnx,v-tc-5.01.a";
 			reg = <0x43cc0000 0x10000>;
 			interrupts = <0 34 4>;
 			interrupt-parent = <&ps7_scugic_0>;
@@ -656,54 +656,23 @@
 			};
 		};
 
-		axi_tpg_0: axi_tpg@43c20000 {
-			compatible = "xlnx,axi-tpg";
-			reg = <0x43c20000 0x10000>;
+		axi_tpg_0: axi_tpg@43c80000 {
+			compatible = "xlnx,axi-tpg-5.0";
+			reg = <0x43c80000 0x10000>;
 
 			port {
 				xlnx,axi-video-format = "rggb";
 				xlnx,axi-video-width = <8>;
 
 				tpg0_out: endpoint {
-					remote-endpoint = <&spc0_in>;
+					remote-endpoint = <&cfa0_in>;
 				};
 			};
 		};
 
-		axi_spc: axi_spc@43c00000 {
-			compatible = "xlnx,axi-spc";
-			reg = <0x43c00000 0x10000>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				port@0 {
-					reg = <0>;
-
-					xlnx,axi-video-format = "rggb";
-					xlnx,axi-video-width = <8>;
-
-					spc0_in: endpoint {
-						remote-endpoint = <&tpg0_out>;
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-
-					xlnx,axi-video-format = "rggb";
-					xlnx,axi-video-width = <8>;
-
-					spc0_out: endpoint {
-						remote-endpoint = <&cfa0_in>;
-					};
-				};
-			};
-		};
-
-		axi_cfa: axi_cfa@43c10000 {
-			compatible = "xlnx,axi-cfa";
-			reg = <0x43c10000 0x10000>;
+		axi_cfa: axi_cfa@43c20000 {
+			compatible = "xlnx,axi-cfa-7.0";
+			reg = <0x43c20000 0x10000>;
 
 			ports {
 				#address-cells = <1>;
@@ -715,7 +684,7 @@
 					xlnx,axi-video-width = <8>;
 
 					cfa0_in: endpoint {
-						remote-endpoint = <&spc0_out>;
+						remote-endpoint = <&tpg0_out>;
 					};
 				};
 
@@ -726,99 +695,6 @@
 					xlnx,axi-video-width = <8>;
 
 					cfa0_out: endpoint {
-						remote-endpoint = <&stats0_in>;
-					};
-				};
-			};
-		};
-
-		axi_stats: axi_stats@43c40000 {
-			compatible = "xlnx,axi-stats";
-			reg = <0x43c40000 0x10000>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				port@0 {
-					reg = <0>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					stats0_in: endpoint {
-						remote-endpoint = <&cfa0_out>;
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					stats0_out: endpoint {
-						remote-endpoint = <&ccm0_in>;
-					};
-				};
-			};
-		};
-
-		axi_ccm: axi_ccm@43c50000 {
-			compatible = "xlnx,axi-ccm";
-			reg = <0x43c50000 0x10000>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				port@0 {
-					reg = <0>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					ccm0_in: endpoint {
-						remote-endpoint = <&stats0_out>;
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					ccm0_out: endpoint {
-						remote-endpoint = <&gamma0_in>;
-					};
-				};
-			};
-		};
-
-		axi_gamma: axi_gamma@43c60000 {
-			compatible = "xlnx,axi-gamma";
-			reg = <0x43c60000 0x10000>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				port@0 {
-					reg = <0>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					gamma0_in: endpoint {
-						remote-endpoint = <&ccm0_out>;
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-
-					xlnx,axi-video-format = "rbg";
-					xlnx,axi-video-width = <8>;
-
-					gamma0_out: endpoint {
 						remote-endpoint = <&rgb2yuv0_in>;
 					};
 				};
@@ -826,7 +702,7 @@
 		};
 
 		axi_rgb2yuv: axi_rgb2yuv@43c70000 {
-			compatible = "xlnx,axi-rgb2yuv";
+			compatible = "xlnx,axi-rgb2yuv-7.1";
 			reg = <0x43c70000 0x10000>;
 
 			ports {
@@ -839,7 +715,7 @@
 					xlnx,axi-video-width = <8>;
 
 					rgb2yuv0_in: endpoint {
-						remote-endpoint = <&gamma0_out>;
+						remote-endpoint = <&cfa0_out>;
 					};
 				};
 
@@ -850,37 +726,6 @@
 					xlnx,axi-video-width = <8>;
 
 					rgb2yuv0_out: endpoint {
-						remote-endpoint = <&enhance0_in>;
-					};
-				};
-			};
-		};
-
-		axi_enhance: axi_enhance@43c80000 {
-			compatible = "xlnx,axi-enhance";
-			reg = <0x43c80000 0x10000>;
-
-			ports {
-				#address-cells = <1>;
-				#size-cells = <0>;
-				port@0 {
-					reg = <0>;
-
-					xlnx,axi-video-format = "yuv444";
-					xlnx,axi-video-width = <8>;
-
-					enhance0_in: endpoint {
-						remote-endpoint = <&rgb2yuv0_out>;
-					};
-				};
-
-				port@1 {
-					reg = <1>;
-
-					xlnx,axi-video-format = "yuv444";
-					xlnx,axi-video-width = <8>;
-
-					enhance0_out: endpoint {
 						remote-endpoint = <&cresample0_in>;
 					};
 				};
@@ -888,7 +733,7 @@
 		};
 
 		axi_cresample: axi_cresample@43c90000 {
-			compatible = "xlnx,axi-cresample";
+			compatible = "xlnx,axi-cresample-4.0";
 			reg = <0x43c90000 0x10000>;
 
 			ports {
@@ -901,7 +746,7 @@
 					xlnx,axi-video-width = <8>;
 
 					cresample0_in: endpoint {
-						remote-endpoint = <&enhance0_out>;
+						remote-endpoint = <&rgb2yuv0_out>;
 					};
 				};
 
@@ -919,7 +764,7 @@
 		};
 
 		axi_scaler: axi_scaler@43c30000 {
-			compatible = "xlnx,axi-scaler";
+			compatible = "xlnx,axi-scaler-8.1";
 			reg = <0x43c30000 0x10000>;
 
 			xlnx,num-hori-taps = <12>;
