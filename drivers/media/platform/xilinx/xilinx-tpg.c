@@ -166,7 +166,7 @@ static int xtpg_s_stream(struct v4l2_subdev *subdev, int enable)
 	u32 bayer_phase;
 
 	if (!enable) {
-		xvip_stop(&xtpg->xvip);
+		xvip_reset(&xtpg->xvip);
 		if (xtpg->vtc)
 			xvtc_generator_stop(xtpg->vtc);
 
