@@ -195,6 +195,30 @@ static int xhls_s_stream(struct v4l2_subdev *subdev, int enable)
 	xvip_write(&xhls->xvip, XHLS_REG_COLS, format->width);
 	xvip_write(&xhls->xvip, XHLS_REG_ROWS, format->height);
 
+	/* Add programming of coefficients */
+	xvip_write(&xhls->xvip, 0x24, 0x1);
+	xvip_write(&xhls->xvip, 0x2c, 0x0);
+	xvip_write(&xhls->xvip, 0x34, 0xffffffff);
+	xvip_write(&xhls->xvip, 0x3c, 0x2);
+	xvip_write(&xhls->xvip, 0x44, 0x0);
+	xvip_write(&xhls->xvip, 0x4c, 0xfffffffe);
+	xvip_write(&xhls->xvip, 0x54, 0x1);
+	xvip_write(&xhls->xvip, 0x5c, 0x0);
+	xvip_write(&xhls->xvip, 0x64, 0xffffffff);
+
+	xvip_write(&xhls->xvip, 0x6c, 0x1);
+	xvip_write(&xhls->xvip, 0x74, 0x2);
+	xvip_write(&xhls->xvip, 0x7c, 0x1);
+	xvip_write(&xhls->xvip, 0x84, 0x0);
+	xvip_write(&xhls->xvip, 0x8c, 0x0);
+	xvip_write(&xhls->xvip, 0x94, 0x0);
+	xvip_write(&xhls->xvip, 0x9c, 0xffffffff);
+	xvip_write(&xhls->xvip, 0xa4, 0xfffffffe);
+	xvip_write(&xhls->xvip, 0xac, 0xffffffff);
+
+	xvip_write(&xhls->xvip, 0xb4, 200);
+	xvip_write(&xhls->xvip, 0xbc, 100);
+
 	xvip_write(&xhls->xvip, XVIP_CTRL_CONTROL,
 		   XHLS_REG_CTRL_AUTO_RESTART | XVIP_CTRL_CONTROL_SW_ENABLE);
 
