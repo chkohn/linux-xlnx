@@ -882,6 +882,22 @@ static int adv7604_s_detect_tx_5v_ctrl(struct v4l2_subdev *sd)
 				info->read_cable_det(sd));
 }
 
+static bool aksv_updated(struct adv7604_state *state)
+{
+	if (state->info->type == ADV7604)
+		return io_read(&state->sd, 0x7e) & 0x20;
+	else
+		return io_read(&state->sd, 0x88) & 0x01;
+}
+
+static void aksv_update_clear(struct adv7604_state *state)
+{
+	if (state->info->type == ADV7604)
+		io_write(&state->sd, 0x80, 0x20);
+	else
+		io_write(&state->sd, 0x8a, 0x01);
+}
+
 static inline bool no_power(struct v4l2_subdev *sd)
 {
 	/* Entire chip or CP powered off */
@@ -2173,6 +2189,10 @@ static int adv7604_log_status(struct v4l2_subdev *sd)
 				      &timings, true);
 	v4l2_print_dv_timings(sd->name, "Configured format: ",
 			      &state->timings, true);
+
+	v4l2_info(sd, "-----Encryption status-----\n");
+	v4l2_info(sd, "AKSV written: %s\n",
+			aksv_updated(state) ? "true" : "false");
 
 	if (no_signal(sd))
 		return 0;
