@@ -1,0 +1,126 @@
+/*
+ * Device Tree Fragment for the Imageon FMC Add-on Board
+ *
+ * (C) Copyright 2014 Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	aliases {
+		i2c1 = &i2c1;
+	};
+
+	hdmi-connector {
+		compatible = "hdmi-connector";
+		label = "HDMI IN";
+		type = "a";
+
+		port {
+			fmc_hdmi_in: endpoint {
+				remote-endpoint = <&fmc_adv7611_in>;
+			};
+		};
+	};
+
+	xtal: xtal@fmc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <27000000>;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	i2cswitch@70 {
+		compatible = "nxp,pca9546";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x70>;
+
+		reset-gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
+
+		i2c@1 {
+			#size-cells = <0>;
+			#address-cells = <1>;
+			reg = <1>;
+
+			fmc_adv7511: adv7511@39 {
+				compatible = "adi,adv7511";
+				reg = <0x39>;
+				adi,input-style = <0x02>;
+				adi,input-id = <0x02>;
+				adi,input-color-depth = <0x3>;
+				adi,sync-pulse = <0x03>;
+				adi,bit-justification = <0x02>;
+				adi,up-conversion = <0x00>;
+				adi,timing-generation-sequence = <0x00>;
+				adi,vsync-polarity = <0x02>;
+				adi,hsync-polarity = <0x02>;
+				adi,tdms-clock-inversion;
+				adi,clock-delay = <0x03>;
+
+				gpios = <&fmc_pca9534 4 0>;
+			};
+		};
+
+		i2c@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <2>;
+			hdmi_in@4c {
+				compatible = "adi,adv7611";
+				reg = <0x4c>;
+
+				interrupts = <0 33 IRQ_TYPE_LEVEL_HIGH>;
+
+				reset-gpios = <&fmc_pca9534 0 GPIO_ACTIVE_LOW>;
+				hpd-gpios = <&fmc_pca9534 2 GPIO_ACTIVE_HIGH>;
+
+				adi,default-input = <0>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					fmc_adv7611_in: endpoint {
+						remote-endpoint = <&fmc_hdmi_in>;
+					};
+				};
+				port@1 {
+					reg = <1>;
+					fmc_adv7611_out: endpoint {
+						remote-endpoint = <&tpg_in>;
+					};
+				};
+			};
+		};
+
+		i2c@3 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <3>;
+
+			fmc_cdce913: clock-gen@65 {
+				#clock-cells = <1>;
+				clocks = <&xtal>;
+				clock-frequency = <25000000>, <50000000>, <100000000>;
+				compatible = "ti,cdce913";
+				reg = <0x65>;
+				ti,s0 = <1>;
+				ti,input-clock-type = "xtal";
+			 };
+
+			 fmc_pca9534: pca9534@20 {
+				compatible = "nxp,pca9534";
+				reg = <0x20>;
+				gpio-controller;
+				#gpio-cells = <2>;
+			 };
+		};
+	};
+};
