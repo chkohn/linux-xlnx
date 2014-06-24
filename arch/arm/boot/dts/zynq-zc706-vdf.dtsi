@@ -1,0 +1,537 @@
+/*
+ * Device Tree Fragment for the VDF design
+ *
+ * (C) Copyright 2014 Laurent Pinchart
+ * (C) Copyright 2007-2013 Xilinx, Inc.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/media/xilinx-vip.h>
+
+&i2c0 {
+	i2cswitch@74 {
+		i2c@1 {
+			#size-cells = <0>;
+			#address-cells = <1>;
+			reg = <1>;
+
+			adv7511_0: adv7511@39 {
+				compatible = "adi,adv7511";
+				reg = <0x39>;
+				adi,input-style = <0x02>;
+				adi,input-id = <0x01>;
+				adi,input-color-depth = <0x3>;
+				adi,sync-pulse = <0x03>;
+				adi,bit-justification = <0x00>;
+				adi,up-conversion = <0x00>;
+				adi,timing-generation-sequence = <0x00>;
+				adi,vsync-polarity = <0x02>;
+				adi,hsync-polarity = <0x02>;
+				adi,tdms-clock-inversion;
+				adi,clock-delay = <0x03>;
+			};
+		};
+	};
+};
+
+&{/amba} {
+	/* ---------------------------------------------------------------------
+	 * VDMA
+	 */
+
+	axi_vdma_1: axivdma@43000000 {
+		compatible = "xlnx,axi-vdma-1.00.a";
+		reg = <0x43000000 0x10000>;
+
+		xlnx,flush-fsync = <1>;
+		xlnx,num-fstores = <1>;
+		xlnx,family = "zynq-770";
+
+		#dma-cells = <1>;
+		dma-mm2schannel@43000000 {
+			compatible = "xlnx,axi-vdma-mm2s-channel";
+			interrupts = <0 58 0x4>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <0>;
+		};
+		dma-s2mmchannel@43000000 {
+			compatible = "xlnx,axi-vdma-s2mm-channel";
+			interrupts = <0 57 4>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <1>;
+		};
+	};
+
+	axi_vdma_2: axivdma@43030000 {
+		compatible = "xlnx,axi-vdma-1.00.a";
+		reg = <0x43030000 0x10000>;
+
+		xlnx,flush-fsync = <1>;
+		xlnx,num-fstores = <1>;
+		xlnx,family = "zynq-770";
+
+		#dma-cells = <1>;
+		dma-mm2schannel@43030000 {
+			compatible = "xlnx,axi-vdma-mm2s-channel";
+			interrupts = <0 55 0x4>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <0>;
+		};
+	};
+
+	axi_vdma_3: axivdma@43020000 {
+		compatible = "xlnx,axi-vdma-1.00.a";
+		reg = <0x43020000 0x10000>;
+
+		xlnx,flush-fsync = <1>;
+		xlnx,num-fstores = <1>;
+		xlnx,family = "zynq-770";
+
+		#dma-cells = <1>;
+		dma-mm2schannel@43020000 {
+			compatible = "xlnx,axi-vdma-mm2s-channel";
+			interrupts = <0 52 0x4>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <0>;
+		};
+		dma-s2mmchannel@43020000 {
+			compatible = "xlnx,axi-vdma-s2mm-channel";
+			interrupts = <0 36 IRQ_TYPE_LEVEL_HIGH>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <1>;
+		};
+	};
+
+	axi_vdma_4: axivdma@43010000 {
+		compatible = "xlnx,axi-vdma-1.00.a";
+		reg = <0x43010000 0x10000>;
+
+		xlnx,flush-fsync = <1>;
+		xlnx,num-fstores = <1>;
+		xlnx,family = "zynq-770";
+
+		#dma-cells = <1>;
+		dma-mm2schannel@43010000 {
+			compatible = "xlnx,axi-vdma-mm2s-channel";
+			interrupts = <0 54 0x4>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <0>;
+		};
+	};
+
+	axi_vdma_5: axivdma@43040000 {
+		compatible = "xlnx,axi-vdma-1.00.a";
+		reg = <0x43040000 0x10000>;
+
+		xlnx,flush-fsync = <1>;
+		xlnx,num-fstores = <1>;
+		xlnx,family = "zynq-770";
+
+		#dma-cells = <1>;
+		dma-mm2schannel@43040000 {
+			compatible = "xlnx,axi-vdma-mm2s-channel";
+			interrupts = <0 32 IRQ_TYPE_LEVEL_HIGH>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <0>;
+		};
+		dma-s2mmchannel@43040000 {
+			compatible = "xlnx,axi-vdma-s2mm-channel";
+			interrupts = <0 31 IRQ_TYPE_LEVEL_HIGH>;
+			xlnx,datawidth = <0x40>;
+			xlnx,device-id = <1>;
+		};
+	};
+
+	/* ---------------------------------------------------------------------
+	 * DRM
+	 */
+
+	vtc_1: vtc@43d50000 {
+		compatible = "xlnx,v-tc-5.01.a";
+		reg = <0x43d50000 0x10000>;
+		interrupts = <0 53 4>;
+	};
+
+	cresample_0: vcresample@43d10000 {
+		compatible = "xlnx,v-cresample-3.01.a";
+		reg = <0x43d10000 0x10000>;
+		xlnx,input-format = "yuv444";
+		xlnx,output-format = "yuv422";
+	};
+
+	rgb2ycrcb_0: vrgb2ycrcb@43d30000 {
+		compatible = "xlnx,v-rgb2ycrcb-6.01.a";
+		reg = <0x43d30000 0x10000>;
+	};
+
+	osd_0: osd@43d20000 {
+		compatible = "xlnx,v-osd-5.01.a";
+		reg = <0x43d20000 0x10000>;
+		xlnx,num-layers = <3>;
+		xlnx,screen-width = <1920>;
+	};
+
+	xilinx_drm_0 {
+		compatible = "xlnx,drm";
+		osd = <&osd_0>;
+		vtc = <&vtc_1>;
+		encoder-slave = <&adv7511_0>;
+		clocks = <&si570>;
+		planes {
+			plane0 {
+				dmas = <&axi_vdma_2 0>;
+				dma-names = "vdma";
+				rgb2yuv = <&rgb2ycrcb_0>;
+				cresample = <&cresample_0>;
+			};
+			plane1 {
+				dmas = <&axi_vdma_1 0>;
+				dma-names = "vdma";
+			};
+			plane2 {
+				dmas = <&axi_vdma_3 0>;
+				dma-names = "vdma";
+			};
+		};
+
+	};
+
+	vtc_2: vtc@43cc0000 {
+		compatible = "xlnx,v-tc-5.01.a";
+		reg = <0x43cc0000 0x10000>;
+		interrupts = <0 34 4>;
+	};
+
+	xilinx_drm_1 {
+		compatible = "xlnx,drm";
+		vtc = <&vtc_2>;
+		encoder-slave = <&fmc_adv7511>;
+		clocks = <&fmc_cdce913 0>;
+		planes {
+			plane0 {
+				dmas = <&axi_vdma_4 0>;
+				dma-names = "vdma";
+			};
+		};
+	};
+
+	/* ---------------------------------------------------------------------
+	 * V4L2
+	 */
+
+	tpg@43c80000 {
+		compatible = "xlnx,v-tpg-5.0";
+		reg = <0x43c80000 0x10000>;
+		clocks = <&clkc 15>;
+
+		port {
+			xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
+			xlnx,video-width = <8>;
+			xlnx,cfa-pattern = "rggb";
+
+			tpg0_out: endpoint {
+				remote-endpoint = <&cfa0_in>;
+			};
+		};
+	};
+
+	cfa@43c20000 {
+		compatible = "xlnx,v-cfa-7.0";
+		reg = <0x43c20000 0x10000>;
+		clocks = <&clkc 15>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+
+				xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
+				xlnx,video-width = <8>;
+				xlnx,cfa-pattern = "rggb";
+
+				cfa0_in: endpoint {
+					remote-endpoint = <&tpg0_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				xlnx,video-format = <XVIP_VF_RBG>;
+				xlnx,video-width = <8>;
+
+				cfa0_out: endpoint {
+					remote-endpoint = <&rgb2yuv0_in>;
+				};
+			};
+		};
+	};
+
+	rgb2yuv@43c70000 {
+		compatible = "xlnx,v-rgb2yuv-7.1";
+		reg = <0x43c70000 0x10000>;
+		clocks = <&clkc 15>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+
+				xlnx,video-format = <XVIP_VF_RBG>;
+				xlnx,video-width = <8>;
+
+				rgb2yuv0_in: endpoint {
+					remote-endpoint = <&cfa0_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				xlnx,video-format = <XVIP_VF_YUV_444>;
+				xlnx,video-width = <8>;
+
+				rgb2yuv0_out: endpoint {
+					remote-endpoint = <&cresample0_in>;
+				};
+			};
+		};
+	};
+
+	cresample@43c90000 {
+		compatible = "xlnx,v-cresample-4.0";
+		reg = <0x43c90000 0x10000>;
+		clocks = <&clkc 15>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+
+				xlnx,video-format = <XVIP_VF_YUV_444>;
+				xlnx,video-width = <8>;
+
+				cresample0_in: endpoint {
+					remote-endpoint = <&rgb2yuv0_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				xlnx,video-format = <XVIP_VF_YUV_422>;
+				xlnx,video-width = <8>;
+
+				cresample0_out: endpoint {
+					remote-endpoint = <&switch_in1>;
+				};
+			};
+		};
+	};
+
+	vtc_3: vtc@43c40000 {
+		compatible = "xlnx,v-tc-6.1";
+		reg = <0x43c40000 0x10000>;
+		interrupts = <0 35 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clkc 15>;
+		xlnx,generator;
+	};
+
+	tpg@43c60000 {
+		compatible = "xlnx,v-tpg-5.0";
+		reg = <0x43c60000 0x10000>;
+		clocks = <&clkc 15>;
+
+		xlnx,vtc = <&vtc_3>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		timing-gpios = <&gpio0 55 GPIO_ACTIVE_LOW>;
+
+		port@0 {
+			reg = <0>;
+
+			xlnx,video-format = <XVIP_VF_YUV_422>;
+			xlnx,video-width = <8>;
+
+			tpg_in: endpoint {
+				remote-endpoint = <&fmc_adv7611_out>;
+			};
+		};
+		port@1 {
+			reg = <1>;
+
+			xlnx,video-format = <XVIP_VF_YUV_422>;
+			xlnx,video-width = <8>;
+
+			tpg1_out: endpoint {
+				remote-endpoint = <&switch_in0>;
+			};
+		};
+	};
+
+	switch@43c10000 {
+		compatible = "xlnx,v-switch-1.0";
+		reg = <0x43c10000 0x10000>;
+		clocks = <&clkc 15>;
+
+		#xlnx,inputs = <2>;
+		#xlnx,outputs = <2>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+				switch_in0: endpoint {
+					remote-endpoint = <&tpg1_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+				switch_in1: endpoint {
+					remote-endpoint = <&cresample0_out>;
+				};
+			};
+			port@2 {
+				reg = <2>;
+				switch_out0: endpoint {
+					remote-endpoint = <&scaler0_in>;
+				};
+			};
+			port@3 {
+				reg = <3>;
+				switch_out1: endpoint {
+					remote-endpoint = <&vcap0_in1>;
+				};
+			};
+		};
+	};
+
+	scaler@43c30000 {
+		compatible = "xlnx,v-scaler-8.1";
+		reg = <0x43c30000 0x10000>;
+		clocks = <&clkc 15>;
+
+		xlnx,num-hori-taps = <12>;
+		xlnx,num-vert-taps = <12>;
+		xlnx,max-num-phases = <4>;
+		xlnx,separate-hv-coef;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			port@0 {
+				reg = <0>;
+
+				xlnx,video-format = <XVIP_VF_YUV_422>;
+				xlnx,video-width = <8>;
+
+				scaler0_in: endpoint {
+					remote-endpoint = <&switch_out0>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				xlnx,video-format = <XVIP_VF_YUV_422>;
+				xlnx,video-width = <8>;
+
+				scaler0_out: endpoint {
+					remote-endpoint = <&vcap0_in0>;
+				};
+			};
+		};
+	};
+
+	axi_video_cap {
+		compatible = "xlnx,video";
+		dmas = <&axi_vdma_1 1>, <&axi_vdma_3 1>;
+		dma-names = "port0", "port1";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				direction = "input";
+				vcap0_in0: endpoint {
+					remote-endpoint = <&scaler0_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+				direction = "input";
+				vcap0_in1: endpoint {
+					remote-endpoint = <&switch_out1>;
+				};
+			};
+		};
+	};
+
+	hls@43c00000 {
+		compatible = "xlnx,v-hls-sobel", "xlnx,v-hls";
+		reg = <0x43c00000 0x24>, <0x43c00024 0xa0>;
+		interrupts = <0 30 IRQ_TYPE_LEVEL_HIGH>;
+		clocks = <&clkc 15>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				xlnx,video-format = <XVIP_VF_YUV_422>;
+				xlnx,video-width = <8>;
+
+				hls0_in: endpoint {
+					remote-endpoint = <&m2m_vdma_out>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+
+				xlnx,video-format = <XVIP_VF_YUV_422>;
+				xlnx,video-width = <8>;
+
+				hls0_out: endpoint {
+					remote-endpoint = <&m2m_vdma_in>;
+				};
+			};
+		};
+	};
+
+	axi_video_m2m {
+		compatible = "xlnx,video";
+		dmas = <&axi_vdma_5 0>, <&axi_vdma_5 1>;
+		dma-names = "port0", "port1";
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+				direction = "output";
+				m2m_vdma_out: endpoint {
+					remote-endpoint = <&hls0_in>;
+				};
+			};
+			port@1 {
+				reg = <1>;
+				direction = "input";
+				m2m_vdma_in: endpoint {
+					remote-endpoint = <&hls0_out>;
+				};
+			};
+		};
+	};
+};
