@@ -7,6 +7,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/media/xilinx-vip.h>
 
 &i2c0 {
 	i2cswitch@74 {
@@ -225,8 +226,9 @@
 		clocks = <&clkc 15>;
 
 		port {
-			xlnx,video-format = "rggb";
+			xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
 			xlnx,video-width = <8>;
+			xlnx,cfa-pattern = "rggb";
 
 			tpg0_out: endpoint {
 				remote-endpoint = <&cfa0_in>;
@@ -245,8 +247,9 @@
 			port@0 {
 				reg = <0>;
 
-				xlnx,video-format = "rggb";
+				xlnx,video-format = <XVIP_VF_MONO_SENSOR>;
 				xlnx,video-width = <8>;
+				xlnx,cfa-pattern = "rggb";
 
 				cfa0_in: endpoint {
 					remote-endpoint = <&tpg0_out>;
@@ -256,7 +259,7 @@
 			port@1 {
 				reg = <1>;
 
-				xlnx,video-format = "rbg";
+				xlnx,video-format = <XVIP_VF_RBG>;
 				xlnx,video-width = <8>;
 
 				cfa0_out: endpoint {
@@ -277,7 +280,7 @@
 			port@0 {
 				reg = <0>;
 
-				xlnx,video-format = "rbg";
+				xlnx,video-format = <XVIP_VF_RBG>;
 				xlnx,video-width = <8>;
 
 				rgb2yuv0_in: endpoint {
@@ -288,7 +291,7 @@
 			port@1 {
 				reg = <1>;
 
-				xlnx,video-format = "yuv444";
+				xlnx,video-format = <XVIP_VF_YUV_444>;
 				xlnx,video-width = <8>;
 
 				rgb2yuv0_out: endpoint {
@@ -309,7 +312,7 @@
 			port@0 {
 				reg = <0>;
 
-				xlnx,video-format = "yuv444";
+				xlnx,video-format = <XVIP_VF_YUV_444>;
 				xlnx,video-width = <8>;
 
 				cresample0_in: endpoint {
@@ -320,7 +323,7 @@
 			port@1 {
 				reg = <1>;
 
-				xlnx,video-format = "yuv422";
+				xlnx,video-format = <XVIP_VF_YUV_422>;
 				xlnx,video-width = <8>;
 
 				cresample0_out: endpoint {
@@ -353,7 +356,7 @@
 		port@0 {
 			reg = <0>;
 
-			xlnx,video-format = "yuv422";
+			xlnx,video-format = <XVIP_VF_YUV_422>;
 			xlnx,video-width = <8>;
 
 			tpg_in: endpoint {
@@ -363,7 +366,7 @@
 		port@1 {
 			reg = <1>;
 
-			xlnx,video-format = "yuv422";
+			xlnx,video-format = <XVIP_VF_YUV_422>;
 			xlnx,video-width = <8>;
 
 			tpg1_out: endpoint {
@@ -426,7 +429,7 @@
 			port@0 {
 				reg = <0>;
 
-				xlnx,video-format = "yuv422";
+				xlnx,video-format = <XVIP_VF_YUV_422>;
 				xlnx,video-width = <8>;
 
 				scaler0_in: endpoint {
@@ -437,7 +440,7 @@
 			port@1 {
 				reg = <1>;
 
-				xlnx,video-format = "yuv422";
+				xlnx,video-format = <XVIP_VF_YUV_422>;
 				xlnx,video-width = <8>;
 
 				scaler0_out: endpoint {
@@ -486,7 +489,7 @@
 			port@0 {
 				reg = <0>;
 
-				xlnx,video-format = "yuv422";
+				xlnx,video-format = <XVIP_VF_YUV_422>;
 				xlnx,video-width = <8>;
 
 				hls0_in: endpoint {
@@ -496,7 +499,7 @@
 			port@1 {
 				reg = <1>;
 
-				xlnx,video-format = "yuv422";
+				xlnx,video-format = <XVIP_VF_YUV_422>;
 				xlnx,video-width = <8>;
 
 				hls0_out: endpoint {
