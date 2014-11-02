@@ -30,7 +30,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 earlyprintk";
+		bootargs = "console=ttyPS0,115200 ip=dhcp root=/dev/nfs rw earlyprintk";
 	};
 
 	usb_phy0: phy0 {
