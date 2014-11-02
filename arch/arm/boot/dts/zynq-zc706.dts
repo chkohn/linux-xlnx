@@ -312,3 +312,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usb0_default>;
 };
+
+#include "zynq-zc706-imageon.dtsi"
+#include "zynq-zc706-vdf.dtsi"
