@@ -163,3 +163,6 @@
 &uart1 {
 	status = "okay";
 };
+
+#include "zynq-zc706-imageon.dtsi"
+#include "zynq-zc706-vdf.dtsi"
