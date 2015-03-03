@@ -89,6 +89,18 @@ static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
  * V4L2 Subdevice Video Operations
  */
 
+#define FRAC_N 8
+
+static s16 fixp_new(s16 a)
+{
+	return a << FRAC_N;
+}
+
+static s16 fixp_mult(s16 a, s16 b)
+{
+	return ((s32)(a * b)) >> FRAC_N;
+}
+
 /**
  * lanczos - Lanczos 2D FIR kernel convolution
  * @x: phase
@@ -96,12 +108,12 @@ static inline struct xscaler_device *to_scaler(struct v4l2_subdev *subdev)
  *
  * Return: the coefficient value in fixed point format.
  */
-static fixp_t lanczos(fixp_t x, fixp_t a)
+static s16 lanczos(s16 x, s16 a)
 {
-	fixp_t pi;
-	fixp_t numerator;
-	fixp_t denominator;
-	fixp_t temp;
+	s16 pi;
+	s16 numerator;
+	s16 denominator;
+	s16 temp;
 
 	if (x < -a || x > a)
 		return 0;
@@ -117,14 +129,14 @@ static fixp_t lanczos(fixp_t x, fixp_t a)
 
 	/* sin(pi * x) */
 	temp = fixp_mult(fixp_new(180), x);
-	temp = fixp_sin(temp >> FRAC_N);
+	temp = fixp_sin16(temp >> FRAC_N);
 
 	/* a * sin(pi * x) */
 	numerator = fixp_mult(temp , a);
 
 	/* sin(pi * x / a) */
 	temp = (fixp_mult(fixp_new(180), x) << FRAC_N) / a;
-	temp = fixp_sin(temp >> FRAC_N);
+	temp = fixp_sin16(temp >> FRAC_N);
 
 	/* a * sin(pi * x) * sin(pi * x / a) */
 	numerator = fixp_mult(temp, numerator);
@@ -151,8 +163,8 @@ static fixp_t lanczos(fixp_t x, fixp_t a)
  */
 static int xscaler_set_coefs(struct xscaler_device *xscaler, s16 taps)
 {
-	fixp_t *coef;
-	fixp_t dy;
+	s16 *coef;
+	s16 dy;
 	u32 coef_val;
 	u16 phases = xscaler->max_num_phases;
 	u16 i;
@@ -163,7 +175,7 @@ static int xscaler_set_coefs(struct xscaler_device *xscaler, s16 taps)
 		return -ENOMEM;
 
 	for (i = 0; i < phases; i++) {
-		fixp_t sum = 0;
+		s16 sum = 0;
 
 		dy = ((fixp_new(i) << FRAC_N) / fixp_new(phases));
 
