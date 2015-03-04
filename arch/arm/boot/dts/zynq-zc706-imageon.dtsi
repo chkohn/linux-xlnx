@@ -12,7 +12,7 @@
 		i2c1 = &i2c1;
 	};
 
-	hdmi-connector {
+/*	hdmi-connector {
 		compatible = "hdmi-connector";
 		label = "HDMI IN";
 		type = "a";
@@ -22,7 +22,7 @@
 				remote-endpoint = <&fmc_adv7611_in>;
 			};
 		};
-	};
+	};*/
 
 	xtal: xtal@fmc {
 		compatible = "fixed-clock";
@@ -87,9 +87,9 @@
 
 				port@0 {
 					reg = <0>;
-					fmc_adv7611_in: endpoint {
+/*					fmc_adv7611_in: endpoint {
 						remote-endpoint = <&fmc_hdmi_in>;
-					};
+					};*/
 				};
 				port@1 {
 					reg = <1>;
