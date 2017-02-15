@@ -3,6 +3,9 @@
  *
  * Copyright (C) 2010-2016 Xilinx, Inc. All rights reserved.
  *
+ * Authors: Radhey Shyam Pandey <radheys@xilinx.com>
+ *          John Nichols <jnichol@xilinx.com>
+ *
  * Based on the Freescale DMA driver.
  *
  * Description:
@@ -30,15 +33,11 @@
 #include <linux/of_irq.h>
 #include <linux/slab.h>
 #include <linux/gpio/consumer.h>
-#include <linux/kthread.h>
 
 #include <uapi/drm/drm_fourcc.h>
 #include <uapi/linux/videodev2.h>
 
 #include "../dmaengine.h"
-
-/* TODO: Remove GPIO reset in 2016.3*/
-#define GPIO_RESET
 
 /* Register/Descriptor Offsets */
 #define XILINX_FRMBUF_CTRL_OFFSET		0x0000
@@ -160,7 +159,6 @@ struct xilinx_frmbuf_device {
 	const struct xilinx_frmbuf_config *frmbuf_config;
 	struct xilinx_frmbuf_chan *chan;
 	struct gpio_desc *rst_gpio;
-	struct task_struct *dbg_thread;
 };
 
 /**
@@ -622,23 +620,6 @@ static int xilinx_frmbuf_chan_reset(struct xilinx_frmbuf_chan *chan)
 	return 0;
 }
 
-/** xilinx_frmbuf_dbg_thread - Function for counting framedone interrupt
- *  TODO : Remove once semi-planar debugging is done.
- */
-int irq_count;
-static int xilinx_frmbuf_dbg_thread(void *data)
-{
-#if 0
-	while (true) {
-		pr_info("IRQ :: %d\n", irq_count);
-		irq_count = 0;
-		usleep_range(1000000-1, 1000000);
-	}
-#endif
-	return 0;
-
-}
-
 /**
  * xilinx_frmbuf_irq_handler - frmbuf Interrupt handler
  * @irq: IRQ number
@@ -661,7 +642,6 @@ static irqreturn_t xilinx_frmbuf_irq_handler(int irq, void *data)
 
 	if (status & XILINX_FRMBUF_ISR_AP_DONE_IRQ) {
 		spin_lock(&chan->lock);
-		irq_count++;
 		chan->idle = true;
 		xilinx_frmbuf_complete_descriptor(chan);
 		xilinx_frmbuf_start_transfer(chan);
@@ -919,7 +899,6 @@ static int xilinx_frmbuf_probe(struct platform_device *pdev)
 			xdev->frmbuf_config = match->data;
 	}
 
-#ifdef GPIO_RESET
 	xdev->rst_gpio = devm_gpiod_get(&pdev->dev, "reset",
 						   GPIOD_OUT_HIGH);
 	if (!xdev->rst_gpio) {
@@ -928,16 +907,6 @@ static int xilinx_frmbuf_probe(struct platform_device *pdev)
 	}
 
 	gpiod_set_value_cansleep(xdev->rst_gpio, 0x0);
-#endif
-
-	xdev->dbg_thread = kthread_create(xilinx_frmbuf_dbg_thread,
-						xdev, "dbg_thread");
-	if (IS_ERR(xdev->dbg_thread)) {
-		dev_err(&pdev->dev, "Unable to create debug thread\n");
-		return PTR_ERR(xdev->dbg_thread);
-	}
-
-	wake_up_process(xdev->dbg_thread);
 
 	/* Request and map I/O memory */
 	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -1014,8 +983,6 @@ static int xilinx_frmbuf_remove(struct platform_device *pdev)
 
 	if (xdev->chan)
 		xilinx_frmbuf_chan_remove(xdev->chan);
-
-	kthread_stop(xdev->dbg_thread);
 
 	return 0;
 }
