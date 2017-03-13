@@ -3,7 +3,7 @@ Device Tree Bindings for Xilinx Video Mixer IP core
 Required properties for Core IP Node:
 
     Required General Properties:
-    - compatible: "xlnx,video_mixer-1.00a"
+    - compatible: "xlnx,video_mixer-1.00.a"
 
     - reg: MMIO base address and size of the Xilinx Video Mixer IP core address 
            space
@@ -14,7 +14,7 @@ Required properties for Core IP Node:
 
     Required Mixer IP Core Properties
     - xlnx,bpc [number]: The data width per video component (8,10,12,16) Note:
-	only 8 is currently supported
+	only 8 is supported at this time
 
     - xlnx,num-layers [number]: Number of active overlay layers supported (1-7)
 	(does not include logo layer but does include base layer)
@@ -38,10 +38,10 @@ Layer Sub Node Properties:
 	be interpreted as the background layer and must use layer-id = <0>.
 
     - xlnx,vformat [string]: Expected layer input data format. 
-	For streaming layers, the possible formats are: "bgr", "yuv444", 
+	For streaming layers, the possible formats are: "bgr888", "yuv444", 
 		"yuv422", "yuv420"
-	For memory layers, the possible formats are: "rgba8", "y_uv8", 
-		"y_uv8_420", "yuyv8"
+	For memory layers, the possible formats are: "bgr888", "yuv444", 
+		"yuv422", "yuv420", "nv12", "nv16", "rgba8888", "xbgr8888"
 
     - xlnx,layer-height [number]: Only required for layer_0 node (master layer).
 	Indicates maximum vertical size of active screen display in pixels
@@ -56,8 +56,10 @@ Layer Sub Node Properties:
 	for layer.  Indicates maximum number of columns (before scaling) for
 	this layer (i.e. horizontal pixels)
 
-    - xlnx,layer-streaming: Layer obtains data as video stream (if omitted,
-	layer is presumed to be memory mapped)
+    - xlnx,layer-streaming: Layer obtains data as video stream. If omitted,
+	layer is presumed to be memory mapped if it is an overlay layer.  If
+	omitted for layer_0 (background layer), then the background layer will
+	be disabled and generate only a solid background color (typically blue).
 
 
 Logo Layer Sub Node Properties:
@@ -76,7 +78,8 @@ Logo Layer Sub Node Properties:
 
 
     Optional Properties:
-    - xlnx,logo-transp: Logo support color key transparency feature
+    - xlnx,logo-transp: Logo support color key transparency feature (note:
+	not supported at this time)
 
     - xlnx,logo-pixel-alpha: Logo supports per pixel alpha data (e.g. RGBA).
 
@@ -110,10 +113,10 @@ This sample is of a mixer IP core that has two overlay layers enabled in
 addition to the logo layer.  One overlay 1 is a streaming video input layer
 which is served by a dma IP core and overlay 2 is memory-based
 (i.e. dma-driven) layer (no need for a separate dma IP core). Additionally, the 
-mixer's reset line is on gpio #79. 
+mixer's reset line is on gpio #79 as indicated in the xilinx_drm node. 
 
 v_mix_0: v_mix@80040000 {
-	compatible = "xlnx,v-mix-1.00a";
+	compatible = "xlnx,v-mix-1.00.a";
 	interrupt-parent = <&gic>;
 	interrupts = <0 90 4>;
 	reg = <0x0 0x80040000 0x0 0x40000>;
@@ -125,6 +128,7 @@ v_mix_0: v_mix@80040000 {
 	mixer_master_layer: layer_0 {
 		xlnx,layer-id = <0>;
 		xlnx,vformat = "rgb";
+		xlnx,layer-streaming;
 		xlnx,layer-width = <1920>;
 		xlnx,layer-height = <1080>;
 	};
@@ -138,7 +142,7 @@ v_mix_0: v_mix@80040000 {
 
 	mixer_overlay_2: layer_2 {
 		xlnx,layer-id = <2>;
-		xlnx,vformat = "y_uv8_420";
+		xlnx,vformat = "nv12";
 		xlnx,layer-scale;
 		xlnx,layer-width = <1920>;
 	};
@@ -164,7 +168,7 @@ xilinx_drm: xilinx_drm {
 	xlnx,encoder-slave = <&adv7511>;
 	xlnx,connector-type = "HDMIA";
 	planes {
-		xlnx,pixel-format = "rgb888";
+		xlnx,pixel-format = "bgr888";
 		plane0 {
 			dmas = <&vdma_0 0>;
 			dma-names = "dma0";

@@ -988,7 +988,8 @@ int xilinx_mixer_logo_load(struct xv_mixer *mixer,
 				u32 logo_w, u32 logo_h,
 				u8 *r_buffer,
 				u8 *g_buffer,
-				u8 *b_buffer)
+				u8 *b_buffer,
+				u8 *a_buffer)
 {
 	void __iomem *reg_base_addr = mixer->reg_base_addr;
 	struct xv_mixer_layer_data *layer_data;
@@ -996,16 +997,22 @@ int xilinx_mixer_logo_load(struct xv_mixer *mixer,
 	int status = 0;
 	int x;
 	u32 aligned_pix_cnt;
-	u32 rword, gword, bword;
+	u32 rword, gword, bword, aword;
 	u32 pixel_cnt = logo_w * logo_h;
 	u32 unaligned_pix_cnt = pixel_cnt % 4;
 	u32 width, height, curr_x_pos, curr_y_pos;
-	u32 rbase_addr, gbase_addr, bbase_addr;
+	u32 rbase_addr, gbase_addr, bbase_addr, abase_addr;
 
 	layer_data = xilinx_mixer_get_layer_data(mixer, XVMIX_LAYER_LOGO);
+	rword = gword = bword = aword = 0;
+
 
 	if (!layer_data)
 		return -ENODEV;
+
+	/* RGBA data should be 32-bit word aligned */
+	if (unaligned_pix_cnt && mixer->logo_pixel_alpha_enabled)
+		return -EINVAL;
 
 	if (mixer->logo_layer_enabled &&
 		logo_w <= layer_data->hw_config.max_width &&
@@ -1017,10 +1024,13 @@ int xilinx_mixer_logo_load(struct xv_mixer *mixer,
 		rbase_addr = XV_MIX_CTRL_ADDR_HWREG_LOGOR_V_BASE;
 		gbase_addr = XV_MIX_CTRL_ADDR_HWREG_LOGOG_V_BASE;
 		bbase_addr = XV_MIX_CTRL_ADDR_HWREG_LOGOB_V_BASE;
+		abase_addr = XV_MIX_CTRL_ADDR_HWREG_LOGOA_V_BASE;
 
 		aligned_pix_cnt = pixel_cnt - unaligned_pix_cnt;
 
+
 		for (x = 0; x < aligned_pix_cnt; x += 4) {
+
 			rword = (u32)r_buffer[x] |
 			(((u32)r_buffer[x+1])<<8) |
 			(((u32)r_buffer[x+2])<<16) |
@@ -1036,12 +1046,21 @@ int xilinx_mixer_logo_load(struct xv_mixer *mixer,
 			(((u32)b_buffer[x+2])<<16) |
 			(((u32)b_buffer[x+3])<<24);
 
-			reg_writel(reg_base_addr,
-				(rbase_addr + x), rword);
-			reg_writel(reg_base_addr,
-				(gbase_addr + x), gword);
-			reg_writel(reg_base_addr,
-				(bbase_addr + x), bword);
+			if (mixer->logo_pixel_alpha_enabled) {
+				aword = (u32)a_buffer[x] |
+				(((u32)a_buffer[x+1])<<8) |
+				(((u32)a_buffer[x+2])<<16) |
+				(((u32)a_buffer[x+3])<<24);
+			}
+
+			reg_writel(reg_base_addr, (rbase_addr + x), rword);
+			reg_writel(reg_base_addr, (gbase_addr + x), gword);
+			reg_writel(reg_base_addr, (bbase_addr + x), bword);
+
+
+			if (mixer->logo_pixel_alpha_enabled)
+				reg_writel(reg_base_addr,
+					(abase_addr + x), aword);
 		}
 
 		if (unaligned_pix_cnt) {

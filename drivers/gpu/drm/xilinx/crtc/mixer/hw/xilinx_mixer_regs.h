@@ -621,5 +621,9 @@ static inline u32 reg_readl(void __iomem *base, int offset)
 #define XV_MIX_CTRL_ADDR_HWREG_LOGOB_V_HIGH            0x33fff
 #define XV_MIX_CTRL_WIDTH_HWREG_LOGOB_V                16
 #define XV_MIX_CTRL_DEPTH_HWREG_LOGOB_V                4096
+#define XV_MIX_CTRL_ADDR_HWREG_LOGOA_V_BASE            0x40000
+#define XV_MIX_CTRL_ADDR_HWREG_LOGOA_V_HIGH            0x43fff
+#define XV_MIX_CTRL_WIDTH_HWREG_LOGOA_V                16
+#define XV_MIX_CTRL_DEPTH_HWREG_LOGOA_V                4096
 
 #endif /* __XV_MIXER_REGS__ */

@@ -371,9 +371,11 @@ void xilinx_drm_crtc_enable_vblank(struct drm_crtc *base_crtc)
 	struct xilinx_drm_crtc *crtc = to_xilinx_crtc(base_crtc);
 
 	if (crtc->plane_manager->mixer) {
-		if (xilinx_mixer_g_intrpt_enabled(crtc->plane_manager->mixer)) {
+		struct xilinx_drm_mixer *mixer = crtc->plane_manager->mixer;
+
+		if (mixer->mixer_hw.intrpts_enabled) {
 			xilinx_drm_mixer_set_intr_handler(
-						crtc->plane_manager->mixer,
+						mixer,
 						xilinx_drm_crtc_vblank_handler,
 						base_crtc);
 		return;

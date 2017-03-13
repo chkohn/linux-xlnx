@@ -92,6 +92,7 @@ struct xilinx_drm_plane {
  * @drm: drm device
  * @node: plane device node
  * @osd: osd instance
+ * @mixer: mixer IP instance
  * @dp_sub: DisplayPort subsystem instance
  * @num_planes: number of available planes
  * @format: video format
@@ -101,9 +102,9 @@ struct xilinx_drm_plane {
  * @max_cursor_height: maximum pixel size for cursor layer height
  * @zpos_prop: z-position(priority) property
  * @alpha_prop: alpha value property
- * @scale_prop: set scaling (vert and horz) for plane
+ * @mixer_scale_prop: set scaling (vert and horz) for plane
  *              (0=no scaling, 1=2x, 2=4x)
- * @alpha_enable_prop: alpha enable property
+ * @mixer_alpha_enable_prop: alpha enable property
  * @default_alpha: default alpha value
  * @planes: xilinx drm planes
  */
@@ -111,7 +112,7 @@ struct xilinx_drm_plane_manager {
 	struct drm_device *drm;
 	struct device_node *node;
 	struct xilinx_osd *osd;
-	struct xv_mixer *mixer;
+	struct xilinx_drm_mixer *mixer;
 	struct xilinx_drm_dp_sub *dp_sub;
 	int num_planes;
 	int max_planes;
