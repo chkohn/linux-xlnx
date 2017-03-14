@@ -80,9 +80,6 @@
 #define INCLUDE_TX
 #endif
 
-#define INCLUDE_RX
-#define INCLUDE_TX
-
 /**
  * This defines the version of the software driver
  */
