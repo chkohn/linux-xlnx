@@ -35,10 +35,30 @@
 #include "crtc/mixer/hw/xilinx_mixer_data.h"
 #include "xilinx_drm_plane.h"
 
-#define XLNX_MIXER	"DRM XV_MIXER: "
+/**
+ * @struct xilinx_drm_mixer
+ * Container for interfacing DRM driver to mixer hardware ip driver layer.
+ * Contains pointers to logical constructions such as the DRM plane 
+ * manager as well as pointers to distinquish the mixer layer serving
+ * as the DRM "primary" plane from the actual mixer layer which serves
+ * as the background layer in hardware.   It is possible that the 
+ * DRM 
+*/
+struct xilinx_drm_mixer {
+	struct xv_mixer mixer_hw; 
+	struct xilinx_drm_plane_manager *plane_manager;
+	struct xv_mixer_layer_data *drm_primary_layer;
+	struct xv_mixer_layer_data *hw_master_layer;
+};
 
-/*JPM for temp debug -- remove asap */
-#define XLNX_MIXER_INFO(dev, fmt, args...) dev_info(dev, XLNX_MIXER fmt, ##args)
+struct xilinx_drm_mixer_plane {
+	struct xv_mixer_layer_data *layer;
+	struct xilinx_drm_mixer *drm_mixer;
+};
+
+/* JPM TODO rpp change this manager to mixer_plane */
+#define to_xv_mixer_hw(p) &(p->manager->mixer->mixer_hw)
+#define to_xv_mixer_layer(p) p->mixer_plane->layer
 
 /**
  * Used to parse device tree for mixer node and initialize the mixer IP core
@@ -49,10 +69,10 @@
  * @param[in] node Open firmware(of) device tree node describing the mixer IP
  * @param[in] manager Plane manager object to bind to mixer instance
  *
- * @returns reference to mixer instance struct; err pointer otherwise
+ * @returns reference to drm mixer instance struct; err pointer otherwise
  *
 */
-struct xv_mixer *
+struct xilinx_drm_mixer *
 xilinx_drm_mixer_probe(struct device *dev,
 		struct device_node *node,
 		struct xilinx_drm_plane_manager *manager);
@@ -66,7 +86,7 @@ xilinx_drm_mixer_probe(struct device *dev,
  *
 */
 void
-xilinx_drm_mixer_reset(struct xv_mixer *mixer);
+xilinx_drm_mixer_reset(struct xilinx_drm_mixer *mixer);
 
 /**
  * Start generation of video stream from mixer
@@ -226,7 +246,7 @@ xilinx_drm_mixer_get_layer(struct xv_mixer *mixer, xv_mixer_layer_id id);
 
 
 void
-xilinx_drm_mixer_set_intr_handler(struct xv_mixer *mixer,
+xilinx_drm_mixer_set_intr_handler(struct xilinx_drm_mixer *mixer,
 				void (*intr_handler_fn)(void *),
 				void *data);
 

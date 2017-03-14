@@ -149,13 +149,16 @@ void xilinx_drm_plane_commit(struct drm_plane *base_plane)
 {
 	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 	struct dma_async_tx_descriptor *desc;
-	struct xilinx_xdma_config dma_config;
 	enum dma_ctrl_flags flags;
 	unsigned int i;
 
+#ifdef CONFIG_XILINX_FRMBUF
 	/* for xilinx video framebuffer dma, if used */
+	struct xilinx_xdma_config dma_config;
+
 	dma_config.fourcc = plane->format;
 	dma_config.type = XDMA_DRM;
+#endif
 
 	DRM_DEBUG_KMS("plane->id: %d\n", plane->id);
 
@@ -164,9 +167,10 @@ void xilinx_drm_plane_commit(struct drm_plane *base_plane)
 
 		if (dma->chan && dma->is_active) {
 
+#ifdef CONFIG_XILINX_FRMBUF
 			/* set first channel private data */
 			dma->chan->private = &dma_config;
-
+#endif
 			flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
 			desc = dmaengine_prep_interleaved_dma(dma->chan,
 							      &dma->xt,
@@ -193,7 +197,7 @@ int xilinx_drm_plane_mode_set(struct drm_plane *base_plane,
 {
 	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 	struct drm_gem_cma_object *obj;
-	size_t offset;
+	size_t offset = 0;
 	unsigned int hsub, vsub, i;
 	int ret;
 
@@ -255,6 +259,11 @@ int xilinx_drm_plane_mode_set(struct drm_plane *base_plane,
 		xilinx_osd_enable_rue(plane->manager->osd);
 	}
 
+	/* JPM TODO rpp this is the main routine to update.  Ensure that a primary
+	 * plane that != MASTER does not call into xilinx_drm_mixer set dimensions
+         *		
+	 * Eventually, change this entire routine into a xilinx_drm_mixer_set_plane()
+	*/
 	if (plane->manager->mixer) {
 
 		uint32_t stride = 0;
@@ -280,9 +289,10 @@ int xilinx_drm_plane_mode_set(struct drm_plane *base_plane,
 		/* if layer is memory based-compute physical address*/
 		if (!mixer_layer_is_streaming(plane->mixer_layer) &&
 			plane->mixer_layer->id < XVMIX_LAYER_LOGO &&
-			plane->mixer_layer->id > XVMIX_LAYER_MASTER) {
+			plane->mixer_layer->id > XVMIX_LAYER_MASTER &&
+			obj) {
 
-			struct xv_mixer *mixer = plane->manager->mixer;
+			struct xv_mixer *mixer = to_xv_mixer_hw(plane);
 
 			ret = xilinx_mixer_set_layer_buff_addr(mixer,
 						plane->mixer_layer->id,
@@ -666,6 +676,15 @@ unsigned int xilinx_drm_plane_get_align(struct drm_plane *base_plane)
 {
 	struct xilinx_drm_plane *plane = to_xilinx_plane(base_plane);
 
+	if (!plane->dma[0].chan) {
+		if (plane->manager->mixer) {
+			struct xilinx_drm_mixer *m = plane->manager->mixer;
+			unsigned int a =
+			 sizeof(m->mixer_hw.layer_data[0].layer_regs.buff_addr);
+			return 1 << a;
+		}
+	}
+
 	return 1 << plane->dma[0].chan->device->copy_align;
 }
 
@@ -771,7 +790,7 @@ void xilinx_drm_plane_manager_dpms(struct xilinx_drm_plane_manager *manager,
 		}
 
 		if (manager->mixer)
-			xilinx_mixer_start(manager->mixer);
+			xilinx_mixer_start(&manager->mixer->mixer_hw);
 
 		break;
 
@@ -780,7 +799,7 @@ void xilinx_drm_plane_manager_dpms(struct xilinx_drm_plane_manager *manager,
 			xilinx_osd_reset(manager->osd);
 
 		if (manager->mixer)
-			xilinx_drm_mixer_reset(manager->mixer);
+			xilinx_drm_mixer_reset(&manager->mixer->mixer_hw);
 
 		if (manager->dp_sub)
 			xilinx_drm_dp_sub_disable(manager->dp_sub);
@@ -963,7 +982,7 @@ xilinx_drm_plane_create(struct xilinx_drm_plane_manager *manager,
 		ret = xilinx_create_mixer_layer_plane(manager,
 						      plane, layer_node);
 		if (ret)
-			goto err_dma;
+			goto err_init;
 
 		if (plane->mixer_layer->id == XVMIX_LAYER_LOGO)
 			type = DRM_PLANE_TYPE_CURSOR;
@@ -1088,18 +1107,18 @@ int xilinx_drm_plane_create_planes(struct xilinx_drm_plane_manager *manager,
 static int
 xilinx_drm_plane_init_manager(struct xilinx_drm_plane_manager *manager)
 {
-	unsigned int format;
+	uint32_t format;
 	uint32_t drm_format;
 	int ret = 0;
 
 	if (manager->mixer) {
 		manager->num_planes =
-			manager->mixer->max_layers +
-			(manager->mixer->logo_layer_enabled ? 1 : 0);
+			manager->mixer->mixer_hw.max_layers +
+			(manager->mixer->mixer_hw.logo_layer_enabled ? 1 : 0);
 
-		manager->max_width = manager->mixer->max_layer_width;
-		manager->max_height = manager->mixer->max_layer_height;
-		format = mixer_video_fmt(manager->mixer);
+		manager->max_width = manager->mixer->mixer_hw.max_layer_width;
+		manager->max_height = manager->mixer->mixer_hw.max_layer_height;
+		format = mixer_video_fmt(&manager->mixer->mixer_hw);
 
 		ret = xilinx_drm_mixer_fmt_to_drm_fmt(format, &drm_format);
 
@@ -1111,15 +1130,15 @@ xilinx_drm_plane_init_manager(struct xilinx_drm_plane_manager *manager)
 		if (drm_format != manager->format) {
 			dev_err(manager->drm->dev,
 				"Plane manager format does not match "
-				"base video format for mixer\n");
+				"output video format for mixer\n");
 			ret = -EINVAL;
 		}
 
-		if (manager->mixer->logo_layer_enabled) {
+		if (manager->mixer->mixer_hw.logo_layer_enabled) {
 			manager->max_cursor_width =
-				manager->mixer->max_logo_layer_width;
+				manager->mixer->mixer_hw.max_logo_layer_width;
 			manager->max_cursor_height =
-				manager->mixer->max_logo_layer_height;
+				manager->mixer->mixer_hw.max_logo_layer_height;
 		}
 
 	} else if (manager->osd) {
@@ -1238,6 +1257,8 @@ xilinx_create_mixer_layer_plane(struct xilinx_drm_plane_manager *manager,
 {
 	int ret = 0;
 	uint32_t layer_id;
+	struct xv_mixer_layer_data *layer_data;
+	struct xilinx_drm_mixer *mixer = manager->mixer;
 
 	/* Read device tree to see which mixer layer a drm plane is connected
 	 * to.  Master layer = 0.  Overlay layers 1-7 use indexing 1-7.
@@ -1254,16 +1275,18 @@ xilinx_create_mixer_layer_plane(struct xilinx_drm_plane_manager *manager,
 		ret = -1;
 	}
 
-	if (plane->primary && layer_id != XVMIX_LAYER_MASTER) {
-		DRM_ERROR("Primary plane not connected to primary "
+	layer_data =
+		xilinx_drm_mixer_get_layer(&mixer->mixer_hw, layer_id);
+
+	if (plane->primary && (layer_data != mixer->drm_primary_layer)) {
+		DRM_ERROR("Primary plane not connected to designated primary "
 			"mixer layer\n");
 		ret = -1;
 	}
 
 	of_node_put(node);
 
-	plane->mixer_layer = xilinx_drm_mixer_get_layer(manager->mixer,
-							layer_id);
+	plane->mixer_layer = layer_data;
 
 	ret = xilinx_drm_mixer_fmt_to_drm_fmt(
 			    mixer_layer_fmt(plane->mixer_layer),

@@ -58,52 +58,54 @@ struct color_fmt_tbl {
 
 /*************************** STATIC DATA  ************************************/
 static struct color_fmt_tbl color_table[] = {
-	/* Media Bus Formats */
-	{"bgr",        XVIDC_CSF_BGR,         DRM_FORMAT_BGR888},
-	{"rgb",        XVIDC_CSF_RGB,         DRM_FORMAT_RGB888},
-	{"yuv444",     XVIDC_CSF_YCRCB_444,   DRM_FORMAT_YUV444},
-	{"yuv422",     XVIDC_CSF_YCRCB_422,   DRM_FORMAT_YUYV},
-	{"yuv420",     XVIDC_CSF_YCRCB_420,   DRM_FORMAT_YUV420},
-	/* Memory Formats */
-	{"yuyv8",      XVIDC_CSF_YCRCB8,      DRM_FORMAT_YUYV},
-	{"y_uv8_420",  XVIDC_CSF_Y_CRCB8_420, DRM_FORMAT_NV12},
-	{"y_uv8",      XVIDC_CSF_Y_CRCB8,     DRM_FORMAT_NV16},
-	{"rgba8",      XVIDC_CSF_RGBA8,       DRM_FORMAT_RGBA8888},
-	{"bgrx8",      XVIDC_CSF_RGBX8,       DRM_FORMAT_XBGR8888},
+	{"bgr888",    XVIDC_CSF_BGR,         DRM_FORMAT_BGR888},
+	{"rgb888",    XVIDC_CSF_RGB,         DRM_FORMAT_RGB888},
+	/* JPM - add to drm_fourcc.h for packed yuv444?? */
+	/*{"yuv444",    XVIDC_CSF_YCRCB_444,   DRM_FORMAT_??????},*/
+	{"yuv422",    XVIDC_CSF_YCRCB_422,   DRM_FORMAT_YUYV},
+	{"nv12",      XVIDC_CSF_Y_CRCB8_420, DRM_FORMAT_NV12},
+	{"nv16",      XVIDC_CSF_Y_CRCB8,     DRM_FORMAT_NV16},
+	{"rgba8888",  XVIDC_CSF_RGBA8,       DRM_FORMAT_RGBA8888},
+	{"abgr8888",  XVIDC_CSF_ABGR8,       DRM_FORMAT_ABGR8888},
+	{"argb8888",  XVIDC_CSF_ARGB8,       DRM_FORMAT_ARGB8888},
+	{"xbgr8888",  XVIDC_CSF_XBGR8,       DRM_FORMAT_XBGR8888},
 };
 
 static const struct of_device_id xv_mixer_match[] = {
-	{.compatible = "xlnx,v-mix-1.00a"},
+	{.compatible = "xlnx,v-mix-1.00.a"},
 	{/*end of table*/},
 };
 
 /*************************** PROTOTYPES **************************************/
 
 static int
-xilinx_drm_mixer_of_init_layer_data(struct device_node *dev_node,
+xilinx_drm_mixer_of_init_layer_data(struct device *dev,
+				struct device_node *dev_node,
 				char *layer_name,
 				struct xv_mixer_layer_data *layer,
-				uint32_t max_layer_width);
+				uint32_t max_layer_width,
+				struct xv_mixer_layer_data **drm_primary_layer);
 
 static int
 xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
-				struct xv_mixer *mixer);
+				struct xv_mixer *mixer_hw);
 
 static int
 xilinx_drm_mixer_parse_dt_bg_video_fmt(struct device_node *layer_node,
-				struct xv_mixer *mixer);
+				struct xv_mixer *mixer_hw);
 
 static irqreturn_t
 xilinx_drm_mixer_intr_handler(int irq, void *data);
 
 
 /************************* IMPLEMENTATIONS ***********************************/
-struct xv_mixer *xilinx_drm_mixer_probe(struct device *dev,
+struct xilinx_drm_mixer	*xilinx_drm_mixer_probe(struct device *dev,
 				struct device_node *node,
 				struct xilinx_drm_plane_manager *manager)
 {
 
-	struct xv_mixer			*mixer;
+	struct xilinx_drm_mixer		*mixer;
+	struct xv_mixer			*mixer_hw;
 	char				layer_node_name[20] = {0};
 	struct xv_mixer_layer_data	*layer_data;
 	const struct of_device_id	*match;
@@ -121,108 +123,124 @@ struct xv_mixer *xilinx_drm_mixer_probe(struct device *dev,
 		return ERR_PTR(-ENODEV);
 	}
 
-	mixer = devm_kzalloc(dev, sizeof(*mixer), GFP_KERNEL);
+	mixer = devm_kzalloc(dev, sizeof(struct xilinx_drm_mixer), GFP_KERNEL);
 	if (!mixer)
 		return ERR_PTR(-ENOMEM);
 
+	mixer_hw = &(mixer->mixer_hw);
+
 	ret = of_address_to_resource(node, 0, &res);
 	if (ret) {
-		dev_err(dev, "Failed to parse node memory address from dts for mixer\n");
+		dev_err(dev, "Failed to parse node memory address from dts "
+			"for mixer\n");
 		return ERR_PTR(ret);
 	}
 
-	mixer->reg_base_addr = devm_ioremap_resource(dev, &res);
-	if (IS_ERR(mixer->reg_base_addr)) {
-		dev_err(dev, "Failed to map io space into virt memory for mixer\n");
-		return ERR_CAST(mixer->reg_base_addr);
+	mixer_hw->reg_base_addr = devm_ioremap_resource(dev, &res);
+	if (IS_ERR(mixer_hw->reg_base_addr)) {
+		dev_err(dev, "Failed to map io space into virt memory for"
+			" mixer\n");
+		return ERR_CAST(mixer_hw->reg_base_addr);
 	}
 
 	ret = of_property_read_u32(node, "xlnx,num-layers",
-				   &(mixer->max_layers));
+				   &(mixer_hw->max_layers));
 	if (ret) {
-		dev_err(dev, "Failed to get num of layers prop for mixer node\n");
+		dev_err(dev, "Failed to get num of layers dts prop for mixer"
+			" node\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	if (mixer->max_layers > XVMIX_MAX_SUPPORTED_LAYERS) {
+	if (mixer_hw->max_layers > XVMIX_MAX_SUPPORTED_LAYERS) {
 		dev_err(dev, "Number of layers specified in device "
 			"tree exceeds mixer capabilities\n");
 		return ERR_PTR(-EINVAL);
 
 	}
 
-	mixer->intrpts_enabled = false;
+	/* establish some global defaults subject to override via dts */
+	mixer_hw->intrpts_enabled = false;
+	mixer_hw->logo_pixel_alpha_enabled = false;
 
-	mixer->logo_layer_enabled = of_property_read_bool(node,
+	mixer_hw->logo_layer_enabled = of_property_read_bool(node,
 							  "xlnx,logo-layer");
 
 	/* Alloc num_layers + 1 for logo layer if enabled in dt */
-	layer_cnt = mixer->max_layers + (mixer->logo_layer_enabled ? 1 : 0);
+	layer_cnt = mixer_hw->max_layers +
+			(mixer_hw->logo_layer_enabled ? 1 : 0);
 
 	layer_data = devm_kzalloc(dev,
 				sizeof(struct xv_mixer_layer_data) * layer_cnt,
-					GFP_KERNEL);
+				GFP_KERNEL);
 
 	if (layer_data) {
-		mixer->layer_cnt = layer_cnt;
+		mixer_hw->layer_cnt = layer_cnt;
 	} else {
 		dev_err(dev, "Out of mem for mixer layer data\n");
 		return ERR_PTR(-ENOMEM);
 	}
 
-	mixer->layer_data = layer_data;
+	mixer_hw->layer_data = layer_data;
 
 
 	/* establish background layer video properties */
-	ret = xilinx_drm_mixer_parse_dt_bg_video_fmt(node, mixer);
+	ret = xilinx_drm_mixer_parse_dt_bg_video_fmt(node, mixer_hw);
 	if (ret) {
 		dev_err(dev, "Incomplete mixer video format in dt\n");
 		return ERR_PTR(-EINVAL);
 	}
-	mixer->private = (void *)manager;
+
+	mixer->plane_manager = manager;
+	mixer->drm_primary_layer = NULL;
+	mixer->hw_master_layer = &(mixer_hw->layer_data[0]); 
 
 
 	/* Parse out logo data from device tree */
-	ret = xilinx_drm_mixer_parse_dt_logo_data(node, mixer);
+	ret = xilinx_drm_mixer_parse_dt_logo_data(node, mixer_hw);
 	if (ret) {
 		dev_err(dev,
 			"Missing req'd logo layer props from dts for mixer\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	layer_idx = mixer->logo_layer_enabled ? 2 : 1;
-	for (i = 1; i <= (mixer->max_layers - 1); i++, layer_idx++) {
+	layer_idx = mixer_hw->logo_layer_enabled ? 2 : 1;
+	for (i = 1; i <= (mixer_hw->max_layers - 1); i++, layer_idx++) {
 
 		snprintf(layer_node_name, sizeof(layer_node_name),
 			"layer_%d", i);
 
 		ret =
-		     xilinx_drm_mixer_of_init_layer_data(node, layer_node_name,
-						&(mixer->layer_data[layer_idx]),
-							mixer->max_layer_width);
+		     xilinx_drm_mixer_of_init_layer_data(dev,
+					node,
+					layer_node_name,
+					&(mixer_hw->layer_data[layer_idx]),
+					mixer_hw->max_layer_width,
+					&mixer->drm_primary_layer);
 
-		if (ret) {
-			dev_err(dev, "Failed to obtain required parameter(s)"
-				" for mixer layer %d and/or invalid parameter"
-				" values supplied\n", i);
-		    return ERR_PTR(-EINVAL);
-		}
+		if (ret)
+		    return ERR_PTR(ret);
 
-		if (!mixer->layer_data[layer_idx].hw_config.is_streaming &&
-			!mixer->intrpts_enabled)
-			mixer->intrpts_enabled = true;
+		if (!mixer_hw->layer_data[layer_idx].hw_config.is_streaming &&
+			!mixer_hw->intrpts_enabled)
+			mixer_hw->intrpts_enabled = true;
 
 	}
 
+	/* If none of the overlay layers were designated as the drm
+	 * primary layer, default to the mixer's video0 layer as drm primary
+	*/
+	if (!mixer->drm_primary_layer)
+		mixer->drm_primary_layer = mixer->hw_master_layer;
+
 	/* request irq and obtain pixels-per-clock (ppc) property */
-	if (mixer->intrpts_enabled) {
+	if (mixer_hw->intrpts_enabled) {
 
-		mixer->irq = irq_of_parse_and_map(node, 0);
+		mixer_hw->irq = irq_of_parse_and_map(node, 0);
 
-		if (mixer->irq > 0) {
-			ret = devm_request_irq(dev, mixer->irq,
+		if (mixer_hw->irq > 0) {
+			ret = devm_request_irq(dev, mixer_hw->irq,
 					xilinx_drm_mixer_intr_handler,
-					IRQF_SHARED, "xilinx_mixer", mixer);
+					IRQF_SHARED, "xilinx_mixer", mixer_hw);
 
 			if (ret) {
 				dev_err(dev,
@@ -232,53 +250,55 @@ struct xv_mixer *xilinx_drm_mixer_probe(struct device *dev,
 		}
 
 		ret = of_property_read_u32(node, "xlnx,ppc",
-				   &(mixer->ppc));
+				   &(mixer_hw->ppc));
 
 		if (ret) {
 			dev_err(dev, "Failed to obtain xlnx,ppc property "
 				"from mixer dts\n");
-			return ret;
+			return ERR_PTR(ret);
 		}
 	}
 
 	/*Pull device out of reset */
-	mixer->reset_gpio = devm_gpiod_get_optional(dev,
+	mixer_hw->reset_gpio = devm_gpiod_get_optional(dev,
 						"xlnx,mixer-reset",
 						GPIOD_OUT_LOW);
-	if (IS_ERR(mixer->reset_gpio)) {
+	if (IS_ERR(mixer_hw->reset_gpio)) {
 		dev_err(dev, "No reset gpio info from dts for mixer\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	gpiod_set_raw_value(mixer->reset_gpio, 0x1);
+	gpiod_set_raw_value(mixer_hw->reset_gpio, 0x1);
 
 
-	if (mixer->intrpts_enabled)
-		xilinx_mixer_intrpt_enable(mixer);
+	if (mixer_hw->intrpts_enabled)
+		xilinx_mixer_intrpt_enable(mixer_hw);
 	else
-		xilinx_mixer_intrpt_disable(mixer);
+		xilinx_mixer_intrpt_disable(mixer_hw);
 
 
 	/* Init all layers to inactive state in software. An update_plane()
 	* call to our drm driver will change this to 'active' and permit the
 	* layer to be enabled in hardware
 	*/
-	for (i = 0; i < mixer->layer_cnt; i++) {
-		layer_data = &(mixer->layer_data[i]);
+	for (i = 0; i < mixer_hw->layer_cnt; i++) {
+		layer_data = &(mixer_hw->layer_data[i]);
 		mixer_layer_active(layer_data) = false;
 	}
 
-	xilinx_mixer_init(mixer);
+	xilinx_mixer_init(mixer_hw);
 
 	return mixer;
 }
 
 
 
-static int xilinx_drm_mixer_of_init_layer_data(struct device_node *node,
-					char *layer_name,
-					struct xv_mixer_layer_data *layer,
-					uint32_t max_layer_width)
+static int xilinx_drm_mixer_of_init_layer_data(struct device *dev,
+				struct device_node *node,
+				char *layer_name,
+				struct xv_mixer_layer_data *layer,
+				uint32_t max_layer_width,
+				struct xv_mixer_layer_data **drm_pri_layer)
 {
 	struct device_node *layer_node;
 	const char *vformat;
@@ -300,40 +320,72 @@ static int xilinx_drm_mixer_of_init_layer_data(struct device_node *node,
 	layer->hw_config.vid_fmt = 0;
 	layer->id = 0;
 
-	ret = of_property_read_string(layer_node, "xlnx,vformat", &vformat);
-	if (ret)
-		return -1;
-
 	ret = of_property_read_u32(layer_node, "xlnx,layer-id", &layer->id);
 
 	if (ret ||
 		layer->id < 1 ||
-		layer->id > (XVMIX_MAX_SUPPORTED_LAYERS - 1))
-		ret = -1;
+		layer->id > (XVMIX_MAX_SUPPORTED_LAYERS - 1)) {
+		dev_err(dev, "Mixer layer id in dts is out of legal range." 
+			" ID=%d.  Must be between %u and %u\n",
+			layer->id, 1, (XVMIX_MAX_SUPPORTED_LAYERS - 1));
+		ret = -EINVAL;
+	}
+
+	ret = of_property_read_string(layer_node, "xlnx,vformat", &vformat);
+	if (ret) {
+		dev_err(dev, "Missing mixer layer video format in dts"
+			" for layer id %d\n", layer->id);
+		return -EINVAL;
+	}
+
 
 	ret = xilinx_drm_mixer_string_to_fmt(vformat,
 					     &(layer->hw_config.vid_fmt));
-	if (ret < 0)
-		return -1;
-
-	if (mixer_layer_can_scale(layer)) {
-		ret = of_property_read_u32(layer_node, "xlnx,layer-width",
-					&(layer->hw_config.max_width));
-		if (ret)
-			return ret;
-
-		if (layer->hw_config.max_width > max_layer_width)
-			return -EINVAL;
+	if (ret < 0) {
+		dev_err(dev, "No matching video format for mixer"
+			" layer %d in dts\n", layer->id);
+		return -EINVAL;
 	}
 
 	mixer_layer_can_scale(layer) =
 		    of_property_read_bool(layer_node, "xlnx,layer-scale");
+
+	if (mixer_layer_can_scale(layer)) {
+		ret = of_property_read_u32(layer_node, "xlnx,layer-width",
+					&(layer->hw_config.max_width));
+		if (ret) {
+			dev_err(dev, "Mixer layer %d dts missing width prop."
+				" Required for layer with scaling enabled\n",
+				layer->id);
+			return ret;
+		}
+
+		if (layer->hw_config.max_width > max_layer_width) {
+			dev_err(dev, "Mixer layer %d width in dts exceeds mixer"
+				" maximum active area width\n", layer->id);
+			return -EINVAL;
+		}
+	}
 
 	mixer_layer_can_alpha(layer) =
 		    of_property_read_bool(layer_node, "xlnx,layer-alpha");
 
 	mixer_layer_is_streaming(layer) =
 		    of_property_read_bool(layer_node, "xlnx,layer-streaming");
+
+	if (of_property_read_bool(layer_node, "xlnx,layer-primary")) {
+		if(*drm_pri_layer) {
+			dev_err(dev, "Ambiguous assignment of primary layer"
+				" in mixer dts for layer %d.  Only one layer "
+				" can be assigned as the primary layer\n",
+				layer->id);
+			return -EINVAL;
+		}
+
+		mixer_layer_can_scale(layer) = false;
+		*drm_pri_layer = layer;
+	}
+
 
 	return 0;
 }
@@ -375,7 +427,7 @@ int
 xilinx_drm_mixer_set_layer_scale(struct xilinx_drm_plane *plane,
 				uint64_t val)
 {
-	struct xv_mixer *mixer = plane->manager->mixer;
+	struct xv_mixer *mixer_hw = to_xv_mixer_hw(plane);
 	struct xv_mixer_layer_data *layer = plane->mixer_layer;
 	int ret;
 
@@ -387,7 +439,7 @@ xilinx_drm_mixer_set_layer_scale(struct xilinx_drm_plane *plane,
 			return -EINVAL;
 		}
 		xilinx_drm_mixer_layer_disable(plane);
-		ret = xilinx_mixer_set_layer_scaling(mixer, layer->id, val);
+		ret = xilinx_mixer_set_layer_scaling(mixer_hw, layer->id, val);
 		if (ret)
 			return ret;
 
@@ -403,7 +455,7 @@ int
 xilinx_drm_mixer_set_layer_alpha(struct xilinx_drm_plane *plane,
 				uint64_t val)
 {
-	struct xv_mixer *mixer = plane->manager->mixer;
+	struct xv_mixer *mixer_hw = to_xv_mixer_hw(plane);
 	struct xv_mixer_layer_data *layer = plane->mixer_layer;
 	int ret;
 
@@ -413,7 +465,7 @@ xilinx_drm_mixer_set_layer_alpha(struct xilinx_drm_plane *plane,
 				"exceeds legal values\n");
 			return -EINVAL;
 		}
-		ret = xilinx_mixer_set_layer_alpha(mixer, layer->id, val);
+		ret = xilinx_mixer_set_layer_alpha(mixer_hw, layer->id, val);
 		if (ret)
 			return ret;
 
@@ -427,11 +479,11 @@ xilinx_drm_mixer_set_layer_alpha(struct xilinx_drm_plane *plane,
 void
 xilinx_drm_mixer_layer_disable(struct xilinx_drm_plane *plane)
 {
-	struct xv_mixer *mixer;
+	struct xv_mixer *mixer_hw;
 	u32 layer_id;
 
 	if (plane)
-		mixer = plane->manager->mixer;
+		mixer_hw = to_xv_mixer_hw(plane);
 	else
 		return;
 
@@ -439,22 +491,24 @@ xilinx_drm_mixer_layer_disable(struct xilinx_drm_plane *plane)
 	if (layer_id < XVMIX_LAYER_MASTER  || layer_id > XVMIX_LAYER_LOGO)
 		return;
 
-	xilinx_mixer_layer_disable(mixer, layer_id);
+	xilinx_mixer_layer_disable(mixer_hw, layer_id);
 
 }
 
 void
 xilinx_drm_mixer_layer_enable(struct xilinx_drm_plane *plane)
 {
-	struct xv_mixer *mixer;
+	struct xv_mixer *mixer_hw;
+	struct xv_mixer_layer_data *layer_data;
 	u32 layer_id;
 
 	if (plane)
-		mixer = plane->manager->mixer;
+		mixer_hw = to_xv_mixer_hw(plane);
 	else
 		return;
 
-	layer_id = plane->mixer_layer->id;
+	layer_data = plane->mixer_layer;
+	layer_id = layer_data->id;
 
 	if (layer_id < XVMIX_LAYER_MASTER  || layer_id > XVMIX_LAYER_LOGO) {
 		DRM_DEBUG_KMS("Attempt to activate invalid layer: %d\n",
@@ -462,7 +516,15 @@ xilinx_drm_mixer_layer_enable(struct xilinx_drm_plane *plane)
 		return;
 	}
 
-	xilinx_mixer_layer_enable(mixer, layer_id);
+	/* JPM TODO rpp if MASTER is not primary, we could disable streaming
+	 * propery, effectively, turning it off
+	*/
+	if (layer_id == XVMIX_LAYER_MASTER &&
+		!mixer_layer_is_streaming(layer_data)) {
+		return;
+	}
+
+	xilinx_mixer_layer_enable(mixer_hw, layer_id);
 }
 
 
@@ -472,14 +534,33 @@ xilinx_drm_mixer_set_layer_dimensions(struct xilinx_drm_plane *plane,
 				u32 crtc_x, u32 crtc_y,
 				u32 width, u32 height, u32 stride)
 {
-	int ret = 0;
-	struct xv_mixer *mixer = plane->manager->mixer;
+	
+	/* JPM TODO make this all a bit more elegant*/
+	struct xilinx_drm_mixer *mixer = plane->manager->mixer;
+	struct xv_mixer *mixer_hw = to_xv_mixer_hw(plane);
 	struct xv_mixer_layer_data *layer_data;
 	xv_mixer_layer_id layer_id;
+	int ret = 0;
 
 	layer_data = plane->mixer_layer;
 	layer_id = layer_data->id;
 
+	/* JPM TODO this must ensure we are dealing with the drm_primary.
+	* if drm_primary != master pointer then update both active_area
+	* and then plane
+	*/
+	if (mixer->drm_primary_layer == layer_data) {
+
+		/*xilinx_drm_mixer_layer_disable(plane);*/
+		ret = xilinx_mixer_set_active_area(mixer_hw, width, height);
+		if (ret)
+			return ret;
+
+		/*xilinx_drm_mixer_layer_enable(plane);*/
+	}
+
+	/* JPM TODO rpp this must check to ensure we aren't dealing with
+	* MASTER or drm_primary layer */
 	if (layer_id != XVMIX_LAYER_MASTER && layer_id < XVMIX_LAYER_ALL) {
 
 		/* only disable plane if width or height is altered */
@@ -487,7 +568,7 @@ xilinx_drm_mixer_set_layer_dimensions(struct xilinx_drm_plane *plane,
 			mixer_layer_height(layer_data) != height)
 			xilinx_drm_mixer_layer_disable(plane);
 
-		ret = xilinx_mixer_set_layer_window(mixer, layer_id,
+		ret = xilinx_mixer_set_layer_window(mixer_hw, layer_id,
 						 crtc_x, crtc_y,
 						 width, height, stride);
 
@@ -498,15 +579,6 @@ xilinx_drm_mixer_set_layer_dimensions(struct xilinx_drm_plane *plane,
 
 	}
 
-	if (layer_id == XVMIX_LAYER_MASTER) {
-		xilinx_drm_mixer_layer_disable(plane);
-
-		ret = xilinx_mixer_set_active_area(mixer, width, height);
-		if (ret)
-			return ret;
-
-		xilinx_drm_mixer_layer_enable(plane);
-	}
 
 	return ret;
 }
@@ -514,34 +586,33 @@ xilinx_drm_mixer_set_layer_dimensions(struct xilinx_drm_plane *plane,
 
 
 struct xv_mixer_layer_data *
-xilinx_drm_mixer_get_layer(struct xv_mixer *mixer, xv_mixer_layer_id layer_id)
+xilinx_drm_mixer_get_layer(struct xv_mixer *mixer_hw, xv_mixer_layer_id layer_id)
 {
-	return xilinx_mixer_get_layer_data(mixer, layer_id);
+	return xilinx_mixer_get_layer_data(mixer_hw, layer_id);
 }
 
-void xilinx_drm_mixer_reset(struct xv_mixer *mixer)
+void xilinx_drm_mixer_reset(struct xilinx_drm_mixer *mixer)
 {
-	int i, layer_idx;
-	struct xilinx_drm_plane_manager *manager =
-		(struct xilinx_drm_plane_manager *)mixer->private;
+	struct xv_mixer *mixer_hw = &(mixer->mixer_hw);
 
-	gpiod_set_raw_value(mixer->reset_gpio, 0x0);
+	gpiod_set_raw_value(mixer_hw->reset_gpio, 0x0);
 
 	udelay(1);
 
-	gpiod_set_raw_value(mixer->reset_gpio, 0x1);
+	gpiod_set_raw_value(mixer_hw->reset_gpio, 0x1);
 
 	/* restore layer properties and bg color after reset */
-	xilinx_mixer_set_bkg_col(mixer, mixer->bg_color, mixer->bg_layer_bpc);
+	xilinx_mixer_set_bkg_col(mixer_hw,
+		mixer_hw->bg_color, mixer_hw->bg_layer_bpc);
 
-	if (mixer->intrpts_enabled)
-		xilinx_mixer_intrpt_enable(mixer);
+	if (mixer_hw->intrpts_enabled)
+		xilinx_mixer_intrpt_enable(mixer_hw);
 
-	xilinx_drm_plane_restore(manager);
+	xilinx_drm_plane_restore(mixer->plane_manager);
 }
 
 static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
-					struct xv_mixer *mixer)
+					struct xv_mixer *mixer_hw)
 {
 
 	int ret = 0;
@@ -550,7 +621,7 @@ static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
 	uint32_t max_width, max_height;
 
 	/* read in logo data */
-	if (mixer->logo_layer_enabled) {
+	if (mixer_hw->logo_layer_enabled) {
 
 		logo_node = of_get_child_by_name(node, "logo");
 		if (!logo_node) {
@@ -558,7 +629,7 @@ static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
 			return -EINVAL;
 		}
 
-		layer_data = &(mixer->layer_data[1]);
+		layer_data = &(mixer_hw->layer_data[1]);
 
 		/* set defaults for logo layer */
 		layer_data->hw_config.min_height = XVMIX_LOGO_LAYER_HEIGHT_MIN;
@@ -588,7 +659,8 @@ static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
 		}
 
 		layer_data->hw_config.max_width = max_width;
-		mixer->max_logo_layer_width = layer_data->hw_config.max_width;
+		mixer_hw->max_logo_layer_width =
+			layer_data->hw_config.max_width;
 
 		ret = of_property_read_u32(logo_node, "xlnx,logo-height",
 					&max_height);
@@ -608,15 +680,19 @@ static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
 		}
 
 		layer_data->hw_config.max_height = max_height;
-		mixer->max_logo_layer_height = layer_data->hw_config.max_height;
+		mixer_hw->max_logo_layer_height =
+			layer_data->hw_config.max_height;
 
-		mixer->logo_color_key_enabled =
+		mixer_hw->logo_color_key_enabled =
 				of_property_read_bool(logo_node,
 						      "xlnx,logo-transp");
 
-		mixer->logo_pixel_alpha_enabled =
+		mixer_hw->logo_pixel_alpha_enabled =
 			of_property_read_bool(logo_node,
 				"xlnx,logo-pixel-alpha");
+
+		if (mixer_hw->logo_pixel_alpha_enabled)
+			layer_data->hw_config.vid_fmt = XVIDC_CSF_RGBA8;
 
 	}
 	return ret;
@@ -625,21 +701,27 @@ static int xilinx_drm_mixer_parse_dt_logo_data(struct device_node *node,
 
 
 static int xilinx_drm_mixer_parse_dt_bg_video_fmt(struct device_node *node,
-						struct xv_mixer *mixer)
+						struct xv_mixer *mixer_hw)
 {
 
 	struct device_node *layer_node;
+	struct xv_mixer_layer_data *layer;
 	const char *vformat;
 	int ret = 0;
 
 	layer_node = of_get_child_by_name(node, "layer_0");
 
-	mixer->layer_data[0].hw_config.min_width = XVMIX_LAYER_WIDTH_MIN;
-	mixer->layer_data[0].hw_config.min_height = XVMIX_LAYER_HEIGHT_MIN;
+	layer = &(mixer_hw->layer_data[0]);
+
+	/* Set default values */
+	layer->hw_config.can_alpha = false;
+	layer->hw_config.can_scale = false;
+	layer->hw_config.is_streaming = false;
+	layer->hw_config.min_width = XVMIX_LAYER_WIDTH_MIN;
+	layer->hw_config.min_height = XVMIX_LAYER_HEIGHT_MIN;
 
 
 	ret = of_property_read_string(layer_node, "xlnx,vformat", &vformat);
-
 
 	if (ret) {
 		DRM_ERROR("Failed to get mixer video format. Read %s from "
@@ -647,15 +729,18 @@ static int xilinx_drm_mixer_parse_dt_bg_video_fmt(struct device_node *node,
 		return -1;
 	}
 
+	mixer_layer_is_streaming(layer) =
+		    of_property_read_bool(layer_node, "xlnx,layer-streaming");
+
 	ret = of_property_read_u32(node, "xlnx,bpc",
-				   &(mixer->bg_layer_bpc));
+				   &(mixer_hw->bg_layer_bpc));
 	if (ret) {
 		DRM_ERROR("Failed to get bits per component (bpc) prop\n");
 		return -1;
 	}
 
 	ret = of_property_read_u32(layer_node, "xlnx,layer-width",
-		&(mixer->layer_data[0].hw_config.max_width));
+		&(mixer_hw->layer_data[0].hw_config.max_width));
 	if (ret) {
 		DRM_ERROR("Failed to get screen width prop\n");
 		return -1;
@@ -664,25 +749,25 @@ static int xilinx_drm_mixer_parse_dt_bg_video_fmt(struct device_node *node,
 	/* set global max width for mixer which will, ultimately, set the
 	*  limit for the crtc
 */
-	mixer->max_layer_width = mixer->layer_data[0].hw_config.max_width;
+	mixer_hw->max_layer_width = layer->hw_config.max_width;
 
 
 	ret = of_property_read_u32(layer_node, "xlnx,layer-height",
-		&(mixer->layer_data[0].hw_config.max_height));
+		&(layer->hw_config.max_height));
 	if (ret) {
 		DRM_ERROR("Failed to get screen height prop\n");
 		return -1;
 	}
 
-	mixer->max_layer_height = mixer->layer_data[0].hw_config.max_height;
+	mixer_hw->max_layer_height = layer->hw_config.max_height;
 
 	/*We'll use the first layer instance to store data of the master layer*/
-	mixer->layer_data[0].id = XVMIX_LAYER_MASTER;
+	layer->id = XVMIX_LAYER_MASTER;
 
 	ret = xilinx_drm_mixer_string_to_fmt(vformat,
-				&(mixer->layer_data[0].hw_config.vid_fmt));
+				&(mixer_hw->layer_data[0].hw_config.vid_fmt));
 	if (ret < 0) {
-		DRM_ERROR("Invalid mixer video format in dt\n");
+		DRM_ERROR("Invalid mixer video format in dts\n");
 		return -1;
 	}
 
@@ -723,21 +808,24 @@ xilinx_drm_mixer_update_logo_img(struct xilinx_drm_plane *plane,
 
 	struct drm_gem_cma_object *buffer;
 	struct xv_mixer_layer_data *logo_layer = plane->mixer_layer;
-	uint32_t pixel_cnt = src_h * src_w;
-	uint32_t comp_offset = 3; /* color comp offset in RG24 buffer */
-	uint32_t pixel_cmp_cnt = pixel_cnt * comp_offset; /* assumes RG24 */
+	size_t pixel_cnt = src_h * src_w;
+
+	/* color comp defaults to offset in RG24 buffer */
+	uint32_t pix_cmp_cnt;
+	uint32_t logo_cmp_cnt;
 	uint32_t layer_pixel_fmt = 0;
+	bool per_pixel_alpha = false;
 
 	uint32_t max_width = logo_layer->hw_config.max_width;
 	uint32_t max_height = logo_layer->hw_config.max_height;
 	uint32_t min_width = logo_layer->hw_config.min_width;
 	uint32_t min_height = logo_layer->hw_config.min_height;
 
-	uint32_t max_logo_pixels = max_width * max_height;
-
-	u8 r_data[max_logo_pixels];
-	u8 g_data[max_logo_pixels];
-	u8 b_data[max_logo_pixels];
+	u8 *r_data;
+	u8 *g_data;
+	u8 *b_data;
+	u8 *a_data;
+	size_t el_size = sizeof(u8);
 
 	u8 *pixel_mem_data;
 
@@ -761,6 +849,26 @@ xilinx_drm_mixer_update_logo_img(struct xilinx_drm_plane *plane,
 
 	ret = xilinx_drm_mixer_fmt_to_drm_fmt(logo_layer->hw_config.vid_fmt,
 					      &layer_pixel_fmt);
+
+	per_pixel_alpha =
+		(mixer_layer_fmt(logo_layer) == XVIDC_CSF_RGBA8) ? true : false;
+
+	r_data = kcalloc(pixel_cnt, el_size, GFP_KERNEL);
+	g_data = kcalloc(pixel_cnt, el_size, GFP_KERNEL);
+	b_data = kcalloc(pixel_cnt, el_size, GFP_KERNEL);
+
+	if (per_pixel_alpha)
+		a_data = kcalloc(pixel_cnt, el_size, GFP_KERNEL);
+
+	if (!r_data || !g_data || !b_data || (per_pixel_alpha && !a_data)) {
+		DRM_ERROR("Unable to allocate memory for logo layer data\n");
+		ret = -ENOMEM;
+		goto free;
+	}
+
+	pix_cmp_cnt = per_pixel_alpha ? 4 : 3;
+	logo_cmp_cnt = pixel_cnt * pix_cmp_cnt;
+
 	if (ret)
 		return ret;
 
@@ -770,10 +878,6 @@ xilinx_drm_mixer_update_logo_img(struct xilinx_drm_plane *plane,
 		return -EINVAL;
 	}
 
-	/* JPM TODO aside from consistency check above, we're implicitly
-	 * assuming that data in RG24 formatted for logo layer.  Need
-	 * a case() statement in the future for GR24
-	*/
 	buffer = xilinx_drm_fb_get_gem_obj(fb, 0);
 
 	/* ensure buffer attributes have changed to indicate new logo
@@ -789,17 +893,26 @@ xilinx_drm_mixer_update_logo_img(struct xilinx_drm_plane *plane,
 
 	pixel_mem_data = (u8 *)(buffer->vaddr);
 
-	for (i = 0, j = 0;
-		i < pixel_cmp_cnt && j < pixel_cnt;
-		i += comp_offset, j++) {
-		b_data[j] = pixel_mem_data[i];
-		g_data[j] = pixel_mem_data[i+1];
-		r_data[j] = pixel_mem_data[i+2];
+	for (i = 0, j = 0; j < pixel_cnt; j++) {
+
+		if (per_pixel_alpha && a_data)
+			a_data[j] = pixel_mem_data[i++];
+
+		b_data[j] = pixel_mem_data[i++];
+		g_data[j] = pixel_mem_data[i++];
+		r_data[j] = pixel_mem_data[i++];
 	}
 
-	ret = xilinx_mixer_logo_load(plane->manager->mixer,
+	ret = xilinx_mixer_logo_load(to_xv_mixer_hw(plane),
 				src_w, src_h,
-				&(r_data[0]), &(g_data[0]), &(b_data[0]));
+				r_data, g_data, b_data,
+				per_pixel_alpha ? a_data : NULL);
+
+free:
+	kfree(r_data);
+	kfree(g_data);
+	kfree(b_data);
+	kfree(a_data);
 
 	return ret;
 }
@@ -823,10 +936,10 @@ static irqreturn_t xilinx_drm_mixer_intr_handler(int irq, void *data)
 }
 
 
-void xilinx_drm_mixer_set_intr_handler(struct xv_mixer *mixer,
+void xilinx_drm_mixer_set_intr_handler(struct xilinx_drm_mixer *mixer,
 				void (*intr_handler_fn)(void *),
 				void *data)
 {
-	mixer->intrpt_handler_fn = intr_handler_fn;
-	mixer->intrpt_data = data;
+	mixer->mixer_hw.intrpt_handler_fn = intr_handler_fn;
+	mixer->mixer_hw.intrpt_data = data;
 }
